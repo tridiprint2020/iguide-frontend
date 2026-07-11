@@ -1,4 +1,15 @@
+import { useParams } from "react-router-dom";
+import { expeditions } from "../data/expeditions";
+
 function Expedition() {
+  const { slug } = useParams();
+
+  const expedition = expeditions.find((e) => e.slug === slug);
+
+  if (!expedition) {
+    return <h1>Expedición no encontrada.</h1>;
+  }
+
   return (
     <div
       style={{
@@ -9,25 +20,20 @@ function Expedition() {
     >
       <h1>🌎 Expedición</h1>
 
-      <h2>Torre Torre</h2>
+      <h2>{expedition.title}</h2>
 
-      <p>Distancia: 3.2 km</p>
-
-      <p>Tiempo estimado: 12 minutos</p>
-
-      <p>Duración: 2 horas</p>
+      <p>📍 Ciudad: {expedition.city}</p>
+      <p>📏 Distancia: {expedition.distance}</p>
+      <p>🚗 Taxi: {expedition.driveTime}</p>
+      <p>🚶 Caminando: {expedition.walkTime}</p>
+      <p>⏳ Duración: {expedition.duration}</p>
+      <p>💵 Precio: {expedition.price}</p>
+      <p>⭐ Dificultad: {expedition.difficulty}</p>
 
       <hr />
 
-      <h3>🤖 Hospes</h3>
-
-      <p>
-        Hoy comenzaremos por uno de los paisajes más representativos de Huancayo.
-      </p>
-
-      <p>
-        Lleva agua, protector solar y una cámara.
-      </p>
+      <h3>🤖 Hospes dice:</h3>
+      <p>{expedition.hospes}</p>
     </div>
   );
 }

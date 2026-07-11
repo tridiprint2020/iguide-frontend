@@ -24,7 +24,7 @@ function Hero() {
       <HospesCard />
       <PrimaryButton
        text="Comenzar Expedición"
-       onClick={() => navigate("/expedition")}
+       onClick={() => navigate("/explorer")}
       />
 
       </div>

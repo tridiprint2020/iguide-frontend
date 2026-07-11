@@ -1,39 +1,61 @@
-function ExpeditionCard() {
+import type { Expedition } from "../types/expedition";
+import { useNavigate } from "react-router-dom";
+
+type Props = {
+  expedition: Expedition;
+};
+
+function ExperienceCard({ expedition }: Props) {
+  const navigate = useNavigate();
+
   return (
     <div
       style={{
-        marginTop: "40px",
-        padding: "20px",
-        borderRadius: "12px",
         border: "1px solid #ddd",
-        background: "#F8FAFC",
+        borderRadius: "16px",
+        overflow: "hidden",
+        marginBottom: "25px",
+        background: "white",
+        boxShadow: "0 6px 18px rgba(0,0,0,.08)",
       }}
     >
-      <h2>📍 Primera Expedición</h2>
+      <img
+        src={expedition.image}
+        alt={expedition.title}
+        style={{
+          width: "100%",
+          height: "220px",
+          objectFit: "cover",
+        }}
+      />
 
-      <h3>Torre Torre</h3>
+      <div style={{ padding: "20px" }}>
+        <h2>{expedition.title}</h2>
 
-      <p>
-        Distancia: 3.2 km
-      </p>
+        <p>📍 {expedition.city}</p>
 
-      <p>
-        Tiempo estimado: 12 minutos
-      </p>
+        <p>⏳ {expedition.duration}</p>
 
-      <p>
-        Duración aproximada: 2 horas
-      </p>
+        <p>🚗 {expedition.driveTime}</p>
 
-      <p>
-        ⭐ Recomendación de Hospes:
-      </p>
+        <p>⭐ {expedition.difficulty}</p>
 
-      <p>
-        "Es un excelente lugar para comenzar a conocer Huancayo."
-      </p>
+        <p>
+          <strong>🤖 Hospes:</strong>
+        </p>
+
+        <p>{expedition.hospes}</p>
+
+        <button
+          onClick={() =>
+            navigate(`/expedition/${expedition.slug}`)
+          }
+        >
+          Explorar
+        </button>
+      </div>
     </div>
   );
 }
 
-export default ExpeditionCard;
+export default ExperienceCard;
