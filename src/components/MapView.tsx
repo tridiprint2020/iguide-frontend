@@ -1,37 +1,99 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
   CircleMarker,
+  MapContainer,
+  Marker,
+  Polyline,
+  Popup,
+  TileLayer,
 } from "react-leaflet";
+
 import "leaflet/dist/leaflet.css";
+
 import L from "leaflet";
 
-import { catalog } from "../data/catalog";
-import { loadUserProfile } from "../data/user";
-import { loadTrack } from "../engine/trackingEngine";
-import { MemoryCardEngine } from "../engine/memoryCardEngine";
-import { shareEngine } from "../engine/shareEngine";
+import {
+  catalog,
+} from "../data/catalog";
 
-import { Theme } from "../styles/theme";
+import {
+  loadUserProfile,
+} from "../data/user";
+
+import {
+  loadTrack,
+} from "../engine/trackingEngine";
+
+import {
+  MemoryCardEngine,
+} from "../engine/memoryCardEngine";
+
+import {
+  shareEngine,
+} from "../engine/shareEngine";
+
+import {
+  Theme,
+} from "../styles/theme";
 
 import MemoryCardModal from "./sharing/MemoryCardModal";
+import QhapaqNanLayer from "./maps/QhapaqNanLayer";
+
+import type {
+  Experience,
+} from "../types/experience";
 
 import type {
   ExpeditionTrack,
   TimelineItem,
 } from "../types/tracking/tracking";
-import type { MemoryCardData } from "../types/memoryCard";
+
+import type {
+  MemoryCardData,
+} from "../types/memoryCard";
 
 interface Props {
   track: ExpeditionTrack | null;
 }
 
-// Corrección de iconos Leaflet.
+type TrackBundle = {
+  experience: Experience;
+  track: ExpeditionTrack;
+
+  routeNodes: TimelineItem[];
+
+  routePath: [
+    number,
+    number,
+  ][];
+
+  startPoint:
+    | TimelineItem
+    | null;
+
+  abortPoint:
+    | TimelineItem
+    | null;
+
+  finishPoint:
+    | TimelineItem
+    | null;
+
+  memoryNodes: TimelineItem[];
+};
+
+/*
+ * Corrección global de los iconos
+ * predeterminados de Leaflet.
+ */
 delete (
   L.Icon.Default.prototype as L.Icon.Default & {
     _getIconUrl?: unknown;
@@ -41,75 +103,365 @@ delete (
 L.Icon.Default.mergeOptions({
   iconUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+
   iconRetinaUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+
   shadowUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function MapView({ track }: Props) {
-  const navigate = useNavigate();
+const DEFAULT_CENTER: [
+  number,
+  number,
+] = [
+  -12.06513,
+  -75.20486,
+];
 
-  const [selectedCard, setSelectedCard] =
-    useState<MemoryCardData | null>(null);
+const WINE = "#7A123D";
+const ORANGE = "#FF8A00";
 
-  const user = loadUserProfile();
+function findLastTimelineItem(
+  timeline: TimelineItem[],
+  type: TimelineItem["type"]
+): TimelineItem | null {
+  for (
+    let index =
+      timeline.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    if (
+      timeline[index].type ===
+      type
+    ) {
+      return timeline[index];
+    }
+  }
 
-  const defaultCenter: [number, number] = [
-    -12.06513,
-    -75.20486,
-  ];
+  return null;
+}
 
-  const activePath = track
-    ? track.timeline.filter(
-        (item: TimelineItem) =>
-          item.type !== "memory"
-      )
-    : [];
+function MapView({
+  track,
+}: Props) {
+  const navigate =
+    useNavigate();
 
-  const mapCenter: [number, number] =
+  const [
+    selectedCard,
+    setSelectedCard,
+  ] =
+    useState<MemoryCardData | null>(
+      null
+    );
+
+  const [
+    showQhapaqNan,
+    setShowQhapaqNan,
+  ] = useState(false);
+
+  const user =
+    loadUserProfile();
+
+  /*
+   * Solo se calcula una vez por render lógico.
+   * Ya no hacemos cuatro catalog.map()
+   * con loadTrack() repetido.
+   */
+  const trackBundles =
+    useMemo<TrackBundle[]>(() => {
+      const bundles: TrackBundle[] =
+        [];
+
+      for (
+        const experience of catalog
+      ) {
+        const persistedTrack =
+          loadTrack(
+            experience.experienceId
+          );
+
+        if (!persistedTrack) {
+          continue;
+        }
+
+        const routeNodes =
+          persistedTrack.timeline.filter(
+            (item) =>
+              item.type === "start" ||
+              item.type === "walk" ||
+              item.type === "abort" ||
+              item.type === "finish"
+          );
+
+        const routePath: [
+          number,
+          number,
+        ][] =
+          routeNodes.map(
+            (point) => [
+              point.lat,
+              point.lng,
+            ]
+          );
+
+        const startPoint =
+          persistedTrack.timeline.find(
+            (item) =>
+              item.type === "start"
+          ) ?? null;
+
+        const abortPoint =
+          findLastTimelineItem(
+            persistedTrack.timeline,
+            "abort"
+          );
+
+        const finishPoint =
+          findLastTimelineItem(
+            persistedTrack.timeline,
+            "finish"
+          );
+
+        const memoryNodes =
+          persistedTrack.timeline.filter(
+            (item) =>
+              item.type === "memory"
+          );
+
+        bundles.push({
+          experience,
+          track: persistedTrack,
+          routeNodes,
+          routePath,
+          startPoint,
+          abortPoint,
+          finishPoint,
+          memoryNodes,
+        });
+      }
+
+      return bundles;
+    }, [track]);
+
+  const activePath =
+    track?.timeline.filter(
+      (item) =>
+        item.type === "start" ||
+        item.type === "walk" ||
+        item.type === "abort" ||
+        item.type === "finish"
+    ) ?? [];
+
+  const mapCenter: [
+    number,
+    number,
+  ] =
     activePath.length > 0
       ? [
           activePath[0].lat,
           activePath[0].lng,
         ]
-      : defaultCenter;
-
-  function openMemoryCard(
-    data: MemoryCardData
-  ) {
-    setSelectedCard(data);
-  }
+      : DEFAULT_CENTER;
 
   function closeMemoryCard() {
     setSelectedCard(null);
   }
-  // CONSTANTES DE COLOR AGREGADAS ANTES DEL RETURN
-  const WINE = "#7A123D";
-  const ORANGE = "#FF8A00";
-  
+
+  /*
+   * La Memory Card se construye únicamente
+   * cuando el usuario la solicita.
+   *
+   * Antes se construían muchas tarjetas
+   * durante el render del mapa.
+   */
+  function openTimelineCard(
+    experience: Experience,
+    expeditionTrack: ExpeditionTrack,
+    item: TimelineItem
+  ) {
+    const cardData =
+      MemoryCardEngine
+        .buildFromTimelineItem(
+          experience,
+          expeditionTrack,
+          item
+        );
+
+    setSelectedCard(
+      cardData
+    );
+  }
+
   return (
     <>
-      <div
+      <section
         style={{
           backgroundColor:
             Theme.Colors.surface,
+
           borderRadius:
             Theme.Radius.large,
+
           padding: "10px",
+
           boxShadow:
             Theme.Shadows.card,
+
           marginTop:
             Theme.Space.md,
+
           marginLeft: "-6px",
           marginRight: "-6px",
         }}
       >
+        <header
+          style={{
+            display: "flex",
+
+            justifyContent:
+              "space-between",
+
+            alignItems: "center",
+
+            gap: "10px",
+
+            marginBottom: "10px",
+          }}
+        >
+          <div>
+            <strong
+              style={{
+                color:
+                  Theme.Colors.text,
+
+                fontSize: "14px",
+              }}
+            >
+              Mapa de exploración
+            </strong>
+
+            <p
+              style={{
+                margin:
+                  "3px 0 0",
+
+                color:
+                  Theme.Colors.textSoft,
+
+                fontSize: "10px",
+              }}
+            >
+              Rutas, experiencias y
+              patrimonio
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowQhapaqNan(
+                (current) =>
+                  !current
+              )
+            }
+            aria-pressed={
+              showQhapaqNan
+            }
+            style={{
+              minHeight: "38px",
+
+              padding:
+                "7px 11px",
+
+              borderRadius:
+                "11px",
+
+              border:
+                showQhapaqNan
+                  ? `1px solid ${ORANGE}`
+                  : "1px solid rgba(255,255,255,0.12)",
+
+              backgroundColor:
+                showQhapaqNan
+                  ? "rgba(255,138,0,0.15)"
+                  : "rgba(255,255,255,0.05)",
+
+              color:
+                showQhapaqNan
+                  ? ORANGE
+                  : Theme.Colors.text,
+
+              fontSize: "11px",
+
+              fontWeight: 800,
+
+              cursor: "pointer",
+            }}
+          >
+            {showQhapaqNan
+              ? "✓ Qhapaq Ñan"
+              : "Qhapaq Ñan"}
+          </button>
+        </header>
+
+        {showQhapaqNan && (
+          <div
+            style={{
+              display: "flex",
+
+              alignItems: "center",
+
+              gap: "7px",
+
+              marginBottom:
+                "9px",
+
+              padding:
+                "7px 9px",
+
+              borderRadius:
+                "9px",
+
+              backgroundColor:
+                "rgba(255,138,0,0.09)",
+
+              color:
+                Theme.Colors.textSoft,
+
+              fontSize: "10px",
+
+              lineHeight: 1.35,
+            }}
+          >
+            <span
+              style={{
+                display:
+                  "inline-block",
+
+                width: "24px",
+
+                borderTop:
+                  `3px dashed ${ORANGE}`,
+              }}
+            />
+
+            Camino prehispánico del
+            Valle del Mantaro
+          </div>
+        )}
+
         <div
           style={{
+            position: "relative",
+
             height: "520px",
+
             borderRadius:
               Theme.Radius.medium,
+
             overflow: "hidden",
           }}
         >
@@ -117,6 +469,7 @@ function MapView({ track }: Props) {
             center={mapCenter}
             zoom={13}
             scrollWheelZoom
+            preferCanvas
             style={{
               height: "100%",
               width: "100%",
@@ -127,372 +480,332 @@ function MapView({ track }: Props) {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
+            <QhapaqNanLayer
+              visible={
+                showQhapaqNan
+              }
+            />
+
             {/* PINES DEL CATÁLOGO */}
-            {catalog.map((experience) => {
-              const isVisited =
-                user.visitedExperiences?.includes(
-                  experience.experienceId
-                ) ?? false;
+            {catalog.map(
+              (experience) => {
+                const isVisited =
+                  user.visitedExperiences
+                    ?.includes(
+                      experience.experienceId
+                    ) ?? false;
 
-              const experienceImage =
-                experience.image ||
-                experience.coverImage;
+                const experienceImage =
+                  experience.image ||
+                  experience.coverImage;
 
-              return (
-                <Marker
-                  key={
-                    experience.experienceId
-                  }
-                  position={[
-                    experience.latitude,
-                    experience.longitude,
-                  ]}
-                >
-                  <Popup minWidth={260}>
-                    <article
-                      style={{
-                        width: "235px",
-                        color: "#161616",
-                      }}
+                return (
+                  <Marker
+                    key={
+                      experience.experienceId
+                    }
+                    position={[
+                      experience.latitude,
+                      experience.longitude,
+                    ]}
+                  >
+                    <Popup
+                      minWidth={260}
                     >
-                      {experienceImage && (
-                        <img
-                          src={experienceImage}
-                          alt={experience.title}
-                          style={{
-                            width: "100%",
-                            height: "110px",
-                            objectFit: "cover",
-                            borderRadius: "11px",
-                            marginBottom: "10px",
-                            backgroundColor:
-                              "#EFEFEF",
-                          }}
-                        />
-                      )}
-
-                      <div
+                      <article
                         style={{
-                          display: "flex",
-                          justifyContent:
-                            "space-between",
-                          alignItems:
-                            "flex-start",
-                          gap: "8px",
+                          width: "235px",
+                          color: "#161616",
                         }}
                       >
-                        <div>
-                          <p
-                            style={{
-                              margin:
-                                "0 0 3px",
-                              color:
-                                Theme.Colors
-                                  .primary,
-                              fontSize:
-                                "10px",
-                              fontWeight: 800,
-                              textTransform:
-                                "uppercase",
-                              letterSpacing:
-                                "0.08em",
-                            }}
-                          >
-                            {experience.type}
-                          </p>
-
-                          <h3
-                            style={{
-                              margin: 0,
-                              fontSize:
-                                "17px",
-                            }}
-                          >
-                            {experience.title}
-                          </h3>
-                        </div>
-
-                        {isVisited && (
-                          <span
-                            title="Lugar visitado"
-                            style={{
-                              fontSize:
-                                "17px",
-                            }}
-                          >
-                            ✔️
-                          </span>
-                        )}
-                      </div>
-
-                      <p
-                        style={{
-                          margin:
-                            "9px 0 11px",
-                          color: "#666666",
-                          fontSize: "12px",
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {experience.description}
-                      </p>
-
-                      {"openingHours" in
-                        experience &&
-                        experience.openingHours && (
-                          <p
-                            style={{
-                              margin:
-                                "0 0 11px",
-                              color:
-                                "#444444",
-                              fontSize:
-                                "11px",
-                              fontWeight: 600,
-                            }}
-                          >
-                            🕒{" "}
-                            {
-                              experience.openingHours
+                        {experienceImage && (
+                          <img
+                            src={
+                              experienceImage
                             }
-                          </p>
+                            alt={
+                              experience.title
+                            }
+                            loading="lazy"
+                            style={{
+                              width:
+                                "100%",
+
+                              height:
+                                "105px",
+
+                              objectFit:
+                                "cover",
+
+                              borderRadius:
+                                "11px",
+
+                              marginBottom:
+                                "9px",
+
+                              backgroundColor:
+                                "#EFEFEF",
+                            }}
+                          />
                         )}
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            `/expedition/${experience.slug}`
-                          )
-                        }
-                        style={{
-                          width: "100%",
-                          minHeight: "42px",
-                          border: "none",
-                          borderRadius:
-                            "11px",
-                          backgroundColor:
-                            Theme.Colors
-                              .primary,
-                          color: "#FFFFFF",
-                          fontWeight: 800,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Ver plan e iniciar
-                      </button>
-                    </article>
-                  </Popup>
-                </Marker>
-              );
-            })}
+                        <div
+                          style={{
+                            display:
+                              "flex",
 
-            {/* RUTAS GUARDADAS */}
-            {catalog.map((experience) => {
-              const currentTrack =
-                loadTrack(
-                  experience.experienceId
-                );
+                            justifyContent:
+                              "space-between",
 
-              if (!currentTrack) {
-                return null;
-              }
+                            alignItems:
+                              "flex-start",
 
-              const routeNodes =
-                currentTrack.timeline.filter(
-                  (item) =>
-                    item.type ===
-                      "start" ||
-                    item.type ===
-                      "walk" ||
-                    item.type ===
-                      "abort" ||
-                    item.type ===
-                      "finish"
-                );
-
-              if (routeNodes.length < 2) {
-                return null;
-              }
-
-              const realPath: [
-                number,
-                number,
-              ][] = routeNodes.map(
-                (point) => [
-                  point.lat,
-                  point.lng,
-                ]
-              );
-
-       
-              const routeColor =
-  Theme.Colors.primary;
-
-              return (
-                <Polyline
-                  key={`track-${experience.experienceId}`}
-                  positions={realPath}
-                  pathOptions={{
-                    color: routeColor,
-                    weight: 4,
-                    lineCap: "round",
-                    lineJoin: "round",
-                    opacity: 0.88,
-                  }}
-                />
-              );
-            })}
-
-            {/* INICIO, ABANDONO Y FINAL */}
-            {catalog.map((experience) => {
-              const currentTrack =
-                loadTrack(
-                  experience.experienceId
-                );
-
-              if (!currentTrack) {
-                return null;
-              }
-
-              const startPoint =
-                currentTrack.timeline.find(
-                  (item) =>
-                    item.type === "start"
-                );
-
-              const abortPoint = [
-                ...currentTrack.timeline,
-              ]
-                .reverse()
-                .find(
-                  (item) =>
-                    item.type === "abort"
-                );
-
-              const finishPoint = [
-                ...currentTrack.timeline,
-              ]
-                .reverse()
-                .find(
-                  (item) =>
-                    item.type ===
-                    "finish"
-                );
-
-              const startCardData =
-                startPoint
-                  ? MemoryCardEngine.buildFromTimelineItem(
-                      experience,
-                      currentTrack,
-                      startPoint
-                    )
-                  : null;
-
-              const abortCardData =
-                abortPoint
-                  ? MemoryCardEngine.buildFromTimelineItem(
-                      experience,
-                      currentTrack,
-                      abortPoint
-                    )
-                  : null;
-
-              const finishCardData =
-                finishPoint
-                  ? MemoryCardEngine.buildFromTimelineItem(
-                      experience,
-                      currentTrack,
-                      finishPoint
-                    )
-                  : null;
-
-              return (
-                <div
-                  key={`edges-${experience.experienceId}`}
-                >
-                  {startPoint &&
-                    startCardData && (
-                      <CircleMarker
-                        center={[
-                          startPoint.lat,
-                          startPoint.lng,
-                        ]}
-                        radius={11}
-                        pathOptions={{
-                          color: "#FFFFFF",
-                          weight: 2,
-                          fillColor: WINE,
-                          fillOpacity: 1,
-                        }}
-                      >
-                        <Popup minWidth={220}>
-                          <div
-                            style={{
-                              padding: "7px",
-                              color:
-                                "#161616",
-                              textAlign:
-                                "center",
-                            }}
-                          >
-                            <strong>
-                              🚀 Inicio del
-                              recorrido
-                            </strong>
-
+                            gap: "8px",
+                          }}
+                        >
+                          <div>
                             <p
                               style={{
                                 margin:
-                                  "7px 0 11px",
-                                fontSize:
-                                  "12px",
+                                  "0 0 3px",
+
                                 color:
-                                  "#666666",
+                                  Theme
+                                    .Colors
+                                    .primary,
+
+                                fontSize:
+                                  "10px",
+
+                                fontWeight:
+                                  800,
+
+                                textTransform:
+                                  "uppercase",
+
+                                letterSpacing:
+                                  "0.08em",
+                              }}
+                            >
+                              {
+                                experience.type
+                              }
+                            </p>
+
+                            <h3
+                              style={{
+                                margin:
+                                  0,
+
+                                fontSize:
+                                  "17px",
                               }}
                             >
                               {
                                 experience.title
                               }
-                            </p>
+                            </h3>
+                          </div>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openMemoryCard(
-                                  startCardData
-                                )
-                              }
+                          {isVisited && (
+                            <span
+                              title="Lugar visitado"
                               style={{
-                                width:
-                                  "100%",
-                                minHeight:
-                                  "38px",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "10px",
-                                backgroundColor:
-                                  Theme.Colors
-                                    .primary,
-                                color:
-                                  "#FFFFFF",
-                                fontWeight:
-                                  700,
-                                cursor:
-                                  "pointer",
+                                fontSize:
+                                  "17px",
                               }}
                             >
-                              Ver Memory Card
-                            </button>
-                          </div>
-                        </Popup>
-                      </CircleMarker>
-                    )}
+                              ✔️
+                            </span>
+                          )}
+                        </div>
+
+                        <p
+                          style={{
+                            margin:
+                              "8px 0 10px",
+
+                            color:
+                              "#666666",
+
+                            fontSize:
+                              "12px",
+
+                            lineHeight:
+                              1.4,
+                          }}
+                        >
+                          {
+                            experience.description
+                          }
+                        </p>
+
+                        {"openingHours" in
+                          experience &&
+                          experience.openingHours && (
+                            <p
+                              style={{
+                                margin:
+                                  "0 0 10px",
+
+                                color:
+                                  "#444444",
+
+                                fontSize:
+                                  "11px",
+
+                                fontWeight:
+                                  600,
+                              }}
+                            >
+                              🕒{" "}
+                              {
+                                experience.openingHours
+                              }
+                            </p>
+                          )}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              `/expedition/${experience.slug}`
+                            )
+                          }
+                          style={{
+                            width:
+                              "100%",
+
+                            minHeight:
+                              "42px",
+
+                            border:
+                              "none",
+
+                            borderRadius:
+                              "11px",
+
+                            backgroundColor:
+                              Theme
+                                .Colors
+                                .primary,
+
+                            color:
+                              "#FFFFFF",
+
+                            fontWeight:
+                              800,
+
+                            cursor:
+                              "pointer",
+                          }}
+                        >
+                          Ver plan e iniciar
+                        </button>
+                      </article>
+                    </Popup>
+                  </Marker>
+                );
+              }
+            )}
+
+            {/* RUTAS GUARDADAS */}
+            {trackBundles.map(
+              ({
+                experience,
+                routePath,
+              }) => {
+                if (
+                  routePath.length < 2
+                ) {
+                  return null;
+                }
+
+                return (
+                  <Polyline
+                    key={`track-${experience.experienceId}`}
+                    positions={
+                      routePath
+                    }
+                    pathOptions={{
+                      color:
+                        Theme.Colors
+                          .primary,
+
+                      weight: 4,
+
+                      lineCap:
+                        "round",
+
+                      lineJoin:
+                        "round",
+
+                      opacity:
+                        0.88,
+                    }}
+                  />
+                );
+              }
+            )}
+
+            {/* HITOS DE RUTA */}
+            {trackBundles.map(
+              ({
+                experience,
+                track:
+                  expeditionTrack,
+                startPoint,
+                abortPoint,
+                finishPoint,
+              }) => (
+                <div
+                  key={`edges-${experience.experienceId}`}
+                >
+                  {startPoint && (
+                    <CircleMarker
+                      center={[
+                        startPoint.lat,
+                        startPoint.lng,
+                      ]}
+                      radius={11}
+                      pathOptions={{
+                        color:
+                          "#FFFFFF",
+
+                        weight: 2,
+
+                        fillColor:
+                          WINE,
+
+                        fillOpacity:
+                          1,
+                      }}
+                    >
+                      <Popup
+                        minWidth={210}
+                      >
+                        <TimelinePopup
+                          title="🚀 Inicio del recorrido"
+                          experienceTitle={
+                            experience.title
+                          }
+                          buttonColor={
+                            WINE
+                          }
+                          onOpen={() =>
+                            openTimelineCard(
+                              experience,
+                              expeditionTrack,
+                              startPoint
+                            )
+                          }
+                        />
+                      </Popup>
+                    </CircleMarker>
+                  )}
 
                   {abortPoint &&
-                    !finishPoint &&
-                    abortCardData && (
+                    !finishPoint && (
                       <CircleMarker
                         center={[
                           abortPoint.lat,
@@ -500,180 +813,102 @@ function MapView({ track }: Props) {
                         ]}
                         radius={10}
                         pathOptions={{
-                          color: "#FFFFFF",
+                          color:
+                            "#FFFFFF",
+
                           weight: 2,
-                        fillColor: ORANGE,
-                          fillOpacity: 1,
+
+                          fillColor:
+                            ORANGE,
+
+                          fillOpacity:
+                            1,
                         }}
                       >
-                        <Popup minWidth={220}>
-                          <div
-                            style={{
-                              padding: "7px",
-                              color:
-                                "#161616",
-                              textAlign:
-                                "center",
-                            }}
-                          >
-                            <strong>
-                              🟠 Recorrido
-                              conservado
-                            </strong>
-
-                            <p
-                              style={{
-                                margin:
-                                  "7px 0 11px",
-                                fontSize:
-                                  "12px",
-                                color:
-                                  "#666666",
-                              }}
-                            >
-                              {
-                                experience.title
-                              }
-                            </p>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openMemoryCard(
-                                  abortCardData
-                                )
-                              }
-                              style={{
-                                width:
-                                  "100%",
-                                minHeight:
-                                  "38px",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "10px",
-                                backgroundColor: ORANGE,
-                                color:
-                                  "#FFFFFF",
-                                fontWeight:
-                                  700,
-                                cursor:
-                                  "pointer",
-                              }}
-                            >
-                              Ver Memory Card
-                            </button>
-                          </div>
+                        <Popup
+                          minWidth={
+                            210
+                          }
+                        >
+                          <TimelinePopup
+                            title="🟠 Recorrido conservado"
+                            experienceTitle={
+                              experience.title
+                            }
+                            buttonColor={
+                              ORANGE
+                            }
+                            onOpen={() =>
+                              openTimelineCard(
+                                experience,
+                                expeditionTrack,
+                                abortPoint
+                              )
+                            }
+                          />
                         </Popup>
                       </CircleMarker>
                     )}
 
-                  {finishPoint &&
-                    finishCardData && (
-                      <CircleMarker
-                        center={[
-                          finishPoint.lat,
-                          finishPoint.lng,
-                        ]}
-                        radius={12}
-                        pathOptions={{
-                          color: "#FFFFFF",
-                          weight: 2,
-                         fillColor: WINE,
-                          fillOpacity: 1,
-                        }}
+                  {finishPoint && (
+                    <CircleMarker
+                      center={[
+                        finishPoint.lat,
+                        finishPoint.lng,
+                      ]}
+                      radius={12}
+                      pathOptions={{
+                        color:
+                          "#FFFFFF",
+
+                        weight: 2,
+
+                        fillColor:
+                          WINE,
+
+                        fillOpacity:
+                          1,
+                      }}
+                    >
+                      <Popup
+                        minWidth={210}
                       >
-                        <Popup minWidth={220}>
-                          <div
-                            style={{
-                              padding: "7px",
-                              color:
-                                "#161616",
-                              textAlign:
-                                "center",
-                            }}
-                          >
-                            <strong>
-                              🏁 Expedición
-                              completada
-                            </strong>
-
-                            <p
-                              style={{
-                                margin:
-                                  "7px 0 11px",
-                                fontSize:
-                                  "12px",
-                                color:
-                                  "#666666",
-                              }}
-                            >
-                              {
-                                experience.title
-                              }
-                            </p>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openMemoryCard(
-                                  finishCardData
-                                )
-                              }
-                              style={{
-                                width:
-                                  "100%",
-                                minHeight:
-                                  "38px",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "10px",
-                                backgroundColor: WINE,
-                                color: "#FFFFFF",
-                                fontWeight:
-                                  800,
-                                cursor:
-                                  "pointer",
-                              }}
-                            >
-                              Ver Memory Card
-                            </button>
-                          </div>
-                        </Popup>
-                      </CircleMarker>
-                    )}
+                        <TimelinePopup
+                          title="🏁 Expedición completada"
+                          experienceTitle={
+                            experience.title
+                          }
+                          buttonColor={
+                            WINE
+                          }
+                          onOpen={() =>
+                            openTimelineCard(
+                              experience,
+                              expeditionTrack,
+                              finishPoint
+                            )
+                          }
+                        />
+                      </Popup>
+                    </CircleMarker>
+                  )}
                 </div>
-              );
-            })}
+              )
+            )}
 
             {/* RECUERDOS */}
-            {catalog.map((experience) => {
-              const currentTrack =
-                loadTrack(
-                  experience.experienceId
-                );
-
-              if (!currentTrack) {
-                return null;
-              }
-
-              const memoryNodes =
-                currentTrack.timeline.filter(
-                  (item) =>
-                    item.type === "memory"
-                );
-
-              return memoryNodes.map(
-                (memory, index) => {
-                  const cardData =
-                    MemoryCardEngine.buildFromTimelineItem(
-                      experience,
-                      currentTrack,
-                      memory
-                    );
-
-                  return (
+            {trackBundles.flatMap(
+              ({
+                experience,
+                track:
+                  expeditionTrack,
+                memoryNodes,
+              }) =>
+                memoryNodes.map(
+                  (
+                    memory,
+                    index
+                  ) => (
                     <CircleMarker
                       key={
                         memory.id ||
@@ -685,92 +920,135 @@ function MapView({ track }: Props) {
                       ]}
                       radius={11}
                       pathOptions={{
-                        color: "#FFFFFF",
+                        color:
+                          "#FFFFFF",
+
                         weight: 2,
+
                         fillColor:
                           Theme.Colors
                             .primary,
-                        fillOpacity: 1,
+
+                        fillOpacity:
+                          1,
                       }}
                     >
-                      <Popup minWidth={220}>
-                        <div
-                          style={{
-                            padding: "7px",
-                            color:
-                              "#161616",
-                            textAlign:
-                              "center",
-                          }}
-                        >
-                          <strong>
-                            📸 Recuerdo
-                            guardado
-                          </strong>
-
-                          <p
-                            style={{
-                              margin:
-                                "7px 0 11px",
-                              fontSize:
-                                "12px",
-                              color:
-                                "#666666",
-                            }}
-                          >
-                            {
-                              experience.title
-                            }
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openMemoryCard(
-                                cardData
-                              )
-                            }
-                            style={{
-                              width: "100%",
-                              minHeight:
-                                "38px",
-                              border:
-                                "none",
-                              borderRadius:
-                                "10px",
-                              backgroundColor:
-                                Theme.Colors
-                                  .primary,
-                              color:
-                                "#FFFFFF",
-                              fontWeight:
-                                700,
-                              cursor:
-                                "pointer",
-                            }}
-                          >
-                            Ver Memory Card
-                          </button>
-                        </div>
+                      <Popup
+                        minWidth={210}
+                      >
+                        <TimelinePopup
+                          title="📸 Recuerdo guardado"
+                          experienceTitle={
+                            experience.title
+                          }
+                          buttonColor={
+                            Theme.Colors
+                              .primary
+                          }
+                          onOpen={() =>
+                            openTimelineCard(
+                              experience,
+                              expeditionTrack,
+                              memory
+                            )
+                          }
+                        />
                       </Popup>
                     </CircleMarker>
-                  );
-                }
-              );
-            })}
+                  )
+                )
+            )}
           </MapContainer>
         </div>
-      </div>
+      </section>
 
       <MemoryCardModal
-        open={selectedCard !== null}
+        open={
+          selectedCard !== null
+        }
         data={selectedCard}
-        onClose={closeMemoryCard}
+        onClose={
+          closeMemoryCard
+        }
         onShare={(data) =>
-          shareEngine.shareMemory(data)
+          shareEngine.shareMemory(
+            data
+          )
         }
       />
     </>
+  );
+}
+
+type TimelinePopupProps = {
+  title: string;
+
+  experienceTitle: string;
+
+  buttonColor: string;
+
+  onOpen: () => void;
+};
+
+function TimelinePopup({
+  title,
+  experienceTitle,
+  buttonColor,
+  onOpen,
+}: TimelinePopupProps) {
+  return (
+    <div
+      style={{
+        padding: "7px",
+
+        color: "#161616",
+
+        textAlign: "center",
+      }}
+    >
+      <strong>
+        {title}
+      </strong>
+
+      <p
+        style={{
+          margin:
+            "7px 0 11px",
+
+          fontSize: "12px",
+
+          color: "#666666",
+        }}
+      >
+        {experienceTitle}
+      </p>
+
+      <button
+        type="button"
+        onClick={onOpen}
+        style={{
+          width: "100%",
+
+          minHeight: "38px",
+
+          border: "none",
+
+          borderRadius:
+            "10px",
+
+          backgroundColor:
+            buttonColor,
+
+          color: "#FFFFFF",
+
+          fontWeight: 700,
+
+          cursor: "pointer",
+        }}
+      >
+        Ver Memory Card
+      </button>
+    </div>
   );
 }
 

@@ -10,23 +10,184 @@ import type {
 // 🏛️ 1. UTILIDADES INTERNAS Y ACCESO A PERSISTENCIA
 // =======================================================================
 
-function getStorageKey(
-  experienceId: string,
-  sessionId?: string
-): string {
-  if (sessionId) {
-    return `iguide_track_${experienceId}_${sessionId}`;
-  }
+type ActiveTrackPointer = {
+  sessionId: string;
+};
 
-  // Compatibilidad temporal con todo el flujo actual.
+const trackCache = new Map<string, ExpeditionTrack>();
+
+function getActiveTrackKey(experienceId: string): string {
   return `iguide_track_${experienceId}`;
 }
 
-function getSessionIndexKey(
-  experienceId: string
+function getSessionTrackKey(
+  experienceId: string,
+  sessionId: string
 ): string {
+  return `iguide_track_${experienceId}_${sessionId}`;
+}
+
+function getSessionIndexKey(experienceId: string): string {
   return `iguide_sessions_${experienceId}`;
 }
+
+function getCacheKey(
+  experienceId: string,
+  sessionId: string
+): string {
+  return `${experienceId}:${sessionId}`;
+}
+
+function isActiveTrackPointer(
+  value: unknown
+): value is ActiveTrackPointer {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("sessionId" in value)
+  ) {
+    return false;
+  }
+
+  return (
+    typeof (value as ActiveTrackPointer).sessionId === "string"
+  );
+}
+
+function normalizeTrack(
+  track: ExpeditionTrack,
+  experienceId: string,
+  fallbackSessionId?: string
+): ExpeditionTrack {
+  return {
+    ...track,
+    experienceId:
+      track.experienceId || experienceId,
+    sessionId:
+      track.sessionId ||
+      fallbackSessionId ||
+      String(track.startedAt || Date.now()),
+    startedAt:
+      track.startedAt || Date.now(),
+    timeline: Array.isArray(track.timeline)
+      ? track.timeline
+      : [],
+  };
+}
+
+function roundCoordinate(value: number): number {
+  return Number(value.toFixed(6));
+}
+
+function compactTimeline(
+  timeline: TimelineItem[]
+): TimelineItem[] {
+  const compacted: TimelineItem[] = [];
+
+  for (const item of timeline) {
+    const normalizedItem: TimelineItem = {
+      ...item,
+      lat: roundCoordinate(item.lat),
+      lng: roundCoordinate(item.lng),
+    };
+
+    if (!normalizedItem.note) {
+      delete normalizedItem.note;
+    }
+
+    if (!normalizedItem.photo) {
+      delete normalizedItem.photo;
+    }
+
+    if (!normalizedItem.audio) {
+      delete normalizedItem.audio;
+    }
+
+    const previous =
+      compacted[compacted.length - 1];
+
+    /*
+     * Evita duplicados GPS idénticos consecutivos.
+     * Conserva siempre memorias, inicio, abandono y final.
+     */
+    if (
+      normalizedItem.type === "walk" &&
+      previous?.type === "walk" &&
+      previous.lat === normalizedItem.lat &&
+      previous.lng === normalizedItem.lng
+    ) {
+      continue;
+    }
+
+    compacted.push(normalizedItem);
+  }
+
+  return compacted;
+}
+
+function prepareTrackForStorage(
+  track: ExpeditionTrack
+): ExpeditionTrack {
+  return {
+    ...track,
+    timeline: compactTimeline(track.timeline ?? []),
+  };
+}
+
+function cacheTrack(track: ExpeditionTrack): void {
+  trackCache.set(
+    getCacheKey(
+      track.experienceId,
+      track.sessionId
+    ),
+    track
+  );
+}
+
+function readTrackFromSessionStorage(
+  experienceId: string,
+  sessionId: string
+): ExpeditionTrack | null {
+  const cacheKey =
+    getCacheKey(experienceId, sessionId);
+
+  const cached =
+    trackCache.get(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  const raw = localStorage.getItem(
+    getSessionTrackKey(
+      experienceId,
+      sessionId
+    )
+  );
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed =
+      JSON.parse(raw) as ExpeditionTrack;
+
+    const normalized =
+      normalizeTrack(
+        parsed,
+        experienceId,
+        sessionId
+      );
+
+    cacheTrack(normalized);
+
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
 export function loadSessionIndex(
   experienceId: string
 ): string[] {
@@ -39,7 +200,8 @@ export function loadSessionIndex(
   }
 
   try {
-    const sessionIds = JSON.parse(raw);
+    const sessionIds =
+      JSON.parse(raw) as unknown;
 
     if (!Array.isArray(sessionIds)) {
       return [];
@@ -58,9 +220,8 @@ export function saveSessionIndex(
   experienceId: string,
   sessionIds: string[]
 ): void {
-  const uniqueSessionIds = Array.from(
-    new Set(sessionIds)
-  );
+  const uniqueSessionIds =
+    Array.from(new Set(sessionIds));
 
   localStorage.setItem(
     getSessionIndexKey(experienceId),
@@ -75,7 +236,9 @@ export function registerSession(
   const currentSessionIds =
     loadSessionIndex(experienceId);
 
-  if (currentSessionIds.includes(sessionId)) {
+  if (
+    currentSessionIds.includes(sessionId)
+  ) {
     return;
   }
 
@@ -85,31 +248,54 @@ export function registerSession(
   ]);
 }
 
-export function loadTrack(experienceId: string): ExpeditionTrack | null {
-  const raw = localStorage.getItem(getStorageKey(experienceId));
-  if (!raw) return null;
+/**
+ * Carga la sesión apuntada por la clave activa.
+ *
+ * También migra automáticamente el formato antiguo,
+ * donde la clave activa contenía una segunda copia
+ * completa del mismo recorrido.
+ */
+export function loadTrack(
+  experienceId: string
+): ExpeditionTrack | null {
+  const activeKey =
+    getActiveTrackKey(experienceId);
+
+  const raw =
+    localStorage.getItem(activeKey);
+
+  if (!raw) {
+    return null;
+  }
 
   try {
-    const track = JSON.parse(raw) as ExpeditionTrack;
-    if (!track.sessionId) {
-  track.sessionId = String(
-    track.startedAt || Date.now()
-  );
+    const parsed =
+      JSON.parse(raw) as
+        | ActiveTrackPointer
+        | ExpeditionTrack;
 
-  registerSession(
-      experienceId,
-    track.sessionId
-  );
-
-  saveTrack(track);
-}
-
-    if (!track.timeline) {
-      track.timeline = [];
-      localStorage.setItem(getStorageKey(experienceId), JSON.stringify(track));
+    if (isActiveTrackPointer(parsed)) {
+      return readTrackFromSessionStorage(
+        experienceId,
+        parsed.sessionId
+      );
     }
 
-    return track;
+    /*
+     * Migración automática:
+     * 1. detecta la copia completa antigua;
+     * 2. guarda una sola copia canónica por sesión;
+     * 3. reemplaza la clave duplicada por un puntero pequeño.
+     */
+    const migratedTrack =
+      normalizeTrack(
+        parsed,
+        experienceId
+      );
+
+    saveTrack(migratedTrack);
+
+    return migratedTrack;
   } catch {
     return null;
   }
@@ -119,72 +305,149 @@ export function loadTrackSession(
   experienceId: string,
   sessionId: string
 ): ExpeditionTrack | null {
-  const raw = localStorage.getItem(
-    getStorageKey(experienceId, sessionId)
+  return readTrackFromSessionStorage(
+    experienceId,
+    sessionId
   );
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const track = JSON.parse(raw) as ExpeditionTrack;
-
-    if (!track.timeline) {
-      track.timeline = [];
-    }
-
-    if (!track.sessionId) {
-      track.sessionId = sessionId;
-    }
-
-    return track;
-  } catch {
-    return null;
-  }
 }
 
 export function loadAllTrackSessions(
   experienceId: string
 ): ExpeditionTrack[] {
-  const sessionIds = loadSessionIndex(experienceId);
+  const sessionIds =
+    loadSessionIndex(experienceId);
 
   return sessionIds
     .map((sessionId) =>
-      loadTrackSession(experienceId, sessionId)
+      loadTrackSession(
+        experienceId,
+        sessionId
+      )
     )
     .filter(
       (track): track is ExpeditionTrack =>
         track !== null
     )
     .sort(
-      (a, b) => b.startedAt - a.startedAt
+      (a, b) =>
+        b.startedAt - a.startedAt
     );
 }
 
+/**
+ * Persistencia optimizada:
+ *
+ * - guarda el recorrido completo una sola vez;
+ * - la clave compatible guarda únicamente sessionId;
+ * - mantiene una caché en memoria para evitar JSON.parse repetido;
+ * - compacta coordenadas y duplicados exactos.
+ */
 export function saveTrack(
   track: ExpeditionTrack
 ): void {
-  const serializedTrack = JSON.stringify(track);
+  const preparedTrack =
+    prepareTrackForStorage(track);
 
-  // Clave nueva por sesión.
+  track.timeline =
+    preparedTrack.timeline;
+
+  const serializedTrack =
+    JSON.stringify(preparedTrack);
+
   localStorage.setItem(
-    getStorageKey(
-      track.experienceId,
-      track.sessionId
+    getSessionTrackKey(
+      preparedTrack.experienceId,
+      preparedTrack.sessionId
     ),
     serializedTrack
   );
 
-  // Compatibilidad temporal con Explorer y consumidores actuales.
   localStorage.setItem(
-    getStorageKey(track.experienceId),
-    serializedTrack
+    getActiveTrackKey(
+      preparedTrack.experienceId
+    ),
+    JSON.stringify({
+      sessionId:
+        preparedTrack.sessionId,
+    } satisfies ActiveTrackPointer)
+  );
+
+  registerSession(
+    preparedTrack.experienceId,
+    preparedTrack.sessionId
+  );
+
+  cacheTrack(preparedTrack);
+}
+
+/**
+ * Elimina solo el puntero activo.
+ * El historial por sesión permanece disponible.
+ */
+export function deleteTrack(
+  experienceId: string
+): void {
+  localStorage.removeItem(
+    getActiveTrackKey(experienceId)
   );
 }
 
-export function deleteTrack(experienceId: string): void {
-  localStorage.removeItem(getStorageKey(experienceId));
+export function clearTrackingCache(): void {
+  trackCache.clear();
+}
+
+export function deleteTrackSession(
+  experienceId: string,
+  sessionId: string
+): void {
+  localStorage.removeItem(
+    getSessionTrackKey(
+      experienceId,
+      sessionId
+    )
+  );
+
+  trackCache.delete(
+    getCacheKey(
+      experienceId,
+      sessionId
+    )
+  );
+
+  saveSessionIndex(
+    experienceId,
+    loadSessionIndex(experienceId).filter(
+      (storedSessionId) =>
+        storedSessionId !== sessionId
+    )
+  );
+
+  const activeRaw =
+    localStorage.getItem(
+      getActiveTrackKey(experienceId)
+    );
+
+  if (!activeRaw) {
+    return;
+  }
+
+  try {
+    const active =
+      JSON.parse(activeRaw) as unknown;
+
+    if (
+      isActiveTrackPointer(active) &&
+      active.sessionId === sessionId
+    ) {
+      localStorage.removeItem(
+        getActiveTrackKey(experienceId)
+      );
+    }
+  } catch {
+    localStorage.removeItem(
+      getActiveTrackKey(experienceId)
+    );
+  }
 }
 
 // Helper de dominio puro para estandarizar ítems cronológicos sanado
