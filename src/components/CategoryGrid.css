@@ -1,0 +1,116 @@
+.category-grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+
+gap:15px;
+
+margin:30px 0;
+
+}
+
+.category-grid button{
+
+background:#181824;
+
+border:none;
+
+border-radius:18px;
+
+padding:20px;
+
+color:white;
+
+cursor:pointer;
+
+transition:.25s;
+
+font-size:15px;
+
+}
+
+.category-grid button:hover{
+
+transform:translateY(-4px);
+
+}
+
+.category-grid button.active{
+
+background:#D61CFF;
+
+}
+
+.hospes-message{
+
+margin-top:25px;
+
+padding:20px;
+
+background:#181824;
+
+border-radius:18px;
+
+color:white;
+
+}
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 15px;
+  margin: 30px 0;
+}
+
+.category-grid button {
+  background: #181824;
+  border: 1px solid #3A3A4A; /* borde visible contra el fondo */
+  border-radius: 18px;
+  padding: 20px;
+  color: white;
+  cursor: pointer;
+  transition: 0.25s;
+  font-size: 15px;
+}
+
+.category-grid button:hover {
+  background: #D61CFF; /* mismo magenta que el activo, para que el hover anticipe el clic */
+  border-color: #D61CFF;
+  transform: translateY(-4px);
+}
+
+.category-grid button.active {
+  background: #D61CFF;
+  border-color: #D61CFF;
+}
+.nori-hover-preview {
+  margin-top: 12px;
+  background: #ffffff;
+  color: #1A202C;
+  border-left: 4px solid #00E5A8;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.nori-grid-preview {
+  background: #ffffff;
+  color: #1A202C;
+  border-radius: 18px;
+  padding: 20px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  border-left: 4px solid #00E5A8;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

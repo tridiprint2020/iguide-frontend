@@ -1,14 +1,30 @@
-function PrimaryButton({ text, onClick }: { text: string, onClick?: () => void }) {
-  return<button onClick={onClick}style={{
-        backgroundColor: "#2563EB",
-        color: "white",
+import { Theme } from "../styles/theme";
+
+type Props = {
+  text: string;
+  onClick?: () => void;
+};
+
+function PrimaryButton({ text, onClick }: Props) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: Theme.Colors.primary,
+        color: Theme.Colors.surface,
         border: "none",
-        padding: "10px 20px",
-        borderRadius: "6px",
+        padding: `${Theme.Space.md}px ${Theme.Space.xl}px`,
+        borderRadius: Theme.Radius.medium,
+        fontSize: Theme.Typography.body,
+        fontWeight: 600,
         cursor: "pointer",
-        fontSize: "16px"
+        boxShadow: Theme.Shadows.card,
+        transition: "0.25s",
       }}
-      >{text}</button>;
+    >
+      {text}
+    </button>
+  );
 }
 
 export default PrimaryButton;

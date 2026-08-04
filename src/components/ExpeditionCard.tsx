@@ -1,8 +1,8 @@
-import type { Expedition } from "../types/expedition";
+import type { ExpeditionExperience } from "../types/experience/experience";
 import { useNavigate } from "react-router-dom";
 
 type Props = {
-  expedition: Expedition;
+  expedition: ExpeditionExperience;
 };
 
 function ExperienceCard({ expedition }: Props) {
@@ -41,7 +41,7 @@ function ExperienceCard({ expedition }: Props) {
         <p>⭐ {expedition.difficulty}</p>
 
         <p>
-          <strong>🤖 Hospes:</strong>
+          <strong> Hospes:</strong>
         </p>
 
         <p>{expedition.hospes}</p>

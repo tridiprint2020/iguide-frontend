@@ -1,33 +1,176 @@
-import PrimaryButton from "./PrimaryButton";
-import HospesCard from "./HospesCard";
-import { useNavigate } from "react-router-dom";
+import WeatherCard from "./WeatherCard";
 
-function Hero() {
+import { loadUserProfile } from "../data/user";
+import { Theme } from "../styles/theme";
 
-  const navigate = useNavigate();
-  
+import type { WeatherStatus } from "../engine/weatherEngine";
+
+type Props = {
+  weather: WeatherStatus;
+  isWeatherLoading?: boolean;
+};
+
+function Hero({
+  weather,
+  isWeatherLoading = false,
+}: Props) {
+  const profile =
+    loadUserProfile();
+
+  const displayName =
+    profile.name?.trim() ||
+    "Explorador";
+
   return (
-    <div style={{ padding: "40px" }}>
-      <h1>Bienvenido Explorador 🚀</h1>
-      <h1>🌍 I.GUIDE</h1>
+    <section
+      style={{
+        display: "grid",
 
- <h3
+        gridTemplateColumns:
+          "minmax(0, 1fr) auto",
+
+        gap: "10px",
+
+        alignItems:
+          "flex-start",
+
+        width: "100%",
+        minWidth: 0,
+
+        paddingTop: "60px",
+
+        boxSizing:
+          "border-box",
+          paddingLeft: "52px",
+      }}
+    >
+      <div
         style={{
-          color: "#2563EB",
+          minWidth: 0,
+
+          display: "flex",
+
+          flexDirection:
+            "column",
+
+          gap: "10px",
         }}
       >
-        Feel the City
-      </h3>
+        <div>
+          <p
+            style={{
+              margin:
+                "0 0 5px",
 
-<p>Como si fueras de la ciudad desde el primer día.</p>
+              fontSize: "13px",
 
-      <HospesCard />
-      <PrimaryButton
-       text="Comenzar Expedición"
-       onClick={() => navigate("/explorer")}
-      />
+              color:
+                Theme.Colors
+                  .textSoft,
 
+              textAlign:
+                "left",
+            }}
+          >
+            ¡Hola, {displayName}! 👋
+          </p>
+
+          <h1
+            style={{
+              margin:
+                "0 0 10px",
+
+              lineHeight: 1.05,
+
+              fontFamily:
+                Theme.Typography
+                  .title,
+
+              fontWeight: 300,
+
+              fontSize:
+                "clamp(1.65rem, 5vw, 2.6rem)",
+
+              textAlign:
+                "left",
+
+              color:
+                Theme.Colors.text,
+            }}
+          >
+            Bienvenido a
+            <br />
+
+            <span
+              style={{
+                color:
+                  Theme.Colors
+                    .primary,
+
+                fontWeight: 800,
+              }}
+            >
+              {weather.city}
+            </span>
+          </h1>
+
+          <p
+            style={{
+              margin: 0,
+
+              lineHeight: 1.35,
+
+              color:
+                Theme.Colors
+                  .textSoft,
+
+              whiteSpace:
+                "pre-line",
+
+              textAlign:
+                "left",
+
+              fontSize: "12px",
+            }}
+          >
+            {
+              "No visites.\nPertenece.\nVive la ciudad como un local."
+            }
+          </p>
+        </div>
       </div>
+
+      {isWeatherLoading ? (
+        <div
+          style={{
+            minWidth: "82px",
+
+            color:
+              Theme.Colors
+                .textSoft,
+
+            fontSize: "10px",
+
+            textAlign:
+              "right",
+          }}
+        >
+          Consultando
+          <br />
+          clima…
+        </div>
+      ) : (
+        <WeatherCard
+          temperature={
+            weather.temperature
+          }
+          weather={{
+            condition:
+              weather.condition,
+          }}
+        />
+      )}
+    </section>
   );
 }
 

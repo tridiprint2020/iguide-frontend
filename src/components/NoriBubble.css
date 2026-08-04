@@ -1,0 +1,50 @@
+.nori-bubble {
+  background-color: #ffffff;
+  color: #1A202C;
+  border-left: 4px solid #00E5A8;
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.nori-bubble span {
+  color: #00E5A8;
+  font-size: 18px;
+}
+
+.nori-icon{
+
+font-size:28px;
+
+}
+
+.nori-text{
+
+font-size:15px;
+
+line-height:1.5;
+
+}
+
+@keyframes fadeIn{
+
+from{
+
+opacity:0;
+
+transform:translateY(10px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+}

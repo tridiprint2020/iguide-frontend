@@ -1,0 +1,1 @@
+export const currentCity = "Huancayo"; // cuando agregues más ciudades, esto vendrá de configuración/usuario

@@ -1,0 +1,72 @@
+import type { Experience } from "../../../types/experience/experience";
+import placeholder from "../../../assets/placeholders/logo-iguide.png";
+
+export const hotels: Experience[] = [
+  {
+    experienceId: "HOT-0001",
+    slug: "hotel-huancayo-plaza",
+    title: "Hotel Huancayo Plaza",
+    type: "hotel",
+    city: "Huancayo",
+    description: "Una estancia confortable en el corazón financiero de la ciudad, ideal para viajes de negocios o turismo urbano.",
+    latitude: -12.064521,
+    longitude: -75.204832,
+    certificationRadiusMeters: 20,
+    tags: ["centro", "confortable", "negocios"],
+    priceRange: "mid",
+    checkIn: "14:00",
+    checkOut: "12:00",
+    stars: 3,
+    amenities: ["Free Wi-Fi", "Desayuno Incluido", "Room Service", "Business Center"],
+    roomTypes: ["Standard", "Matrimonial", "Twin"],
+    // 🏛️ Propiedades requeridas por la arquitectura base de publicación:
+    image: placeholder,
+    coverImage: placeholder,
+    isActive: true,
+    estimatedVisitMinutes: 60
+  },
+  {
+    experienceId: "HOT-0002",
+    slug: "hostal-backpacker-wanka",
+    title: "Hostal Backpacker Wanka",
+    type: "hotel",
+    city: "Huancayo",
+    description: "El punto de encuentro perfecto para viajeros independientes y mochileros que buscan explorar el valle de forma económica.",
+    latitude: -12.071234,
+    longitude: -75.211567,
+    certificationRadiusMeters: 20,
+    tags: ["económico", "mochilero", "social"],
+    priceRange: "budget",
+    checkIn: "13:00",
+    checkOut: "11:00",
+    stars: 2,
+    amenities: ["Free Wi-Fi", "Cocina Compartida", "Lockers", "Terraza"],
+    roomTypes: ["Shared Dorm", "Private Single"],
+    image: placeholder,
+    coverImage: placeholder,
+    isActive: true,
+    estimatedVisitMinutes: 60
+  },
+  {
+    experienceId: "HOT-0003",
+    slug: "hotel-boutique-valle",
+    title: "Hotel Boutique Valle de la Luz",
+    type: "hotel",
+    city: "Huancayo",
+    description: "Una experiencia premium alejada del bullicio urbano, rodeada de jardines con vistas espectaculares al paisaje andino.",
+    latitude: -12.041892,
+    longitude: -75.192341,
+    certificationRadiusMeters: 20,
+    tags: ["premium", "boutique", "vistas"],
+    priceRange: "premium",
+    checkIn: "15:00",
+    checkOut: "12:00",
+    stars: 4,
+    amenities: ["Free Wi-Fi", "Spa & Sauna", "Restaurante Gourmet", "Estacionamiento Gratis", "Jardines"],
+    roomTypes: ["Deluxe King", "Suite Ejecutiva"],
+    image: placeholder,
+    coverImage: placeholder,
+    isActive: true,
+    estimatedVisitMinutes: 60
+  }
+];
