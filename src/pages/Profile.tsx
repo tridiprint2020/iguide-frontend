@@ -1,303 +1,735 @@
-import { useEffect, useState } from "react";
-import { loadUserProfile } from "../data/user";
-import { catalog } from "../data/catalog";
-import { Theme } from "../styles/theme";
-import type { UserProfile } from "../types/user/user";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-// ============================================================
-// BADGES — calculados en cliente a partir de UserProfile.
-// No requieren nueva tabla ni cambios de tipo.
-// ============================================================
-type Badge = {
-  id: string;
-  emoji: string;
-  label: string;
-  description: string;
-  unlocked: boolean;
-};
+import {
+  Award,
+  Heart,
+  House,
+  MapPin,
+  Sparkles,
+  Star,
+  UserRound,
+} from "lucide-react";
 
-function computeBadges(profile: UserProfile): Badge[] {
-  const visited = profile.visitedExperiences.length;
-  const favorites = profile.favorites.length;
+import {
+  useNavigate,
+} from "react-router-dom";
 
-  return [
-    {
-      id: "primer_paso",
-      emoji: "🥾",
-      label: "Primer Paso",
-      description: "Completa tu primera expedición",
-      unlocked: visited >= 1,
-    },
-    {
-      id: "caminante_valle",
-      emoji: "🏔️",
-      label: "Caminante del Valle",
-      description: "Completa 5 expediciones",
-      unlocked: visited >= 5,
-    },
-    {
-      id: "gran_explorador",
-      emoji: "🌄",
-      label: "Gran Explorador",
-      description: "Completa 10 expediciones",
-      unlocked: visited >= 10,
-    },
-    {
-      id: "nivel_3",
-      emoji: "⭐",
-      label: "Explorador Wanka",
-      description: "Alcanza el nivel 3",
-      unlocked: profile.level >= 3,
-    },
-    {
-      id: "coleccionista",
-      emoji: "💛",
-      label: "Coleccionista",
-      description: "Guarda 5 lugares en favoritos",
-      unlocked: favorites >= 5,
-    },
-  ];
-}
+import {
+  loadUserProfile,
+} from "../data/user";
 
-// ============================================================
-// Helpers de progreso — usa la misma fórmula que completeExpedition
-// en data/user.ts (300 XP por nivel). Si esa fórmula cambia,
-// actualizar aquí también.
-// ============================================================
-const XP_PER_LEVEL = 300;
+import {
+  catalog,
+} from "../data/catalog";
 
-function getXpProgress(profile: UserProfile) {
-  const xpIntoLevel = profile.experience % XP_PER_LEVEL;
-  const percent = Math.min(100, Math.round((xpIntoLevel / XP_PER_LEVEL) * 100));
-  return {
-    xpIntoLevel,
-    xpForNextLevel: XP_PER_LEVEL,
-    percent,
-  };
-}
+import LocalityIndexCard from "../components/profile/LocalityIndexCard";
 
-function getExperienceTitle(experienceId: string): string {
-  const match = catalog.find((item) => item.experienceId === experienceId);
-  return match?.title ?? experienceId;
-}
+import logoIG from "../assets/placeholders/logoIG.png";
 
-const travelModeLabel: Record<string, string> = {
-  solo: "Explorador Solo",
-  couple: "Explorador en Pareja",
-  family: "Explorador en Familia",
-  friends: "Explorador con Amigos",
-};
+import {
+  Theme,
+} from "../styles/theme";
+
+import type {
+  UserProfile,
+} from "../types/user/user";
 
 function Profile() {
-  const [profile, setProfile] = useState<UserProfile>(() => loadUserProfile());
+  const navigate =
+    useNavigate();
 
-  // Sincroniza si XP/favoritos cambian en otra pantalla (evento ya disparado por data/user.ts)
+  const [
+    profile,
+    setProfile,
+  ] = useState<UserProfile>(
+    () => loadUserProfile()
+  );
+
   useEffect(() => {
-    function handleUpdate(event: Event) {
-      const detail = (event as CustomEvent<UserProfile>).detail;
-      if (detail) setProfile(detail);
+    function refreshProfile() {
+      setProfile(
+        loadUserProfile()
+      );
     }
-    window.addEventListener("iguide-user-updated", handleUpdate);
-    return () => window.removeEventListener("iguide-user-updated", handleUpdate);
+
+    window.addEventListener(
+      "iguide-user-updated",
+      refreshProfile
+    );
+
+    window.addEventListener(
+      "storage",
+      refreshProfile
+    );
+
+    return () => {
+      window.removeEventListener(
+        "iguide-user-updated",
+        refreshProfile
+      );
+
+      window.removeEventListener(
+        "storage",
+        refreshProfile
+      );
+    };
   }, []);
 
-  const badges = computeBadges(profile);
-  const unlockedBadges = badges.filter((b) => b.unlocked);
-  const xp = getXpProgress(profile);
+  const totalActiveExperiences =
+    useMemo(
+      () =>
+        catalog.filter(
+          (experience) =>
+            experience.isActive !==
+            false
+        ).length,
+      []
+    );
+
+  const visitedCount =
+    new Set(
+      profile.visitedExperiences
+    ).size;
+
+  const favoriteCount =
+    profile.favorites.length;
+
+  const achievementCount =
+    profile.achievements.length;
+
+  const currentLevelXp =
+    profile.experience % 300;
+
+  const xpToNextLevel =
+    currentLevelXp === 0 &&
+    profile.experience > 0
+      ? 300
+      : 300 - currentLevelXp;
+
+  const levelProgress =
+    Math.min(
+      Math.round(
+        (
+          currentLevelXp /
+          300
+        ) * 100
+      ),
+      100
+    );
+
+  const cityProgress =
+    totalActiveExperiences > 0
+      ? Math.min(
+          Math.round(
+            (
+              visitedCount /
+              totalActiveExperiences
+            ) * 100
+          ),
+          100
+        )
+      : 0;
+
+  const displayName =
+    profile.name?.trim() ||
+    "Explorador";
 
   return (
-    <div
+    <main
       style={{
         minHeight: "100vh",
-        backgroundColor: Theme.Colors.background,
-        color: Theme.Colors.text,
-        padding: Theme.Space.md,
-        paddingBottom: "80px", // deja espacio para bottom nav / bubble
+
         boxSizing: "border-box",
+
+        padding:
+          "16px 14px 40px",
+
+        background:
+          "radial-gradient(circle at 50% 0%, rgba(59,130,246,0.10), transparent 32%), #0D0E13",
+
+        color:
+          Theme.Colors.text,
       }}
     >
-      {/* ============ HEADER: IDENTIDAD ============ */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: Theme.Space.md,
-          marginBottom: Theme.Space.lg,
+          width: "100%",
+
+          maxWidth: "620px",
+
+          margin: "0 auto",
         }}
       >
-        <div
+        {/* CABECERA */}
+        <header
           style={{
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            backgroundColor: Theme.Colors.primary,
             display: "flex",
+
             alignItems: "center",
-            justifyContent: "center",
-            fontSize: 28,
-            fontWeight: 700,
-            color: "#fff",
-            flexShrink: 0,
-          }}
-        >
-          {profile.name.charAt(0).toUpperCase()}
-        </div>
 
-        <div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
-            {profile.name}
-          </h2>
-          <p style={{ margin: "4px 0 0 0", fontSize: 13, color: Theme.Colors.textSoft }}>
-            {travelModeLabel[profile.travelMode] ?? "Explorador"} · Nivel {profile.level}
-          </p>
-        </div>
-      </div>
+            justifyContent:
+              "space-between",
 
-      {/* ============ XP / NIVEL ============ */}
-      <div
-        style={{
-          backgroundColor: Theme.Colors.surface,
-          borderRadius: Theme.Radius.medium,
-          padding: Theme.Space.md,
-          marginBottom: Theme.Space.md,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 13,
-            marginBottom: 6,
-            color: Theme.Colors.textSoft,
+            gap: "12px",
+
+            marginBottom: "20px",
           }}
         >
-          <span>Nivel {profile.level}</span>
-          <span>{xp.xpIntoLevel} / {xp.xpForNextLevel} XP</span>
-        </div>
-        <div
-          style={{
-            width: "100%",
-            height: 8,
-            borderRadius: 999,
-            backgroundColor: `${Theme.Colors.textSoft}33`,
-            overflow: "hidden",
-          }}
-        >
-          <div
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/")
+            }
             style={{
-              width: `${xp.percent}%`,
-              height: "100%",
-              backgroundColor: Theme.Colors.primary,
-              transition: "width 0.4s ease",
-            }}
-          />
-        </div>
-      </div>
+              minHeight: "40px",
 
-      {/* ============ STATS RÁPIDOS ============ */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: Theme.Space.sm,
-          marginBottom: Theme.Space.lg,
-        }}
-      >
-        <StatCard label="Expediciones" value={profile.visitedExperiences.length} />
-        <StatCard label="Favoritos" value={profile.favorites.length} />
-        <StatCard label="Insignias" value={`${unlockedBadges.length}/${badges.length}`} />
-      </div>
+              display: "flex",
 
-      {/* ============ BADGES ============ */}
-      <SectionTitle>Insignias</SectionTitle>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
-          gap: Theme.Space.sm,
-          marginBottom: Theme.Space.lg,
-        }}
-      >
-        {badges.map((badge) => (
-          <div
-            key={badge.id}
-            title={badge.description}
-            style={{
-              backgroundColor: Theme.Colors.surface,
-              borderRadius: Theme.Radius.medium,
-              padding: Theme.Space.sm,
-              textAlign: "center",
-              opacity: badge.unlocked ? 1 : 0.35,
-              border: badge.unlocked
-                ? `1px solid ${Theme.Colors.primary}55`
-                : "1px solid transparent",
+              alignItems: "center",
+
+              gap: "7px",
+
+              padding:
+                "8px 13px",
+
+              borderRadius:
+                "12px",
+
+              border:
+                "1px solid rgba(255,255,255,0.10)",
+
+              background:
+                "rgba(255,255,255,0.06)",
+
+              color: "#FFFFFF",
+
+              fontSize: "12px",
+
+              fontWeight: 750,
+
+              cursor: "pointer",
             }}
           >
-            <div style={{ fontSize: 26 }}>{badge.emoji}</div>
-            <div style={{ fontSize: 11, marginTop: 4, fontWeight: 600 }}>
-              {badge.label}
-            </div>
-          </div>
-        ))}
-      </div>
+            <House
+              size={16}
+              strokeWidth={2.2}
+            />
 
-      {/* ============ HISTORIAL ============ */}
-      <SectionTitle>Recorridos completados</SectionTitle>
-      {profile.visitedExperiences.length === 0 ? (
-        <p style={{ fontSize: 13, color: Theme.Colors.textSoft }}>
-          Aún no completas ninguna expedición. ¡Sal a explorar Huancayo! 🧭
-        </p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: Theme.Space.sm }}>
-          {profile.visitedExperiences.map((experienceId) => (
-            <div
-              key={experienceId}
+            Inicio
+          </button>
+
+          <img
+            src={logoIG}
+            alt="I.GUIDE"
+            style={{
+              width: "68px",
+
+              maxHeight: "46px",
+
+              display: "block",
+
+              objectFit: "contain",
+            }}
+          />
+        </header>
+
+        {/* IDENTIDAD */}
+        <section
+          style={{
+            display: "flex",
+
+            alignItems: "center",
+
+            gap: "15px",
+
+            marginBottom: "18px",
+
+            padding: "18px",
+
+            borderRadius: "22px",
+
+            background:
+              "linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.035))",
+
+            border:
+              "1px solid rgba(255,255,255,0.08)",
+
+            boxShadow:
+              "0 16px 35px rgba(0,0,0,0.22)",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              width: "68px",
+
+              height: "68px",
+
+              flexShrink: 0,
+
+              display: "flex",
+
+              alignItems: "center",
+
+              justifyContent:
+                "center",
+
+              borderRadius: "22px",
+
+              background:
+                "linear-gradient(145deg, #FF00FF, #C60073)",
+
+              color: "#FFFFFF",
+
+              boxShadow:
+                "0 10px 28px rgba(255,0,122,0.30)",
+            }}
+          >
+            <UserRound
+              size={31}
+              strokeWidth={2}
+            />
+          </div>
+
+          <div
+            style={{
+              minWidth: 0,
+
+              flex: 1,
+            }}
+          >
+            <span
               style={{
-                backgroundColor: Theme.Colors.surface,
-                borderRadius: Theme.Radius.medium,
-                padding: Theme.Space.sm,
-                fontSize: 14,
+                display: "block",
+
+                marginBottom: "4px",
+
+                color:
+                  Theme.Colors.primary,
+
+                fontSize: "9px",
+
+                fontWeight: 850,
+
+                letterSpacing:
+                  "0.12em",
+
+                textTransform:
+                  "uppercase",
               }}
             >
-              🧭 {getExperienceTitle(experienceId)}
-            </div>
-          ))}
+              Pasaporte local
+            </span>
+
+            <h1
+              style={{
+                margin: 0,
+
+                color: "#FFFFFF",
+
+                fontFamily:
+                  Theme.Typography.title,
+
+                fontSize:
+                  "clamp(1.7rem, 7vw, 2.4rem)",
+
+                lineHeight: 1.05,
+
+                overflowWrap:
+                  "anywhere",
+              }}
+            >
+              {displayName}
+            </h1>
+
+            <p
+              style={{
+                margin:
+                  "7px 0 0",
+
+                color:
+                  Theme.Colors.textSoft,
+
+                fontSize: "12px",
+              }}
+            >
+              Nivel {profile.level} ·{" "}
+              {profile.experience} XP
+            </p>
+          </div>
+        </section>
+
+        {/* ÍNDICE DE LOCALIDAD */}
+        <div
+          style={{
+            marginBottom: "18px",
+          }}
+        >
+          <LocalityIndexCard
+            profile={profile}
+          />
         </div>
-      )}
-    </div>
+
+        {/* XP */}
+        <section
+          style={{
+            marginBottom: "18px",
+
+            padding: "17px",
+
+            borderRadius: "20px",
+
+            background:
+              Theme.Colors.surface,
+
+            border:
+              "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+
+              alignItems: "center",
+
+              justifyContent:
+                "space-between",
+
+              gap: "12px",
+
+              marginBottom: "10px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+
+                alignItems: "center",
+
+                gap: "8px",
+              }}
+            >
+              <Star
+                size={18}
+                strokeWidth={2.2}
+                color={
+                  Theme.Colors.primary
+                }
+              />
+
+              <span
+                style={{
+                  color: "#FFFFFF",
+
+                  fontSize: "13px",
+
+                  fontWeight: 800,
+                }}
+              >
+                Progreso XP
+              </span>
+            </div>
+
+            <strong
+              style={{
+                color:
+                  Theme.Colors.primary,
+
+                fontSize: "12px",
+              }}
+            >
+              Nivel {profile.level}
+            </strong>
+          </div>
+
+          <div
+            style={{
+              width: "100%",
+
+              height: "9px",
+
+              overflow: "hidden",
+
+              borderRadius: "999px",
+
+              background:
+                "rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                width:
+                  `${levelProgress}%`,
+
+                height: "100%",
+
+                borderRadius:
+                  "999px",
+
+                background:
+                  "linear-gradient(90deg, #FF00FF, #FF007A)",
+
+                transition:
+                  "width 0.35s ease",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+
+              justifyContent:
+                "space-between",
+
+              gap: "10px",
+
+              marginTop: "8px",
+
+              color:
+                Theme.Colors.textSoft,
+
+              fontSize: "10px",
+            }}
+          >
+            <span>
+              {profile.experience} XP acumulados
+            </span>
+
+            <span>
+              {xpToNextLevel} XP para subir
+            </span>
+          </div>
+        </section>
+
+        {/* ESTADÍSTICAS */}
+        <section
+          style={{
+            display: "grid",
+
+            gridTemplateColumns:
+              "repeat(2, minmax(0, 1fr))",
+
+            gap: "10px",
+
+            marginBottom: "18px",
+          }}
+        >
+          <StatCard
+            icon={MapPin}
+            label="Descubrimientos"
+            value={`${visitedCount}`}
+            detail={`${cityProgress}% de la ciudad`}
+          />
+
+          <StatCard
+            icon={Heart}
+            label="Favoritos"
+            value={`${favoriteCount}`}
+            detail="Lugares guardados"
+          />
+
+          <StatCard
+            icon={Award}
+            label="Insignias"
+            value={`${achievementCount}`}
+            detail="Logros obtenidos"
+          />
+
+          <StatCard
+            icon={Sparkles}
+            label="Experiencias"
+            value={`${totalActiveExperiences}`}
+            detail="Disponibles ahora"
+          />
+        </section>
+
+        {/* EXPLORACIÓN */}
+        <section
+          style={{
+            padding: "18px",
+
+            borderRadius: "20px",
+
+            background:
+              "linear-gradient(145deg, rgba(255,0,255,0.10), rgba(255,255,255,0.035))",
+
+            border:
+              "1px solid rgba(255,0,255,0.20)",
+
+            textAlign: "center",
+          }}
+        >
+          <Sparkles
+            size={24}
+            strokeWidth={2}
+            color={
+              Theme.Colors.primary
+            }
+          />
+
+          <h2
+            style={{
+              margin:
+                "9px 0 5px",
+
+              color: "#FFFFFF",
+
+              fontSize: "17px",
+            }}
+          >
+            Sigue aumentando tu localidad
+          </h2>
+
+          <p
+            style={{
+              margin:
+                "0 0 14px",
+
+              color:
+                Theme.Colors.textSoft,
+
+              fontSize: "11px",
+
+              lineHeight: 1.5,
+            }}
+          >
+            Completa nuevas misiones,
+            descubre lugares y vive
+            Huancayo como alguien de aquí.
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/explorer")
+            }
+            style={{
+              width: "100%",
+
+              minHeight: "46px",
+
+              border: "none",
+
+              borderRadius: "13px",
+
+              background:
+                "linear-gradient(145deg, #FF00FF, #E0008A)",
+
+              color: "#FFFFFF",
+
+              fontSize: "12px",
+
+              fontWeight: 850,
+
+              cursor: "pointer",
+
+              boxShadow:
+                "0 9px 24px rgba(255,0,122,0.26)",
+            }}
+          >
+            Explorar nuevas misiones →
+          </button>
+        </section>
+      </div>
+    </main>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div
-      style={{
-        backgroundColor: Theme.Colors.surface,
-        borderRadius: Theme.Radius.medium,
-        padding: Theme.Space.sm,
-        textAlign: "center",
-      }}
-    >
-      <div style={{ fontSize: 18, fontWeight: 700 }}>{value}</div>
-      <div style={{ fontSize: 11, color: Theme.Colors.textSoft }}>{label}</div>
-    </div>
-  );
-}
+type StatIcon =
+  typeof MapPin;
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+type StatCardProps = {
+  icon: StatIcon;
+  label: string;
+  value: string;
+  detail: string;
+};
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: StatCardProps) {
   return (
-    <h3
+    <article
       style={{
-        fontSize: 14,
-        fontWeight: 700,
-        marginBottom: Theme.Space.sm,
-        color: Theme.Colors.textSoft,
-        textTransform: "uppercase",
-        letterSpacing: "0.03em",
+        minHeight: "120px",
+
+        boxSizing: "border-box",
+
+        padding: "15px",
+
+        borderRadius: "18px",
+
+        background:
+          Theme.Colors.surface,
+
+        border:
+          "1px solid rgba(255,255,255,0.07)",
+
+        boxShadow:
+          "0 12px 26px rgba(0,0,0,0.17)",
       }}
     >
-      {children}
-    </h3>
+      <Icon
+        size={18}
+        strokeWidth={2.1}
+        color={
+          Theme.Colors.primary
+        }
+      />
+
+      <strong
+        style={{
+          display: "block",
+
+          marginTop: "11px",
+
+          color: "#FFFFFF",
+
+          fontSize: "22px",
+        }}
+      >
+        {value}
+      </strong>
+
+      <span
+        style={{
+          display: "block",
+
+          marginTop: "2px",
+
+          color: "#FFFFFF",
+
+          fontSize: "11px",
+
+          fontWeight: 750,
+        }}
+      >
+        {label}
+      </span>
+
+      <span
+        style={{
+          display: "block",
+
+          marginTop: "4px",
+
+          color:
+            Theme.Colors.textSoft,
+
+          fontSize: "9px",
+        }}
+      >
+        {detail}
+      </span>
+    </article>
   );
 }
 

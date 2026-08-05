@@ -16,6 +16,7 @@ import {
   addAbortPoint,
   addMemoryToTrack,
   canCompleteJourney,
+  completeTrack,
   createStartPoint,
   deleteTrack,
   loadTrack,
@@ -441,59 +442,90 @@ function resumeWalking() {
   function completeJourney() {
   locationTracker.stop();
 
-  setJourney((prev) => {
-    if (!prev.experience) {
-      return prev;
+  setJourney((previous) => {
+    const experience =
+      previous.experience;
+
+    if (!experience) {
+      localStorage.removeItem(
+        ACTIVE_JOURNEY_KEY
+      );
+
+      return defaultJourney;
     }
 
-    if (prev.state === "COMPLETED") {
-      return prev;
+    if (
+      previous.state ===
+      "COMPLETED"
+    ) {
+      return previous;
     }
 
     const experienceId =
-      prev.experience.experienceId;
+      experience.experienceId;
 
     const validation =
-      canCompleteJourney(experienceId);
+      canCompleteJourney(
+        experienceId
+      );
 
     if (!validation.success) {
       console.warn(
-        "Expedición no certificada:",
+        "Llegada todavía no certificada:",
         validation.message
       );
 
       return {
-        ...prev,
+        ...previous,
         state: "WALKING",
         screen: "walking",
       };
     }
 
-    const finalTrack = loadTrack(experienceId);
+    /*
+     * La certificación y el premio ocurren
+     * juntos, en una sola transición.
+     */
+    const completedTrack =
+      completeTrack(
+        experienceId
+      );
 
-    if (!finalTrack?.completedAt) {
-      console.warn(
-        "La validación fue correcta, pero el track todavía no está marcado como completado."
+    if (!completedTrack) {
+      console.error(
+        "No fue posible completar el track:",
+        experienceId
       );
 
       return {
-        ...prev,
+        ...previous,
         state: "WALKING",
         screen: "walking",
       };
     }
 
-    completeExpedition(experienceId, 150);
+    completeExpedition(
+      experienceId,
+      150
+    );
 
+    /*
+     * Esto apaga inmediatamente la misión
+     * activa y evita que reaparezca tras
+     * recargar o volver desde otra página.
+     */
     localStorage.removeItem(
       ACTIVE_JOURNEY_KEY
     );
 
     return {
-      ...prev,
+      ...previous,
       state: "COMPLETED",
       screen: "completed",
-      timeline: finalTrack.timeline,
+      startedAt:
+        completedTrack.startedAt,
+      timeline:
+        completedTrack.timeline,
     };
   });
 }

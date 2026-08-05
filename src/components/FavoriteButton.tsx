@@ -4,16 +4,24 @@ import {
 } from "react";
 
 import {
+  Heart,
+} from "lucide-react";
+
+import {
   isFavorite,
   toggleFavorite,
 } from "../data/user";
 
-import { Theme } from "../styles/theme";
+import {
+  Theme,
+} from "../styles/theme";
 
 type Props = {
-  experienceId: string;
+  experienceId:
+    string;
 
-  compact?: boolean;
+  compact?:
+    boolean;
 
   onChange?: (
     isNowFavorite: boolean
@@ -28,10 +36,11 @@ function FavoriteButton({
   const [
     selected,
     setSelected,
-  ] = useState(() =>
-    isFavorite(
-      experienceId
-    )
+  ] = useState(
+    () =>
+      isFavorite(
+        experienceId
+      )
   );
 
   useEffect(() => {
@@ -60,10 +69,6 @@ function FavoriteButton({
     event:
       React.MouseEvent<HTMLButtonElement>
   ) {
-    /*
-     * Evita que el clic en el corazón
-     * inicie automáticamente el recorrido.
-     */
     event.preventDefault();
     event.stopPropagation();
 
@@ -94,6 +99,9 @@ function FavoriteButton({
       onClick={
         handleClick
       }
+      aria-pressed={
+        selected
+      }
       aria-label={
         selected
           ? "Quitar de favoritos"
@@ -105,59 +113,80 @@ function FavoriteButton({
           : "Guardar para después"
       }
       style={{
-        minWidth: compact
-          ? "38px"
-          : "44px",
+        minWidth:
+          compact
+            ? "38px"
+            : "44px",
 
-        minHeight: compact
-          ? "38px"
-          : "44px",
+        minHeight:
+          compact
+            ? "38px"
+            : "44px",
 
-        padding: compact
-          ? "6px"
-          : "8px 12px",
+        padding:
+          compact
+            ? "6px"
+            : "8px 12px",
 
         borderRadius:
           Theme.Radius.pill,
 
-        border: selected
-          ? `1px solid ${Theme.Colors.primary}`
-          : "1px solid rgba(255,255,255,0.12)",
+        border:
+          selected
+            ? `1px solid ${Theme.Colors.primary}`
+            : "1px solid rgba(255,255,255,0.12)",
 
         backgroundColor:
           selected
             ? "rgba(255,0,122,0.16)"
             : "rgba(255,255,255,0.05)",
 
-        color: selected
-          ? Theme.Colors.primary
-          : "#FFFFFF",
+        color:
+          selected
+            ? Theme.Colors.primary
+            : "#FFFFFF",
 
-        display: "inline-flex",
+        display:
+          "inline-flex",
 
-        alignItems: "center",
+        alignItems:
+          "center",
 
         justifyContent:
           "center",
 
         gap: "6px",
 
-        cursor: "pointer",
+        cursor:
+          "pointer",
 
-        fontSize: compact
-          ? "18px"
-          : "13px",
+        fontSize:
+          "13px",
 
-        fontWeight: 700,
+        fontWeight:
+          700,
+
+        transition:
+          "background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease",
       }}
     >
-      <span
-        aria-hidden="true"
-      >
-        {selected
-          ? "♥"
-          : "♡"}
-      </span>
+      <Heart
+        size={
+          compact
+            ? 20
+            : 18
+        }
+        strokeWidth={
+          selected
+            ? 2.4
+            : 2
+        }
+        fill={
+          selected
+            ? "currentColor"
+            : "none"
+        }
+      />
 
       {!compact && (
         <span>

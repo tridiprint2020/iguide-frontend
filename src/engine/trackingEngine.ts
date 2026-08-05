@@ -833,107 +833,100 @@ function isInsideCertificationArea(
   return distanceKm * 1000 <= radiusMeters;
 }
 
-export function canCompleteJourney(experienceId: string): CompletionResult {
-  const track = loadTrack(experienceId);
+export function canCompleteJourney(
+  experienceId: string
+): CompletionResult {
+  const track =
+    loadTrack(experienceId);
 
   if (!track) {
     return {
       success: false,
       reason: "timeline",
-      message: "Hospes no encontró ningún registro activo de esta expedición en el dispositivo.",
+      message:
+        "No se encontró una expedición activa en este dispositivo.",
     };
   }
 
-const stats = getJourneyStatsFromTrack(experienceId);
-const experience = catalog.find(
-  (item) => item.experienceId === experienceId
-);
+  const experience =
+    catalog.find(
+      (item) =>
+        item.experienceId ===
+        experienceId
+    );
 
-if (!experience) {
+  if (!experience) {
+    return {
+      success: false,
+      reason: "destination",
+      message:
+        "No se pudo encontrar el destino oficial.",
+    };
+  }
+
+  const finish =
+    [...track.timeline]
+      .reverse()
+      .find(
+        (item) =>
+          item.type === "finish"
+      );
+
+  if (!finish) {
+    return {
+      success: false,
+      reason: "gps",
+      message:
+        "Todavía no se ha registrado la llegada al destino.",
+    };
+  }
+
+  const configuredRadiusMeters =
+    experience
+      .certificationRadiusMeters ??
+    20;
+
+  /*
+   * Tolerancia realista para GPS móvil.
+   * Conservamos el radio del establecimiento,
+   * pero nunca certificamos con menos de 35 m.
+   */
+  const certificationRadiusMeters =
+    Math.max(
+      configuredRadiusMeters,
+      35
+    );
+
+  const inside =
+    isInsideCertificationArea(
+      finish.lat,
+      finish.lng,
+      experience.latitude,
+      experience.longitude,
+      certificationRadiusMeters
+    );
+
+  if (!inside) {
+    return {
+      success: false,
+      reason: "distance",
+      message:
+        `La llegada quedó fuera del área de certificación de ${certificationRadiusMeters} metros.`,
+    };
+  }
+
+  /*
+   * RC2:
+   * llegar físicamente es suficiente.
+   *
+   * Foto, nota, tiempo y distancia recorrida
+   * son información adicional, no requisitos.
+   */
   return {
-    success: false,
+    success: true,
     reason: "destination",
-    message: "Hospes no pudo encontrar el destino oficial.",
-  };
-}
-const finish = track.timeline.findLast?.(
-  p => p.type === "finish"
-) ??
-[...track.timeline]
-.reverse()
-.find(p => p.type === "finish");
-
-if (!finish) {
-  return {
-    success: false,
-    reason: "gps",
-    message: "Todavía no has llegado al destino."
-  };
-}
-const configuredRadiusMeters =
-  experience.certificationRadiusMeters ?? 20;
-
-/*
- * Tolerancia mínima para GPS móvil real.
- *
- * El local conserva su radio oficial, pero la certificación
- * nunca trabaja con menos de 35 metros porque la precisión
- * de Android puede fluctuar incluso estando en la puerta.
- */
-const certificationRadiusMeters = Math.max(
-  configuredRadiusMeters,
-  35
-);
-
-const inside = isInsideCertificationArea(
-  finish.lat,
-  finish.lng,
-  experience.latitude,
-  experience.longitude,
-  certificationRadiusMeters
-);
-
-if (!inside) {
-  return {
-    success: false,
-    reason: "distance",
     message:
-      `Aún no has ingresado al área de certificación de ${certificationRadiusMeters} metros.`,
+      `Llegada certificada en ${experience.title}.`,
   };
 }
 
-const MIN_DISTANCE_KM = 0.05;
-const MIN_DURATION_SECONDS = 60;
-
-if (stats.totalDistanceKm < MIN_DISTANCE_KM) {
-  return {
-    success: false,
-    reason: "gps",
-    message:
-      "Hospes detectó que aún no has recorrido suficiente distancia para certificar esta expedición.",
-  };
-}
-
-if (stats.durationSeconds < MIN_DURATION_SECONDS) {
-  return {
-    success: false,
-    reason: "gps",
-    message:
-      "La expedición fue demasiado corta para ser certificada.",
-  };
-}
-
-if (stats.totalMemories < 1) {
-  return {
-    success: false,
-    reason: "timeline",
-    message:
-      "Hospes requiere que captures al menos un recuerdo (foto o nota) para certificar esta aventura.",
-  };
-}
-
-return {
-  success: true,
-  message: "¡Expedición validada con éxito por Hospes!",
-};
-}

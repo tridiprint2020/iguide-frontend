@@ -322,7 +322,7 @@ export default function ActiveJourneyBubble() {
             "3px solid rgba(255,255,255,0.92)",
 
           background:
-            "linear-gradient(145deg, #FF007A 0%, #C90061 100%)",
+            "linear-gradient(145deg, #ff00c8 0%, #FF00FF 100%)",
 
           color:
             "#FFFFFF",

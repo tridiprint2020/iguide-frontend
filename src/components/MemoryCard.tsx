@@ -2,10 +2,6 @@ import {
   Theme,
 } from "../styles/theme";
 
-import {
-  MiniMap,
-} from "./maps/MiniMap";
-
 import MemoryMapCanvas from "./sharing/MemoryMapCanvas";
 
 import logo from "../assets/placeholders/logo-iguide.png";
@@ -409,20 +405,20 @@ function MemoryCard({
             }}
           />
         ) : data.mapBackground ? (
-          <MemoryMapCanvas
-            center={
-              data.mapBackground
-                .center
-            }
-            path={
-              data.mapBackground
-                .path
-            }
-            memories={
-              data.mapBackground
-                .memories
-            }
-          />
+         <MemoryMapCanvas
+  center={
+    data.mapBackground.center
+  }
+  path={
+    data.mapBackground.path
+  }
+  memories={
+    data.mapBackground.memories
+  }
+  waypoints={
+    data.waypoints ?? []
+  }
+/>
         ) : (
           <div
             style={{
@@ -614,13 +610,7 @@ function MemoryCard({
                 "10px 14px 0",
             }}
           >
-            <MiniMap
-              nodes={
-                data.waypoints
-              }
-              height="82px"
-              theme="dark"
-            />
+            
           </div>
         )}
 

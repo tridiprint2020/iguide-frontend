@@ -1,8 +1,11 @@
-import { Theme } from "../../styles/theme";
+import {
+  Theme,
+} from "../../styles/theme";
 
 type MapNode = {
   lat: number;
   lng: number;
+
   type:
     | "start"
     | "walk"
@@ -12,19 +15,31 @@ type MapNode = {
 };
 
 interface MiniMapProps {
-  nodes: MapNode[];
-  height?: string | number;
-  interactive?: boolean;
-  theme?: "light" | "dark" | "minimal";
+  nodes:
+    MapNode[];
+
+  height?:
+    string | number;
+
+  interactive?:
+    boolean;
+
+  theme?:
+    | "light"
+    | "dark"
+    | "minimal";
 }
 
 export function MiniMap({
   nodes,
-  height = "160px",
+  height = "72px",
   interactive = false,
   theme = "dark",
 }: MiniMapProps) {
-  if (!nodes || nodes.length === 0) {
+  if (
+    !nodes ||
+    nodes.length === 0
+  ) {
     return (
       <div
         style={{
@@ -47,7 +62,9 @@ export function MiniMap({
               : "#F4F4F5",
 
           border:
-            "1px dashed rgba(255,255,255,0.08)",
+            theme === "dark"
+              ? "1px solid rgba(255,255,255,0.07)"
+              : "1px solid rgba(0,0,0,0.08)",
 
           color:
             "#71717A",
@@ -73,12 +90,9 @@ export function MiniMap({
         node.type === "abort"
     );
 
-  const endColor =
-    hasFinish
-      ? "#41E28A"
-      : hasAbort
-        ? "#FF8A00"
-        : Theme.Colors.primary;
+  const isAbandoned =
+    hasAbort &&
+    !hasFinish;
 
   const memoryNodes =
     nodes.filter(
@@ -88,7 +102,6 @@ export function MiniMap({
 
   return (
     <div
-      className="iguide-minimap"
       style={{
         height,
 
@@ -103,7 +116,7 @@ export function MiniMap({
 
         border:
           theme === "dark"
-            ? "1px solid rgba(255,255,255,0.06)"
+            ? "1px solid rgba(255,255,255,0.07)"
             : "1px solid rgba(0,0,0,0.08)",
 
         backgroundColor:
@@ -117,81 +130,49 @@ export function MiniMap({
             : "default",
       }}
     >
-      {/* Fondo */}
+      {/* Línea siempre magenta */}
       <div
         aria-hidden="true"
         style={{
           position:
             "absolute",
 
-          inset: 0,
+          left: "11%",
 
-          opacity:
-            theme === "dark"
-              ? 0.18
-              : 0.30,
+          right: "11%",
 
-          backgroundImage:
-            theme === "dark"
-              ? "radial-gradient(rgba(255,255,255,0.20) 1px, transparent 1px)"
-              : "radial-gradient(rgba(0,0,0,0.10) 1px, transparent 1px)",
+          top: "50%",
 
-          backgroundSize:
-            "14px 14px",
-        }}
-      />
+          height: "4px",
 
-      {/* Línea principal */}
-      <div
-        aria-hidden="true"
-        style={{
-          position:
-            "absolute",
-
-          left:
-            "10%",
-
-          right:
-            "10%",
-
-          top:
-            "50%",
-
-          height:
-            "4px",
+          transform:
+            "translateY(-50%)",
 
           borderRadius:
             "999px",
 
-          background:
-            `linear-gradient(90deg, ${Theme.Colors.primary}, ${endColor})`,
-
-          transform:
-            "translateY(-50%) rotate(-3deg)",
+          backgroundColor:
+            Theme.Colors.primary,
 
           boxShadow:
-            `0 0 13px ${Theme.Colors.primary}55`,
+            "0 0 10px rgba(255,0,122,0.32)",
         }}
       />
 
-      {/* Inicio */}
+      {/* Inicio grande magenta */}
       <div
         aria-hidden="true"
         style={{
           position:
             "absolute",
 
-          left:
-            "8%",
+          left: "8%",
 
-          top:
-            "50%",
+          top: "50%",
 
-          width:
-            "12px",
+          width: "15px",
 
-          height:
-            "12px",
+          height: "15px",
 
           transform:
             "translateY(-50%)",
@@ -200,29 +181,31 @@ export function MiniMap({
             "50%",
 
           backgroundColor:
-            "#6D163E",
+            Theme.Colors.primary,
 
           border:
-            "2px solid #FFFFFF",
+            "3px solid #FFFFFF",
+
+          boxSizing:
+            "border-box",
 
           zIndex: 3,
         }}
       />
 
-      {/* Recuerdos */}
+      {/* Recuerdos pequeños magenta */}
       {memoryNodes.map(
-        (node, index) => {
+        (
+          node,
+          index
+        ) => {
           const progress =
             (index + 1) /
             (memoryNodes.length + 1);
 
           const left =
-            10 + progress * 78;
-
-          const verticalOffset =
-            index % 2 === 0
-              ? -7
-              : 5;
+            12 +
+            progress * 74;
 
           return (
             <div
@@ -236,13 +219,13 @@ export function MiniMap({
                   `${left}%`,
 
                 top:
-                  `calc(50% + ${verticalOffset}px)`,
+                  "50%",
 
                 width:
-                  "10px",
+                  "8px",
 
                 height:
-                  "10px",
+                  "8px",
 
                 transform:
                   "translate(-50%, -50%)",
@@ -256,17 +239,17 @@ export function MiniMap({
                 border:
                   "2px solid #FFFFFF",
 
-                zIndex: 3,
+                boxSizing:
+                  "border-box",
 
-                boxShadow:
-                  "0 0 8px rgba(255,0,122,0.55)",
+                zIndex: 3,
               }}
             />
           );
         }
       )}
 
-      {/* Final, abandono o ruta activa */}
+      {/* Llegada magenta; abandono naranja */}
       <div
         aria-hidden="true"
         style={{
@@ -280,10 +263,10 @@ export function MiniMap({
             "50%",
 
           width:
-            "14px",
+            "17px",
 
           height:
-            "14px",
+            "17px",
 
           transform:
             "translateY(-50%)",
@@ -292,15 +275,22 @@ export function MiniMap({
             "50%",
 
           backgroundColor:
-            endColor,
+            isAbandoned
+              ? "#FF8A00"
+              : Theme.Colors.primary,
 
           border:
-            "2px solid #FFFFFF",
+            "3px solid #FFFFFF",
+
+          boxSizing:
+            "border-box",
 
           zIndex: 3,
 
           boxShadow:
-            `0 0 10px ${endColor}66`,
+            isAbandoned
+              ? "0 0 9px rgba(255,138,0,0.30)"
+              : "0 0 9px rgba(255,0,122,0.30)",
         }}
       />
     </div>

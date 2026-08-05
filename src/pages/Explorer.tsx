@@ -28,12 +28,18 @@ import {
 
 import PassportCard from "../components/PassportCard";
 import MapView from "../components/MapView";
-import { NameCaptureModal } from "../components/NameCaptureModal";
+
+import {
+  NameCaptureModal,
+} from "../components/NameCaptureModal";
+
 import HospesBanner from "../components/hospes/HospesBanner";
 
 import type {
   UserProfile,
 } from "../types/user/user";
+
+import logoIG from "../assets/placeholders/logoIG.png";
 
 import {
   Theme,
@@ -122,16 +128,16 @@ function Explorer() {
 
   function handleGoHome() {
     /*
-     * Regresa a Home sin borrar el recorrido
-     * persistido. Una expedición activa podrá
-     * retomarse mediante su burbuja global.
+     * Cambia únicamente la pantalla visible.
+     * La misión persistida podrá retomarse
+     * mediante la burbuja global.
      */
     resetToHome();
     navigate("/");
   }
 
   return (
-    <div
+    <main
       style={{
         minHeight: "100vh",
 
@@ -155,7 +161,7 @@ function Explorer() {
           position: "relative",
         }}
       >
-        {/* Navegación de salida */}
+        {/* ÚNICO ENCABEZADO */}
         <header
           style={{
             display: "flex",
@@ -165,9 +171,9 @@ function Explorer() {
 
             alignItems: "center",
 
-            gap: "12px",
+            gap: "14px",
 
-            marginBottom: "14px",
+            marginBottom: "15px",
           }}
         >
           <button
@@ -188,11 +194,12 @@ function Explorer() {
               background:
                 "rgba(255,255,255,0.06)",
 
-              color: "#FFFFFF",
+              color:
+                Theme.Colors.text,
 
               fontSize: "12px",
 
-              fontWeight: 700,
+              fontWeight: 750,
 
               cursor: "pointer",
             }}
@@ -200,35 +207,68 @@ function Explorer() {
             ← Inicio
           </button>
 
-          <span
+          <img
+            src={logoIG}
+            alt="I.GUIDE"
             style={{
-              color:
-                Theme.Colors.textSoft,
+              width: "72px",
 
-              fontSize: "11px",
+              maxHeight: "48px",
+
+              objectFit: "contain",
+
+              display: "block",
             }}
-          >
-            I.GUIDE v2.0
-          </span>
+          />
         </header>
 
-        <h1
+        <div
           style={{
-            margin:
-              "0 0 14px",
-
-            color:
-              Theme.Colors.text,
-
-            fontFamily:
-              Theme.Typography.title,
-
-            fontSize:
-              "clamp(1.7rem, 6vw, 2.3rem)",
+            marginBottom: "14px",
           }}
         >
-          Explora Huancayo
-        </h1>
+          <span
+            style={{
+              display: "block",
+
+              marginBottom: "3px",
+
+              color:
+                Theme.Colors.primary,
+
+              fontSize: "10px",
+
+              fontWeight: 850,
+
+              letterSpacing:
+                "0.12em",
+
+              textTransform:
+                "uppercase",
+            }}
+          >
+            Feel the City
+          </span>
+
+          <h1
+            style={{
+              margin: 0,
+
+              color:
+                Theme.Colors.text,
+
+              fontFamily:
+                Theme.Typography.title,
+
+              fontSize:
+                "clamp(1.7rem, 6vw, 2.3rem)",
+
+              lineHeight: 1.08,
+            }}
+          >
+            Explora Huancayo
+          </h1>
+        </div>
 
         <HospesBanner
           message={
@@ -247,7 +287,6 @@ function Explorer() {
           track={null}
         />
 
-        {/* Única acción inferior */}
         <section
           style={{
             marginTop: "16px",
@@ -282,6 +321,7 @@ function Explorer() {
               aria-hidden="true"
               style={{
                 width: "42px",
+
                 height: "42px",
 
                 flexShrink: 0,
@@ -345,9 +385,9 @@ function Explorer() {
                 Cuéntame qué deseas
                 comer, conocer o hacer.
                 Hospes buscará una
-                experiencia adecuada
-                según la hora, el clima
-                y tus preferencias.
+                experiencia según la
+                hora, el clima y tus
+                preferencias.
               </p>
 
               <button
@@ -390,7 +430,6 @@ function Explorer() {
           <NameCaptureModal
             onClose={() => {
               setShowNameModal(false);
-
               setHasSeenModal(true);
             }}
             onProfileUpdated={(
@@ -401,7 +440,7 @@ function Explorer() {
           />
         )}
       </div>
-    </div>
+    </main>
   );
 }
 

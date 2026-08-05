@@ -14,6 +14,7 @@ import type { TimelineItem } from "../types/tracking/tracking";
 import { loadTrack } from "../engine/trackingEngine";
 import HospesBanner from "../components/hospes/HospesBanner";
 import { getHospesMessage } from "../engine/hospesContextEngine";
+import logoIG from "../assets/placeholders/logoIG.png";
 
 type ExpeditionExperience = Experience & {
   distance: string;
@@ -136,25 +137,37 @@ const hospesBannerMessage =
     <div style={{ backgroundColor: "#0A0A0A", minHeight: "100vh", padding: Theme.Space.lg }}>
       <div style={{ maxWidth: "600px", margin: "0 auto" }}>
         {/* 🏠 BARRA DE NAVEGACIÓN DE ESCAPE (REGLA 22) */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <button
-          onClick={() => navigate("/")} // Te saca de inmediato a la pantalla de bienvenida o Home central
+       <header
           style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "#A0A0A0",
-            padding: "8px 16px",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 600,
-            cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            gap: "6px"
+            justifyContent: "space-between",
+            marginBottom: 18,
           }}
         >
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,.12)",
+              background: "rgba(255,255,255,.05)",
+              color: "#FFF",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
           🏠 Inicio
         </button>
+         <img
+            src={logoIG}
+            alt="I.GUIDE"
+            style={{
+              width: 68,
+              objectFit: "contain",
+            }}
+          />
+            </header>
         <span style={{ fontSize: "12px", color: "#666" }}>I.GUIDE v2.0</span>
       </div>
         
@@ -296,7 +309,7 @@ const hospesBannerMessage =
             </div>
           )}
         </div>
-      </div>
+     
 
       {shareOpen && activeMemory && (
         <MemoryPreviewModal
