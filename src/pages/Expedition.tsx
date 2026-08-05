@@ -188,32 +188,9 @@ const hospesBannerMessage =
 
          
 <HospesBanner
-  message={hospesBannerMessage}
-  onAction={() => {
-    const action =
-      hospesBannerMessage.action;
-
-    if (!action) {
-      return;
-    }
-
-    /*
-     * En Expedition, "open-experience"
-     * significa comenzar esta experiencia,
-     * no volver a navegar a la misma página.
-     */
-    if (
-      action.type ===
-      "open-experience"
-    ) {
-      if (!isTrackingActive) {
-        startWalking(expedition);
-      }
-
-      return;
-    }
-
-    navigate(action.target);
+  message={{
+    ...hospesBannerMessage,
+    action: undefined,
   }}
 />
 

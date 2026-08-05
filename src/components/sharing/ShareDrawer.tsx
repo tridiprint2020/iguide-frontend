@@ -1,168 +1,456 @@
-import { useEffect } from "react";
+import {
+  useEffect,
+} from "react";
 
 type Props = {
   open: boolean;
   onClose: () => void;
 
-  onInstagram: () => void;
-  onFacebook: () => void;
-  onThreads: () => void;
-  onTwitter: () => void;
+  /*
+   * Contrato nuevo.
+   */
+  onShare?: () =>
+    void | Promise<void>;
 
-  onDownload: () => void;
-  onCopyLink: () => void;
+  onDownload: () =>
+    void | Promise<void>;
+
+  onCopyLink: () =>
+    void | Promise<void>;
+
+  /*
+   * Compatibilidad temporal con los
+   * componentes anteriores.
+   *
+   * Se eliminarán cuando PointSavedView
+   * y MemoryPreviewModal sean migrados.
+   */
+  onInstagram?: () =>
+    void | Promise<void>;
+
+  onFacebook?: () =>
+    void | Promise<void>;
+
+  onThreads?: () =>
+    void | Promise<void>;
+
+  onTwitter?: () =>
+    void | Promise<void>;
 };
 
 function ShareDrawer({
   open,
   onClose,
+  onShare,
+  onDownload,
+  onCopyLink,
   onInstagram,
   onFacebook,
   onThreads,
   onTwitter,
-  onDownload,
-  onCopyLink,
 }: Props) {
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+    if (!open) {
+      document.body.style.overflow =
+        "";
+
+      return;
     }
 
+    document.body.style.overflow =
+      "hidden";
+
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow =
+        "";
     };
   }, [open]);
 
-  const socialButtons = [
-    {
-      label: "Instagram",
-      icon: "📷",
-      action: onInstagram,
-    },
-    {
-      label: "Facebook",
-      icon: "📘",
-      action: onFacebook,
-    },
-    {
-      label: "Threads",
-      icon: "🧵",
-      action: onThreads,
-    },
-    {
-      label: "Twitter",
-      icon: "𝕏",
-      action: onTwitter,
-    },
-  ];
+  /*
+   * Prioridad:
+   *
+   * 1. Usa la acción moderna onShare.
+   * 2. Si todavía no fue migrada, reutiliza
+   *    la primera acción social disponible.
+   */
+  const legacyShareAction =
+    onInstagram ??
+    onFacebook ??
+    onThreads ??
+    onTwitter;
+
+  const effectiveShareAction =
+    onShare ??
+    legacyShareAction;
+
+  async function handleShare() {
+    if (!effectiveShareAction) {
+      return;
+    }
+
+    await effectiveShareAction();
+  }
+
+  async function handleDownload() {
+    await onDownload();
+  }
+
+  async function handleCopyLink() {
+    await onCopyLink();
+  }
 
   return (
     <>
-      {/* Overlay */}
       <div
         onClick={onClose}
-        className={`
-          fixed inset-0 z-40
-          bg-black/60
-          transition-opacity duration-300
-          ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
-        `}
+        style={{
+          position:
+            "fixed",
+
+          inset: 0,
+
+          zIndex:
+            10040,
+
+          backgroundColor:
+            "rgba(0,0,0,0.68)",
+
+          opacity:
+            open ? 1 : 0,
+
+          pointerEvents:
+            open
+              ? "auto"
+              : "none",
+
+          transition:
+            "opacity 0.22s ease",
+        }}
       />
 
-      {/* Drawer */}
-      <div
-        className={`
-          fixed bottom-0 left-0 right-0 z-50
-          rounded-t-[24px]
-          bg-[#161616]
-          px-6 pt-4 pb-8
-          shadow-2xl
-          transition-transform duration-300 ease-out
-          ${open ? "translate-y-0" : "translate-y-full"}
-        `}
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Compartir recuerdo"
+        style={{
+          position:
+            "fixed",
+
+          left: 0,
+          right: 0,
+          bottom: 0,
+
+          zIndex:
+            10050,
+
+          boxSizing:
+            "border-box",
+
+          width:
+            "100%",
+
+          maxWidth:
+            "620px",
+
+          margin:
+            "0 auto",
+
+          padding:
+            "12px 18px max(24px, env(safe-area-inset-bottom))",
+
+          borderRadius:
+            "24px 24px 0 0",
+
+          backgroundColor:
+            "#161616",
+
+          border:
+            "1px solid rgba(255,255,255,0.08)",
+
+          boxShadow:
+            "0 -20px 55px rgba(0,0,0,0.52)",
+
+          transform:
+            open
+              ? "translateY(0)"
+              : "translateY(105%)",
+
+          transition:
+            "transform 0.26s ease-out",
+
+          pointerEvents:
+            open
+              ? "auto"
+              : "none",
+        }}
       >
-        {/* Drag Handle */}
+        <div
+          style={{
+            width:
+              "52px",
 
-        <div className="flex justify-center mb-5">
-          <div className="w-14 h-1.5 rounded-full bg-gray-500" />
-        </div>
+            height:
+              "5px",
 
-        <h2 className="text-white text-lg font-semibold text-center">
-          Compartir descubrimiento
-        </h2>
+            margin:
+              "0 auto 17px",
 
-        <p className="text-gray-400 text-sm text-center mt-1 mb-6">
-          Comparte este momento con tus amigos
-        </p>
+            borderRadius:
+              "999px",
 
-        {/* Redes */}
+            backgroundColor:
+              "#555555",
+          }}
+        />
 
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {socialButtons.map((button) => (
-            <button
-              key={button.label}
-              onClick={button.action}
-              className="
-                flex flex-col items-center justify-center
-                min-h-[64px]
-                rounded-2xl
-                bg-[#202020]
-                hover:bg-[#2A2A2A]
-                active:scale-95
-                transition-all
-              "
+        <header
+          style={{
+            display:
+              "flex",
+
+            justifyContent:
+              "space-between",
+
+            alignItems:
+              "flex-start",
+
+            gap:
+              "12px",
+
+            marginBottom:
+              "18px",
+          }}
+        >
+          <div>
+            <span
+              style={{
+                display:
+                  "block",
+
+                color:
+                  "#FF00FF",
+
+                fontSize:
+                  "10px",
+
+                fontWeight:
+                  800,
+
+                letterSpacing:
+                  "0.08em",
+
+                textTransform:
+                  "uppercase",
+              }}
             >
-              <span className="text-2xl">{button.icon}</span>
+              I.GUIDE
+            </span>
 
-              <span className="mt-2 text-xs text-gray-300">
-                {button.label}
-              </span>
+            <h2
+              style={{
+                margin:
+                  "3px 0 0",
+
+                color:
+                  "#FFFFFF",
+
+                fontSize:
+                  "19px",
+              }}
+            >
+              Comparte tu recuerdo
+            </h2>
+
+            <p
+              style={{
+                margin:
+                  "5px 0 0",
+
+                color:
+                  "rgba(255,255,255,0.58)",
+
+                fontSize:
+                  "12px",
+
+                lineHeight:
+                  1.4,
+              }}
+            >
+              Envía la experiencia o guarda la imagen en tu dispositivo.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={
+              onClose
+            }
+            aria-label="Cerrar"
+            style={{
+              width:
+                "38px",
+
+              height:
+                "38px",
+
+              flexShrink:
+                0,
+
+              borderRadius:
+                "50%",
+
+              border:
+                "1px solid rgba(255,255,255,0.10)",
+
+              background:
+                "rgba(255,255,255,0.05)",
+
+              color:
+                "#FFFFFF",
+
+              fontSize:
+                "20px",
+
+              cursor:
+                "pointer",
+            }}
+          >
+            ×
+          </button>
+        </header>
+
+        <div
+          style={{
+            display:
+              "grid",
+
+            gap:
+              "10px",
+          }}
+        >
+          {effectiveShareAction && (
+            <button
+              type="button"
+              onClick={() => {
+                void handleShare();
+              }}
+              style={{
+                minHeight:
+                  "52px",
+
+                border:
+                  "none",
+
+                borderRadius:
+                  "14px",
+
+                backgroundColor:
+                  "#FF00FF",
+
+                color:
+                  "#FFFFFF",
+
+                fontSize:
+                  "14px",
+
+                fontWeight:
+                  800,
+
+                cursor:
+                  "pointer",
+              }}
+            >
+              ↗ Compartir
             </button>
-          ))}
-        </div>
+          )}
 
-        {/* Acciones */}
-
-        <div className="space-y-3">
           <button
-            onClick={onDownload}
-            className="
-              w-full
-              min-h-[52px]
-              rounded-full
-              bg-pink-600
-              hover:bg-pink-500
-              active:scale-[0.98]
-              transition-all
-              text-white
-              font-semibold
-            "
+            type="button"
+            onClick={() => {
+              void handleDownload();
+            }}
+            style={{
+              minHeight:
+                "50px",
+
+              borderRadius:
+                "14px",
+
+              border:
+                "1px solid rgba(255,255,255,0.13)",
+
+              backgroundColor:
+                "rgba(255,255,255,0.05)",
+
+              color:
+                "#FFFFFF",
+
+              fontSize:
+                "13px",
+
+              fontWeight:
+                750,
+
+              cursor:
+                "pointer",
+            }}
           >
-            Descargar imagen
+            ↓ Descargar imagen
           </button>
 
           <button
-            onClick={onCopyLink}
-            className="
-              w-full
-              min-h-[52px]
-              rounded-full
-              border
-              border-gray-500
-              hover:border-white
-              hover:bg-white/5
-              active:scale-[0.98]
-              transition-all
-              text-white
-              font-medium
-            "
+            type="button"
+            onClick={() => {
+              void handleCopyLink();
+            }}
+            style={{
+              minHeight:
+                "44px",
+
+              border:
+                "none",
+
+              background:
+                "transparent",
+
+              color:
+                "rgba(255,255,255,0.62)",
+
+              fontSize:
+                "12px",
+
+              fontWeight:
+                650,
+
+              cursor:
+                "pointer",
+            }}
           >
-            Copiar enlace
+            🔗 Copiar enlace
           </button>
         </div>
-      </div>
+
+        <p
+          style={{
+            margin:
+              "16px 0 0",
+
+            color:
+              "rgba(255,255,255,0.34)",
+
+            textAlign:
+              "center",
+
+            fontSize:
+              "10px",
+
+            lineHeight:
+              1.4,
+          }}
+        >
+          Próximamente podrás elegir si deseas destacar la fotografía, ruta, tiempo, hitos o nota.
+        </p>
+      </section>
     </>
   );
 }

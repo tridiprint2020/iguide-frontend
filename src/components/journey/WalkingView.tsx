@@ -1,15 +1,28 @@
-import { useNavigate } from "react-router-dom";
-import { useJourney } from "../../context/JourneyContext";
-import { getJourneyStats } from "../../engine/trackingEngine";
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  useJourney,
+} from "../../context/JourneyContext";
+
+import {
+  getJourneyStats,
+} from "../../engine/trackingEngine";
 
 import JourneyCompletedView from "./JourneyCompletedView";
 import { CameraView } from "./CameraView";
 import { PointSavedView } from "./PointSavedView";
+
 import HospesBanner from "../hospes/HospesBanner";
-import { getHospesMessage } from "../../engine/hospesContextEngine";
+
+import {
+  getHospesMessage,
+} from "../../engine/hospesContextEngine";
 
 export function WalkingView() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   const {
     journey,
@@ -25,34 +38,43 @@ export function WalkingView() {
         )
       : null;
 
-  const durationMinutes = Math.floor(
-    (stats?.durationSeconds ?? 0) / 60
-  );
-
-  const hospesBannerMessage =
-  getHospesMessage({
-    screen: "walking",
-    experience: journey.experience,
-    timeline: journey.timeline,
-  });
-
-  function handleGoHome() {
-    const confirmed = window.confirm(
-      "¿Deseas salir al inicio? Tu recorrido guardado se conservará."
+  const durationMinutes =
+    Math.floor(
+      (stats?.durationSeconds ?? 0) /
+        60
     );
 
-    if (!confirmed) {
-      return;
-    }
+  const hospesBannerMessage =
+    getHospesMessage({
+      screen: "walking",
+      experience:
+        journey.experience,
+      timeline:
+        journey.timeline,
+    });
 
-    abandonJourney();
+  function handleGoHome() {
     navigate("/");
   }
 
-  function handleAbandonAndExplore() {
-    const confirmed = window.confirm(
-      "¿Deseas abandonar esta sesión? La ruta registrada hasta ahora permanecerá guardada."
+  function handleReturnToExperience() {
+    const experience =
+      journey.experience;
+
+    if (!experience) {
+      return;
+    }
+
+    navigate(
+      `/expedition/${experience.slug}`
     );
+  }
+
+  function handleAbandon() {
+    const confirmed =
+      window.confirm(
+        "¿Deseas abandonar definitivamente esta expedición?\n\nLa ruta registrada permanecerá guardada en tu historial."
+      );
 
     if (!confirmed) {
       return;
@@ -75,30 +97,42 @@ export function WalkingView() {
           </button>
 
           <span className="text-[#FF007A] font-semibold flex items-center gap-1.5">
-            <span aria-hidden="true">●</span>
+            <span aria-hidden="true">
+              ●
+            </span>
             Expedición activa
           </span>
         </header>
 
-        <main className="flex-1 flex flex-col justify-center items-center gap-10 px-6">
+        <main className="flex-1 flex flex-col justify-center items-center gap-8 px-6">
           <div className="text-center">
             <p className="uppercase text-xs tracking-[0.25em] text-zinc-400">
               Explorando
             </p>
 
             <h1 className="text-4xl font-bold mt-2 text-zinc-900">
-  {journey.experience?.title ?? "Destino"}
-</h1>
+              {journey.experience
+                ?.title ??
+                "Destino"}
+            </h1>
 
             <p className="mt-3 text-sm text-zinc-500">
-              {journey.timeline.length} eventos registrados
+              {
+                journey.timeline
+                  .length
+              }{" "}
+              eventos registrados
             </p>
           </div>
-<div className="w-full max-w-xl">
-  <HospesBanner
-    message={hospesBannerMessage}
-  />
-</div>
+
+          <div className="w-full max-w-xl">
+            <HospesBanner
+              message={
+                hospesBannerMessage
+              }
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-10">
             <div className="text-center">
               <p className="text-zinc-400">
@@ -106,7 +140,10 @@ export function WalkingView() {
               </p>
 
               <h2 className="font-mono text-3xl mt-1 text-zinc-800">
-                {durationMinutes} min
+                {
+                  durationMinutes
+                }{" "}
+                min
               </h2>
             </div>
 
@@ -116,7 +153,12 @@ export function WalkingView() {
               </p>
 
               <h2 className="font-mono text-3xl mt-1 text-zinc-800">
-                {(stats?.totalDistanceKm ?? 0).toFixed(2)} km
+                {(
+                  stats
+                    ?.totalDistanceKm ??
+                  0
+                ).toFixed(2)}{" "}
+                km
               </h2>
             </div>
           </div>
@@ -133,10 +175,28 @@ export function WalkingView() {
 
           <button
             type="button"
-            onClick={handleAbandonAndExplore}
+            onClick={
+              handleReturnToExperience
+            }
             className="w-full border border-zinc-300 bg-white text-zinc-700 rounded-xl py-3 font-semibold active:scale-[0.99] transition"
           >
-            Abandonar y conservar ruta
+            🧭 Ver destino y mapa
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGoHome}
+            className="w-full border border-zinc-300 bg-white text-zinc-700 rounded-xl py-3 font-semibold active:scale-[0.99] transition"
+          >
+            🏠 Ir a Inicio — mantener misión
+          </button>
+
+          <button
+            type="button"
+            onClick={handleAbandon}
+            className="w-full border border-orange-300 bg-orange-50 text-orange-700 rounded-xl py-3 font-semibold active:scale-[0.99] transition"
+          >
+            ⛔ Abandonar definitivamente
           </button>
         </footer>
       </div>
@@ -154,7 +214,9 @@ export function WalkingView() {
       return <PointSavedView />;
 
     case "completed":
-      return <JourneyCompletedView />;
+      return (
+        <JourneyCompletedView />
+      );
 
     case "idle":
     default:

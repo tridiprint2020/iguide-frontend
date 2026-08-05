@@ -29,7 +29,7 @@ import {
 } from "../data/user";
 
 import {
-  loadTrack,
+  loadAllTrackSessions,
 } from "../engine/trackingEngine";
 
 import {
@@ -68,8 +68,6 @@ type TrackBundle = {
   experience: Experience;
   track: ExpeditionTrack;
 
-  routeNodes: TimelineItem[];
-
   routePath: [
     number,
     number,
@@ -91,13 +89,14 @@ type TrackBundle = {
 };
 
 /*
- * Corrección global de los iconos
+ * Corrección de los iconos
  * predeterminados de Leaflet.
  */
 delete (
-  L.Icon.Default.prototype as L.Icon.Default & {
-    _getIconUrl?: unknown;
-  }
+  L.Icon.Default.prototype as
+    L.Icon.Default & {
+      _getIconUrl?: unknown;
+    }
 )._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -166,9 +165,15 @@ function MapView({
     loadUserProfile();
 
   /*
-   * Solo se calcula una vez por render lógico.
-   * Ya no hacemos cuatro catalog.map()
-   * con loadTrack() repetido.
+   * Explorer recupera todas las sesiones:
+   *
+   * - activas;
+   * - completadas;
+   * - abandonadas;
+   * - históricas.
+   *
+   * Así los recuerdos continúan apareciendo
+   * aunque el puntero activo haya sido eliminado.
    */
   const trackBundles =
     useMemo<TrackBundle[]>(() => {
@@ -178,69 +183,68 @@ function MapView({
       for (
         const experience of catalog
       ) {
-        const persistedTrack =
-          loadTrack(
+        const storedSessions =
+          loadAllTrackSessions(
             experience.experienceId
           );
 
-        if (!persistedTrack) {
-          continue;
+        for (
+          const persistedTrack of storedSessions
+        ) {
+          const routeNodes =
+            persistedTrack.timeline.filter(
+              (item) =>
+                item.type === "start" ||
+                item.type === "walk" ||
+                item.type === "abort" ||
+                item.type === "finish"
+            );
+
+          const routePath: [
+            number,
+            number,
+          ][] =
+            routeNodes.map(
+              (point) => [
+                point.lat,
+                point.lng,
+              ]
+            );
+
+          const startPoint =
+            persistedTrack.timeline.find(
+              (item) =>
+                item.type === "start"
+            ) ?? null;
+
+          const abortPoint =
+            findLastTimelineItem(
+              persistedTrack.timeline,
+              "abort"
+            );
+
+          const finishPoint =
+            findLastTimelineItem(
+              persistedTrack.timeline,
+              "finish"
+            );
+
+          const memoryNodes =
+            persistedTrack.timeline.filter(
+              (item) =>
+                item.type === "memory"
+            );
+
+          bundles.push({
+            experience,
+            track: persistedTrack,
+            routePath,
+            startPoint,
+            abortPoint,
+            finishPoint,
+            memoryNodes,
+          });
         }
-
-        const routeNodes =
-          persistedTrack.timeline.filter(
-            (item) =>
-              item.type === "start" ||
-              item.type === "walk" ||
-              item.type === "abort" ||
-              item.type === "finish"
-          );
-
-        const routePath: [
-          number,
-          number,
-        ][] =
-          routeNodes.map(
-            (point) => [
-              point.lat,
-              point.lng,
-            ]
-          );
-
-        const startPoint =
-          persistedTrack.timeline.find(
-            (item) =>
-              item.type === "start"
-          ) ?? null;
-
-        const abortPoint =
-          findLastTimelineItem(
-            persistedTrack.timeline,
-            "abort"
-          );
-
-        const finishPoint =
-          findLastTimelineItem(
-            persistedTrack.timeline,
-            "finish"
-          );
-
-        const memoryNodes =
-          persistedTrack.timeline.filter(
-            (item) =>
-              item.type === "memory"
-          );
-
-        bundles.push({
-          experience,
-          track: persistedTrack,
-          routeNodes,
-          routePath,
-          startPoint,
-          abortPoint,
-          finishPoint,
-          memoryNodes,
-        });
       }
 
       return bundles;
@@ -271,11 +275,8 @@ function MapView({
   }
 
   /*
-   * La Memory Card se construye únicamente
-   * cuando el usuario la solicita.
-   *
-   * Antes se construían muchas tarjetas
-   * durante el render del mapa.
+   * La tarjeta se construye solamente
+   * cuando el usuario toca un hito.
    */
   function openTimelineCard(
     experience: Experience,
@@ -709,10 +710,12 @@ function MapView({
               }
             )}
 
-            {/* RUTAS GUARDADAS */}
+            {/* RUTAS HISTÓRICAS Y ACTIVAS */}
             {trackBundles.map(
               ({
                 experience,
+                track:
+                  expeditionTrack,
                 routePath,
               }) => {
                 if (
@@ -721,16 +724,33 @@ function MapView({
                   return null;
                 }
 
+                const hasAbort =
+                  expeditionTrack.timeline.some(
+                    (item) =>
+                      item.type === "abort"
+                  );
+
+                const hasFinish =
+                  expeditionTrack.timeline.some(
+                    (item) =>
+                      item.type === "finish"
+                  );
+
+                const routeColor =
+                  hasAbort &&
+                  !hasFinish
+                    ? ORANGE
+                    : Theme.Colors.primary;
+
                 return (
                   <Polyline
-                    key={`track-${experience.experienceId}`}
+                    key={`track-${experience.experienceId}-${expeditionTrack.sessionId}`}
                     positions={
                       routePath
                     }
                     pathOptions={{
                       color:
-                        Theme.Colors
-                          .primary,
+                        routeColor,
 
                       weight: 4,
 
@@ -748,7 +768,7 @@ function MapView({
               }
             )}
 
-            {/* HITOS DE RUTA */}
+            {/* INICIO, ABANDONO Y FINAL */}
             {trackBundles.map(
               ({
                 experience,
@@ -759,7 +779,7 @@ function MapView({
                 finishPoint,
               }) => (
                 <div
-                  key={`edges-${experience.experienceId}`}
+                  key={`edges-${experience.experienceId}-${expeditionTrack.sessionId}`}
                 >
                   {startPoint && (
                     <CircleMarker
@@ -896,7 +916,7 @@ function MapView({
               )
             )}
 
-            {/* RECUERDOS */}
+            {/* RECUERDOS DE TODAS LAS SESIONES */}
             {trackBundles.flatMap(
               ({
                 experience,
@@ -912,7 +932,7 @@ function MapView({
                     <CircleMarker
                       key={
                         memory.id ||
-                        `memory-${experience.experienceId}-${index}`
+                        `memory-${experience.experienceId}-${expeditionTrack.sessionId}-${index}`
                       }
                       center={[
                         memory.lat,
@@ -982,11 +1002,8 @@ function MapView({
 
 type TimelinePopupProps = {
   title: string;
-
   experienceTitle: string;
-
   buttonColor: string;
-
   onOpen: () => void;
 };
 

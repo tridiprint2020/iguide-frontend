@@ -2,10 +2,13 @@ import { useState } from "react";
 import { useJourney } from "../../context/JourneyContext";
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
-import { loadTrack } from "../../engine/trackingEngine";
 import { MemoryCardEngine } from "../../engine/memoryCardEngine";
 import HospesBanner from "../hospes/HospesBanner";
 import { getHospesMessage } from "../../engine/hospesContextEngine";
+import {
+  loadTrack,
+  updateMemoryNote,
+} from "../../engine/trackingEngine";
 
 export function PointSavedView() {
   const { journey, resumeWalking } = useJourney();
@@ -150,7 +153,21 @@ export function PointSavedView() {
 
         <button
           type="button"
-          onClick={resumeWalking}
+          onClick={() => {
+  if (
+    journey.experience &&
+    lastMemory
+  ) {
+    updateMemoryNote(
+      journey.experience
+        .experienceId,
+      lastMemory.id,
+      note
+    );
+  }
+
+  resumeWalking();
+}}
           className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl py-4 font-semibold active:scale-[0.99] transition shadow-md"
         >
           Continuar paseo →

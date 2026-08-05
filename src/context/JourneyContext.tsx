@@ -17,6 +17,7 @@ import {
   addMemoryToTrack,
   canCompleteJourney,
   createStartPoint,
+  deleteTrack,
   loadTrack,
 } from "../engine/trackingEngine";
 
@@ -345,24 +346,76 @@ function abandonJourney() {
   locationTracker.stop();
 
   setJourney((prev) => {
-    if (prev.experience) {
-      const lastGeoPoint = [...prev.timeline]
-        .reverse()
-        .find(
-          (item) =>
-            item.type === "start" ||
-            item.type === "walk" ||
-            item.type === "memory"
-        );
+    const activeExperience =
+      prev.experience;
+
+    if (!activeExperience) {
+      localStorage.removeItem(
+        ACTIVE_JOURNEY_KEY
+      );
+
+      return defaultJourney;
+    }
+
+    const experienceId =
+      activeExperience.experienceId;
+
+    const persistedTrack =
+      loadTrack(experienceId);
+
+    const timeline =
+      persistedTrack?.timeline ??
+      prev.timeline;
+
+    const alreadyAborted =
+      timeline.some(
+        (item) =>
+          item.type === "abort"
+      );
+
+    const alreadyCompleted =
+      Boolean(
+        persistedTrack?.completedAt
+      ) ||
+      timeline.some(
+        (item) =>
+          item.type === "finish"
+      );
+
+    if (
+      !alreadyAborted &&
+      !alreadyCompleted
+    ) {
+      const lastGeoPoint =
+        [...timeline]
+          .reverse()
+          .find(
+            (item) =>
+              item.type ===
+                "start" ||
+              item.type ===
+                "walk" ||
+              item.type ===
+                "memory"
+          );
 
       if (lastGeoPoint) {
         addAbortPoint(
-          prev.experience.experienceId,
+          experienceId,
           lastGeoPoint.lat,
           lastGeoPoint.lng
         );
       }
     }
+
+    /*
+     * El historial permanece guardado bajo:
+     * iguide_track_<id>_<sessionId>
+     *
+     * Solo eliminamos el puntero activo:
+     * iguide_track_<id>
+     */
+    deleteTrack(experienceId);
 
     localStorage.removeItem(
       ACTIVE_JOURNEY_KEY

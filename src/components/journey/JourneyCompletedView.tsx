@@ -1,144 +1,95 @@
-import { useJourney } from "../../context/JourneyContext";
+import {
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  useJourney,
+} from "../../context/JourneyContext";
+
+import {
+  getJourneyStats,
+} from "../../engine/trackingEngine";
+
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { Experience } from "../../types/experience/experience";
-import { getJourneyStats } from "../../engine/trackingEngine";
 import HospesBanner from "../hospes/HospesBanner";
-import { getHospesMessage } from "../../engine/hospesContextEngine";
+
+import {
+  getHospesMessage,
+} from "../../engine/hospesContextEngine";
+
+import type {
+  Experience,
+} from "../../types/experience/experience";
 
 export default function JourneyCompletedView() {
-const {
-  journey,
-  abandonJourney
-} = useJourney();
+  const {
+    journey,
+    abandonJourney,
+  } = useJourney();
 
-const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [shareOpen, setShareOpen] = useState(false);
-const hospesBannerMessage =
-  getHospesMessage({
-    screen: "completed",
-    experience: journey.experience,
-    timeline: journey.timeline,
-    rewardXp: 150,
-  });
-  
-  // ❌ ANTES: const stats = journey.experience ? getJourneyStats(journey.experience.experienceId) : null;
-  // ✅ DESPUÉS: Cambia la llamada por el puente directo de tracks persistidos
- const stats =
-  journey.timeline && journey.startedAt
-    ? getJourneyStats(
+  const [
+    shareOpen,
+    setShareOpen,
+  ] = useState(false);
+
+  const activeExperience =
+    journey.experience as
+      | Experience
+      | null;
+
+  const stats = useMemo(() => {
+    if (
+      !journey.startedAt ||
+      !journey.timeline
+    ) {
+      return null;
+    }
+
+    return getJourneyStats(
+      journey.timeline,
+      journey.startedAt
+    );
+  }, [
+    journey.startedAt,
+    journey.timeline,
+  ]);
+
+  const lastPhoto =
+    stats?.lastPhoto;
+
+  const lastNote =
+    stats?.lastNote ?? "";
+
+  const hospesBannerMessage =
+    getHospesMessage({
+      screen: "completed",
+      experience:
+        journey.experience,
+      timeline:
         journey.timeline,
-        journey.startedAt
-      )
-    : null;
+      rewardXp: 150,
+    });
 
-
-  const lastPhoto = stats?.lastPhoto;
-  const lastNote = stats?.lastNote ?? "";
-  const activeExperience = journey.experience as Experience;
-
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#090909",
-        padding: 24,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between"
-      }}
-    >
-      <div>
-        <div
-  style={{
-    color: "#41E28A",
-    fontWeight: 700,
-    marginBottom: 12,
-  }}
->
-  ✓ Expedición completada
-</div>
-
-<HospesBanner
-  message={hospesBannerMessage}
-/>
-
-        <h1
-          style={{
-            color: "white",
-            fontSize: 34,
-            marginBottom: 10
-          }}
-        >
-          ¡Aventura Finalizada!
-        </h1>
-
-        <p
-          style={{
-            color: "#BBBBBB",
-            lineHeight: 1.6,
-            marginBottom: 24
-          }}
-        >
-          Tu recorrido quedó guardado.
-          Ahora puedes compartirlo completo
-          o continuar explorando {activeExperience?.city || "Huancayo"}.
-        </p>
-
-        {/* 📊 PANEL DE MÉTRICAS REALES DESACOPLADO */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "12px",
-            marginBottom: "24px"
-          }}
-        >
-          <div style={{ backgroundColor: "#141414", padding: "14px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.03)" }}>
-            <p style={{ color: "#777777", fontSize: "12px", margin: "0 0 4px 0", textTransform: "uppercase" }}>Hitos</p>
-            <h3 style={{ color: "#FFFFFF", fontSize: "20px", fontWeight: 700, margin: 0 }}>
-              {stats?.totalMemories ?? 0} 🔮
-            </h3>
-          </div>
-
-          <div style={{ backgroundColor: "#141414", padding: "14px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.03)" }}>
-            <p style={{ color: "#777777", fontSize: "12px", margin: "0 0 4px 0", textTransform: "uppercase" }}>Duración</p>
-            <h3 style={{ color: "#FFFFFF", fontSize: "20px", fontWeight: 700, margin: 0 }}>
-              {Math.floor((stats?.durationSeconds ?? 0) / 60)} min ⏳
-            </h3>
-          </div>
-
-          <div style={{ backgroundColor: "#141414", padding: "14px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.03)" }}>
-            <p style={{ color: "#777777", fontSize: "12px", margin: "0 0 4px 0", textTransform: "uppercase" }}>Fotos</p>
-            <h3 style={{ color: "#FFFFFF", fontSize: "20px", fontWeight: 700, margin: 0 }}>
-              {stats?.totalPhotos ?? 0} 📷
-            </h3>
-          </div>
-
-          <div style={{ backgroundColor: "#141414", padding: "14px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.03)" }}>
-            <p style={{ color: "#777777", fontSize: "12px", margin: "0 0 4px 0", textTransform: "uppercase" }}>Notas</p>
-            <h3 style={{ color: "#FFFFFF", fontSize: "20px", fontWeight: 700, margin: 0 }}>
-              {stats?.totalNotes ?? 0} 📝
-            </h3>
-          </div>
-        </div>
-
-        {/* 🏛️ CARD EMOCIONAL ACOPLADO A LA FACHADA UNIFICADA */}
-        <MemoryCard
-  data={{
+  const memoryData = {
     title:
-      activeExperience?.title ||
+      activeExperience?.title ??
       "Destino",
 
     placeLabel:
-      activeExperience?.title ||
+      activeExperience?.title ??
       "Lugar visitado",
 
     city:
-      activeExperience?.city ||
+      activeExperience?.city ??
       "Huancayo",
 
     date:
@@ -148,15 +99,15 @@ const hospesBannerMessage =
 
     photo: lastPhoto,
 
-    note:
-      lastNote ||
-      "¡Completé mi Línea de Exploración con éxito! 🔮",
+    /*
+     * Solo mostramos como protagonista
+     * una nota escrita realmente por el usuario.
+     * No inyectamos frases automáticas largas.
+     */
+    note: lastNote,
 
     primaryInterest:
-      activeExperience?.interests &&
-      activeExperience.interests.length > 0
-        ? activeExperience.interests[0]
-        : undefined,
+      activeExperience?.interests?.[0],
 
     lat:
       activeExperience?.latitude,
@@ -165,10 +116,10 @@ const hospesBannerMessage =
       activeExperience?.longitude,
 
     waypoints:
-      journey.timeline || [],
+      journey.timeline ?? [],
 
     stats:
-      stats || {
+      stats ?? {
         totalPhotos: 0,
         totalNotes: 0,
         totalMemories: 0,
@@ -178,11 +129,15 @@ const hospesBannerMessage =
 
     mapBackground: {
       center: [
-        activeExperience?.latitude ?? 0,
-        activeExperience?.longitude ?? 0,
-      ],
+        activeExperience
+          ?.latitude ?? 0,
+        activeExperience
+          ?.longitude ?? 0,
+      ] as [number, number],
 
-      path: (journey.timeline || [])
+      path: (
+        journey.timeline ?? []
+      )
         .filter(
           (item) =>
             item.type !== "memory"
@@ -195,69 +150,394 @@ const hospesBannerMessage =
             ] as [number, number]
         ),
 
-      memories:
-        (journey.timeline || []).filter(
-          (item) =>
-            item.type === "memory"
-        ),
+      memories: (
+        journey.timeline ?? []
+      ).filter(
+        (item) =>
+          item.type === "memory"
+      ),
     },
-  }}
-  onShare={() =>
-    setShareOpen(true)
+  };
+
+  function handleDownload() {
+    if (!lastPhoto) {
+      alert(
+        "Esta memoria no contiene una fotografía. La exportación gráfica completa de la ruta se habilitará en la siguiente fase."
+      );
+
+      return;
+    }
+
+    const anchor =
+      document.createElement("a");
+
+    anchor.href = lastPhoto;
+
+    anchor.download =
+      `iguide-${activeExperience?.slug ?? "recuerdo"}-${Date.now()}.jpg`;
+
+    document.body.appendChild(
+      anchor
+    );
+
+    anchor.click();
+    anchor.remove();
   }
-/>
+
+  async function handleNativeShare() {
+    const shareText =
+      `Completé ${activeExperience?.title ?? "una experiencia"} con I.GUIDE.`;
+
+    const shareUrl =
+      window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title:
+            activeExperience?.title ??
+            "I.GUIDE",
+          text: shareText,
+          url: shareUrl,
+        });
+
+        return;
+      }
+
+      await navigator.clipboard.writeText(
+        `${shareText} ${shareUrl}`
+      );
+
+      alert(
+        "Enlace copiado. Ya puedes compartirlo."
+      );
+    } catch (error) {
+      /*
+       * El usuario puede cancelar el diálogo
+       * nativo sin que sea un error funcional.
+       */
+      console.info(
+        "Compartir cancelado:",
+        error
+      );
+    }
+  }
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(
+        window.location.href
+      );
+
+      alert(
+        "Enlace copiado."
+      );
+    } catch {
+      alert(
+        "No se pudo copiar el enlace automáticamente."
+      );
+    }
+  }
+
+  function handleReturnToExplorer() {
+    /*
+     * La expedición ya fue completada.
+     * Limpiamos la vista activa y regresamos
+     * al catálogo, conservando el historial.
+     */
+    abandonJourney();
+    navigate("/explorer");
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        boxSizing: "border-box",
+        background: "#090909",
+        padding:
+          "20px 16px 42px",
+        color: "#FFFFFF",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "600px",
+          margin: "0 auto",
+        }}
+      >
+        <div
+          style={{
+            color: "#41E28A",
+            fontWeight: 800,
+            marginBottom: "10px",
+            fontSize: "13px",
+          }}
+        >
+          ✓ Expedición completada
+        </div>
+
+        <HospesBanner
+          message={
+            hospesBannerMessage
+          }
+        />
+
+        <h1
+          style={{
+            margin:
+              "22px 0 8px",
+            color: "#FFFFFF",
+            fontSize:
+              "clamp(1.8rem, 7vw, 2.4rem)",
+            lineHeight: 1.08,
+          }}
+        >
+          ¡Aventura finalizada!
+        </h1>
+
+        <p
+          style={{
+            margin:
+              "0 0 20px",
+            color:
+              "rgba(255,255,255,0.68)",
+            lineHeight: 1.55,
+            fontSize: "13px",
+          }}
+        >
+          Tu recorrido, recuerdos y
+          llegada quedaron guardados.
+        </p>
+
+        {/* Resumen único, sin repetir dentro y fuera varias veces */}
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(3, minmax(0, 1fr))",
+            gap: "8px",
+            marginBottom: "20px",
+          }}
+        >
+          <Metric
+            label="Distancia"
+            value={`${(
+              stats?.totalDistanceKm ??
+              0
+            ).toFixed(2)} km`}
+          />
+
+          <Metric
+            label="Tiempo"
+            value={formatDuration(
+              stats?.durationSeconds ??
+                0
+            )}
+          />
+
+          <Metric
+            label="Hitos"
+            value={`${
+              stats?.totalMemories ??
+              0
+            } 🔮`}
+          />
+        </section>
 
         <div
           style={{
-            marginTop: 28,
-            display: "grid",
-            gap: 12
+            display: "flex",
+            justifyContent:
+              "center",
           }}
         >
-          <button
-            onClick={() => setShareOpen(true)}
-            style={{
-              height: 54,
-              borderRadius: 14,
-              border: "none",
-              cursor: "pointer",
-              background: "#FF007A",
-              color: "white",
-              fontWeight: 700
-            }}
-          >
-            Compartir aventura completa
-          </button>
-
-          <button
-  onClick={() => {
-    abandonJourney();
-    navigate("/explorer");
-  }}
-  style={{
-              height: 54,
-              borderRadius: 14,
-              border: "1px solid #333",
-              background: "#111",
-              color: "white",
-              cursor: "pointer"
-            }}
-          >
-            Volver a explorar
-          </button>
+          <MemoryCard
+            data={memoryData}
+            onShare={() =>
+              setShareOpen(true)
+            }
+            onDownload={
+              handleDownload
+            }
+          />
         </div>
+
+        {lastNote && (
+          <section
+            style={{
+              marginTop: "16px",
+              padding: "15px",
+              borderRadius: "15px",
+              background:
+                "rgba(255,255,255,0.04)",
+              border:
+                "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            <span
+              style={{
+                display: "block",
+                marginBottom: "6px",
+                color: "#FF00FF",
+                fontSize: "10px",
+                fontWeight: 800,
+                letterSpacing:
+                  "0.08em",
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              Tu nota
+            </span>
+
+            <p
+              style={{
+                margin: 0,
+                color:
+                  "rgba(255,255,255,0.82)",
+                fontSize: "13px",
+                lineHeight: 1.5,
+              }}
+            >
+              “{lastNote}”
+            </p>
+          </section>
+        )}
+
+        {/*
+         * Ya no repetimos:
+         * - Compartir aventura completa
+         * - Compartir descubrimiento
+         * - O comparte este descubrimiento
+         *
+         * La MemoryCard contiene los únicos
+         * botones Compartir y Descargar.
+         */}
+        <button
+          type="button"
+          onClick={
+            handleReturnToExplorer
+          }
+          style={{
+            width: "100%",
+            minHeight: "52px",
+            marginTop: "20px",
+            borderRadius: "14px",
+            border:
+              "1px solid rgba(255,255,255,0.12)",
+            background: "#111111",
+            color: "#FFFFFF",
+            fontWeight: 750,
+            cursor: "pointer",
+          }}
+        >
+          Explorar otro lugar →
+        </button>
       </div>
 
       <ShareDrawer
         open={shareOpen}
-        onClose={() => setShareOpen(false)}
-        onInstagram={() => {}}
-        onFacebook={() => {}}
-        onThreads={() => {}}
-        onTwitter={() => {}}
-        onDownload={() => {}}
-        onCopyLink={() => {}}
+        onClose={() =>
+          setShareOpen(false)
+        }
+        onShare={
+          handleNativeShare
+        }
+        onDownload={
+          handleDownload
+        }
+        onCopyLink={
+          handleCopyLink
+        }
       />
     </div>
   );
+}
+
+type MetricProps = {
+  label: string;
+  value: string;
+};
+
+function Metric({
+  label,
+  value,
+}: MetricProps) {
+  return (
+    <div
+      style={{
+        minWidth: 0,
+        padding: "12px 6px",
+        borderRadius: "13px",
+        backgroundColor:
+          "#141414",
+        border:
+          "1px solid rgba(255,255,255,0.05)",
+        textAlign: "center",
+      }}
+    >
+      <span
+        style={{
+          display: "block",
+          color:
+            "rgba(255,255,255,0.42)",
+          fontSize: "8px",
+          fontWeight: 700,
+          textTransform:
+            "uppercase",
+          letterSpacing:
+            "0.05em",
+        }}
+      >
+        {label}
+      </span>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: "5px",
+          color: "#FFFFFF",
+          fontSize:
+            "clamp(11px, 3.4vw, 14px)",
+          fontFamily:
+            "monospace",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {value}
+      </strong>
+    </div>
+  );
+}
+
+function formatDuration(
+  totalSeconds: number
+): string {
+  const hours =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+  const minutes =
+    Math.floor(
+      (totalSeconds % 3600) /
+        60
+    );
+
+  const seconds =
+    totalSeconds % 60;
+
+  const pad = (
+    value: number
+  ) =>
+    String(value).padStart(
+      2,
+      "0"
+    );
+
+  return `${pad(hours)}:${pad(
+    minutes
+  )}:${pad(seconds)}`;
 }

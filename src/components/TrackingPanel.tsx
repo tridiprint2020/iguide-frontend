@@ -33,7 +33,10 @@ function TrackingPanel({
 }: Props) {
   // ✅ REGLA DE REACT: Los hooks se declaran aquí en la raíz, consumiendo resetToHome unificado
   const navigate = useNavigate();
-  const { completeJourney, resetToHome } = useJourney();
+const {
+  completeJourney,
+  abandonJourney,
+} = useJourney();
   const [invalidCompletion, setInvalidCompletion] = useState({ open: false, message: "" });
 
   // Constante derivada pura alineada a la Adenda 11.B
@@ -194,9 +197,7 @@ setInvalidCompletion({
       { enableHighAccuracy: true, timeout: 6000 }
     );
   };
-
-
-  return (
+return (
     <div
       style={{
         backgroundColor: Theme.Colors.surface,
@@ -228,9 +229,9 @@ setInvalidCompletion({
       {isTracking && (
         <>
           <p style={{ fontSize: "13px", color: Theme.Colors.textSoft }}>
-  {/* ✅ Regla 13: El Timeline unificado almacena eventos semánticos completos */}
-  Grabando recorrido... {track?.timeline.length ?? 0} eventos registrados.
-</p>
+            {/* ✅ Regla 13: El Timeline unificado almacena eventos semánticos completos */}
+            Grabando recorrido... {track?.timeline.length ?? 0} eventos registrados.
+          </p>
 
 
           {noriHint && (
@@ -271,26 +272,26 @@ setInvalidCompletion({
             onChange={handlePhotoChange}
             style={{ marginBottom: Theme.Space.sm }}
           />
-<button
-  className="ig-hover"
-  // ✅ CORREGIDO: Enlace legítimo a la función multimedia del Core
-  onClick={handleAddMemory} 
-  style={{
-    width: "100%",
-    padding: "10px",
-    borderRadius: Theme.Radius.medium,
-    border: `1px solid ${Theme.Colors.secondary}`,
-    backgroundColor: "transparent",
-    color: Theme.Colors.secondary,
-    fontWeight: 600,
-    cursor: "pointer",
-    marginBottom: Theme.Space.sm,
-  }}
->
-  📍 Guardar recuerdo
-</button>
+          <button
+            className="ig-hover"
+            // ✅ CORREGIDO: Enlace legítimo a la función multimedia del Core
+            onClick={handleAddMemory} 
+            style={{
+              width: "100%",
+              padding: "10px",
+              borderRadius: Theme.Radius.medium,
+              border: `1px solid ${Theme.Colors.secondary}`,
+              backgroundColor: "transparent",
+              color: Theme.Colors.secondary,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: Theme.Space.sm,
+            }}
+          >
+            📍 Guardar recuerdo
+          </button>
 
-                    <button
+          <button
             className="ig-hover"
             onClick={handleFinish}
             style={{
@@ -355,7 +356,7 @@ setInvalidCompletion({
               {invalidCompletion.message}
             </p>
 
-                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <button
                 onClick={() => setInvalidCompletion({ open: false, message: "" })}
                 style={{ height: "46px", borderRadius: "12px", border: "none", backgroundColor: Theme.Colors.primary, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", fontSize: "14px" }}
@@ -364,25 +365,28 @@ setInvalidCompletion({
               </button>
 
               <button
+                type="button"
                 onClick={() => {
-                  setInvalidCompletion({ open: false, message: "" });
-                  
-                  // ✅ CORREGIDO: Llamada directa limpia, sin usar require() que rompa Vite
-                  resetToHome(); 
-                  navigate("/explorer"); 
+                  setInvalidCompletion({
+                    open: false,
+                    message: "",
+                  });
+
+                  abandonJourney();
+                  navigate("/explorer");
                 }}
-                style={{ 
-                  height: "46px", 
-                  borderRadius: "12px", 
-                  border: "1px solid rgba(255,255,255,0.1)", 
-                  backgroundColor: "transparent", 
-                  color: "#E5E5EA", 
-                  fontWeight: 600, 
-                  cursor: "pointer", 
-                  fontSize: "13px" 
+                style={{
+                  height: "46px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,138,0,0.35)",
+                  backgroundColor: "rgba(255,138,0,0.10)",
+                  color: "#FFB15C",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: "13px",
                 }}
               >
-                🏠 Volver al inicio (Abortar)
+                ⛔ Abandonar definitivamente
               </button>
            
             </div>
@@ -393,6 +397,7 @@ setInvalidCompletion({
     </div>
   );
 }
+
 
 export default TrackingPanel;
 //

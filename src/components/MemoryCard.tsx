@@ -1,22 +1,18 @@
-import { Theme } from "../styles/theme";
-import { MiniMap } from "./maps/MiniMap";
+import {
+  Theme,
+} from "../styles/theme";
+
+import {
+  MiniMap,
+} from "./maps/MiniMap";
+
 import MemoryMapCanvas from "./sharing/MemoryMapCanvas";
+
 import logo from "../assets/placeholders/logo-iguide.png";
-import type { MemoryCardData } from "../types/memoryCard";
 
-// Diccionario estático de Slogans e Invitaciones Emocionales de I.GUIDE por categoría
-const EMOTIONAL_MANIFESTO: { [key: string]: { slogan: string; phrase: string } } = {
-  adventure: { slogan: "FEEL THE CITY", phrase: "Conquista paisajes que recordarás toda la vida." },
-  gastronomy: { slogan: "FEEL THE CITY", phrase: "Saborea la ciudad como un verdadero local." },
-  photography: { slogan: "FEEL THE CITY", phrase: "Cada rincón merece una fotografía." },
-  nightlife: { slogan: "FEEL THE CITY", phrase: "Cuando cae la noche, la ciudad despierta." },
-  backpacker: { slogan: "FEEL THE CITY", phrase: "Viaja ligero. Vive más." },
-  family: { slogan: "FEEL THE CITY", phrase: "Los mejores recuerdos se construyen juntos." },
-  couples: { slogan: "FEEL THE CITY", phrase: "Cada lugar es mejor cuando se comparte." },
-  culture: { slogan: "FEEL THE CITY", phrase: "Cada tradición cuenta una historia." },
-  default: { slogan: "FEEL THE CITY", phrase: "Explora la esencia oculta de la ciudad." }
-};
-
+import type {
+  MemoryCardData,
+} from "../types/memoryCard";
 
 type Props = {
   data: MemoryCardData;
@@ -24,220 +20,887 @@ type Props = {
   onDownload?: () => void;
 };
 
-function MemoryCard({ data, onShare, onDownload }: Props) {
-  const hasPhoto = !!data.photo;
+const AUTOMATIC_NOTES = [
+  "guardando la esencia del momento",
+  "guardé un recuerdo durante mi experiencia",
+  "comienza mi aventura con i.guide",
+  "comencé mi aventura hacia",
+  "completé mi línea de exploración",
+  "completé mi línea de exploración con éxito",
+  "un rincón que no aparece en los mapas",
+  "hasta aquí llegó esta parte de la aventura",
+  "el recorrido quedó guardado para continuar descubriendo la ciudad",
+  "cada gran recorrido empieza con un primer paso",
+  "este punto forma parte de mi recorrido hacia",
+  "llegué a",
+  "un momento registrado durante mi recorrido",
+];
 
-  // Extraer el manifiesto emocional basado en la categoría pre-mapeada
-  const interestKey = data.primaryInterest || "default";
-  const categoryMeta = EMOTIONAL_MANIFESTO[interestKey] || EMOTIONAL_MANIFESTO["default"];
+function isUserNote(
+  note?: string
+): boolean {
+  const normalized =
+    note?.trim().toLowerCase() ??
+    "";
 
-  // El formateo estricto ya viene computado en strings limpios desde el motor o stats
-  const formattedDistance = `${data.stats.totalDistanceKm.toFixed(2)} km`;
+  if (!normalized) {
+    return false;
+  }
 
-  // Formateador express nativo en render para la duración
-  const hours = Math.floor(data.stats.durationSeconds / 3600);
-  const minutes = Math.floor((data.stats.durationSeconds % 3600) / 60);
-  const seconds = data.stats.durationSeconds % 60;
-  const pad = (num: number) => String(num).padStart(2, "0");
-  const formattedTime = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return !AUTOMATIC_NOTES.some(
+    (automaticNote) =>
+      normalized.includes(
+        automaticNote
+      )
+  );
+}
+
+function formatDuration(
+  totalSeconds: number
+): string {
+  const hours =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+  const minutes =
+    Math.floor(
+      (totalSeconds % 3600) /
+        60
+    );
+
+  const seconds =
+    totalSeconds % 60;
+
+  const pad = (
+    value: number
+  ) =>
+    String(value).padStart(
+      2,
+      "0"
+    );
+
+  return `${pad(hours)}:${pad(
+    minutes
+  )}:${pad(seconds)}`;
+}
+
+function getJourneyStatus(
+  data: MemoryCardData
+) {
+  const waypoints =
+    data.waypoints ?? [];
+
+  const hasFinish =
+    waypoints.some(
+      (point) =>
+        point.type === "finish"
+    );
+
+  const hasAbort =
+    waypoints.some(
+      (point) =>
+        point.type === "abort"
+    );
+
+  if (hasFinish) {
+    return {
+      label:
+        "Completado",
+
+      icon:
+        "🏁",
+
+      color:
+        "#41E28A",
+
+      background:
+        "rgba(65,226,138,0.10)",
+
+      border:
+        "rgba(65,226,138,0.28)",
+    };
+  }
+
+  if (hasAbort) {
+    return {
+      label:
+        "Ruta conservada",
+
+      icon:
+        "●",
+
+      color:
+        "#FF8A00",
+
+      background:
+        "rgba(255,138,0,0.10)",
+
+      border:
+        "rgba(255,138,0,0.34)",
+    };
+  }
+
+  return {
+    label:
+      "Ruta registrada",
+
+    icon:
+      "🧭",
+
+    color:
+      "#FFFFFF",
+
+    background:
+      "rgba(255,255,255,0.06)",
+
+    border:
+      "rgba(255,255,255,0.11)",
+  };
+}
+
+function MemoryCard({
+  data,
+  onShare,
+  onDownload,
+}: Props) {
+  const hasPhoto =
+    Boolean(data.photo);
+
+  const hasUserNote =
+    isUserNote(data.note);
+
+  const status =
+    getJourneyStatus(data);
+
+  const formattedDistance =
+    `${data.stats.totalDistanceKm.toFixed(
+      2
+    )} km`;
+
+  const formattedTime =
+    formatDuration(
+      data.stats.durationSeconds
+    );
 
   return (
-    <div
+    <article
       style={{
-        borderRadius: "24px",
-        overflow: "hidden",
-        backgroundColor: "#161616",
-        backgroundImage: hasPhoto ? `url(${data.photo})` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        position: "relative",
-        width: "min(86vw, 330px)",
-        minHeight: "560px",
-        height: "auto",
-        boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
-        border: "1px solid rgba(255, 255, 255, 0.04)"
+        width:
+          "min(88vw, 350px)",
+
+        boxSizing:
+          "border-box",
+
+        overflow:
+          "hidden",
+
+        borderRadius:
+          "24px",
+
+        background:
+          "linear-gradient(180deg, #1B1B1B 0%, #101010 100%)",
+
+        border:
+          "1px solid rgba(255,255,255,0.08)",
+
+        boxShadow:
+          "0 22px 50px rgba(0,0,0,0.48)",
+
+        color:
+          "#FFFFFF",
       }}
     >
-      {/* SI NO HAY FOTO: Canvas vectorial inyectado dinámicamente de fondo */}
-      {!hasPhoto && data.mapBackground && (
-        <MemoryMapCanvas
-          center={data.mapBackground.center}
-          path={data.mapBackground.path}
-          memories={data.mapBackground.memories}
+      {/* MARCA Y NOMBRE */}
+      <header
+        style={{
+          display:
+            "flex",
+
+          alignItems:
+            "center",
+
+          gap:
+            "11px",
+
+          padding:
+            "18px 18px 15px",
+
+          borderBottom:
+            "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <img
+          src={logo}
+          alt="I.GUIDE"
+          style={{
+            width:
+              "38px",
+
+            height:
+              "38px",
+
+            flexShrink:
+              0,
+
+            objectFit:
+              "contain",
+
+            borderRadius:
+              "8px",
+
+            backgroundColor:
+              "#FFFFFF",
+          }}
         />
-      )}
 
-      {/* Capa cinemática multinivel para protección tipográfica */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        background: "linear-gradient(to top, rgba(10,10,10,1) 0%, rgba(10,10,10,0.4) 50%, rgba(10,10,10,0.8) 100%)",
-        zIndex: 1
-      }} />
+        <div
+          style={{
+            minWidth:
+              0,
 
-      {/* RENDERIZADO VISUAL PURO DE DATOS PRECALCULADOS */}
-<div
-  style={{
-    position: "relative",
-    minHeight: "560px",
-    boxSizing: "border-box",
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    gap: "16px",
-    color: "#FFFFFF",
-    zIndex: 2,
-  }}
->
-       {/* Header Superior */}
-<div>
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "9px",
-      marginBottom: "6px",
-    }}
-  >
-    <img
-      src={logo}
-      alt="I.GUIDE"
-      style={{
-        width: "28px",
-        height: "28px",
-        objectFit: "contain",
-        flexShrink: 0,
-      }}
-    />
+            flex:
+              1,
+          }}
+        >
+          <span
+            style={{
+              display:
+                "block",
 
-    <div>
-      <span
-        style={{
-          display: "block",
-          fontSize: "10px",
-          fontWeight: 800,
-          color: Theme.Colors.primary,
-          letterSpacing: "1px",
-          textTransform: "uppercase",
-        }}
-      >
-        {categoryMeta.slogan}
-      </span>
+              color:
+                Theme.Colors.primary,
 
-      <h2
-        style={{
-          margin: "1px 0 0",
-          fontSize: "18px",
-          fontWeight: 800,
-          letterSpacing: "-0.5px",
-        }}
-      >
-        {data.title}
-      </h2>
-    </div>
-  </div>
-          {data.placeLabel && (
-  <p
-    style={{
-      margin: "2px 0",
-      fontSize: "11px",
-      opacity: 0.75
-    }}
-  >
-    📍 {data.placeLabel}
-  </p>
-)}
-          <p style={{ margin: 0, fontSize: "11px", opacity: 0.6 }}>{data.city} · {data.date}</p>
+              fontSize:
+                "10px",
+
+              fontWeight:
+                850,
+
+              letterSpacing:
+                "0.13em",
+
+              textTransform:
+                "uppercase",
+            }}
+          >
+            Feel the City
+          </span>
+
+          <h2
+            style={{
+              margin:
+                "3px 0 0",
+
+              color:
+                "#FFFFFF",
+
+              fontSize:
+                "20px",
+
+              lineHeight:
+                1.12,
+
+              fontWeight:
+                850,
+
+              overflowWrap:
+                "anywhere",
+            }}
+          >
+            {data.title}
+          </h2>
         </div>
+      </header>
 
-        {/* Crónica Urbana Central */}
-        <div style={{ margin: "auto 0", padding: "8px 0" }}>
-          <p style={{ margin: "0 0 12px 0", fontSize: "13.5px", fontStyle: "italic", fontWeight: 400, lineHeight: "1.4", color: "#F3F4F6" }}>
-            "{data.note || "Guardando la esencia del momento en la ruta..."}"
-          </p>
+      {/* UBICACIÓN */}
+      <section
+        style={{
+          padding:
+            "12px 18px 0",
+
+          textAlign:
+            "center",
+        }}
+      >
+        {data.placeLabel && (
           <p
-  style={{
-    margin: 0,
-    fontSize: "11px",
-    fontWeight: 600,
-    color: "#FFFFFF",
-    opacity: 0.82,
-    textTransform: "uppercase",
-    lineHeight: 1.45,
-  }}
->
-  ✨ {categoryMeta.phrase}
-</p>
-        </div>
+            style={{
+              margin:
+                "0 0 5px",
 
-        {/* Panel Inferior Cuantitativo */}
-        <div>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "6px",
-            backgroundColor: "rgba(255,255,255,0.03)",
-            padding: "8px",
-            borderRadius: "12px",
-            marginBottom: "12px",
-            textAlign: "center"
-          }}>
-            <div>
-              <span style={{ fontSize: "8px", opacity: 0.4, textTransform: "uppercase" }}>Distancia</span>
-              <p style={{ margin: "2px 0 0 0", fontSize: "12px", fontWeight: 700, fontFamily: "monospace" }}>{formattedDistance}</p>
-            </div>
-            <div>
-              <span style={{ fontSize: "8px", opacity: 0.4, textTransform: "uppercase" }}>Tiempo</span>
-              <p style={{ margin: "2px 0 0 0", fontSize: "12px", fontWeight: 700, fontFamily: "monospace" }}>{formattedTime}</p>
-            </div>
-            <div>
-              <span style={{ fontSize: "8px", opacity: 0.4, textTransform: "uppercase" }}>Hitos</span>
-              <p style={{ margin: "2px 0 0 0", fontSize: "12px", fontWeight: 700, color: Theme.Colors.primary }}>{data.stats.totalMemories} 🔮</p>
-            </div>
+              color:
+                "rgba(255,255,255,0.72)",
+
+              fontSize:
+                "12px",
+
+              lineHeight:
+                1.4,
+            }}
+          >
+            📍 {data.placeLabel}
+          </p>
+        )}
+
+        <p
+          style={{
+            margin:
+              0,
+
+            color:
+              "rgba(255,255,255,0.45)",
+
+            fontSize:
+              "11px",
+          }}
+        >
+          {data.city} · {data.date}
+        </p>
+      </section>
+
+      {/* MAPA O FOTOGRAFÍA PROTAGONISTA */}
+      <section
+        style={{
+          position:
+            "relative",
+
+          height:
+            "310px",
+
+          margin:
+            "14px 14px 0",
+
+          overflow:
+            "hidden",
+
+          borderRadius:
+            "18px",
+
+          backgroundColor:
+            "#080808",
+
+          border:
+            "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        {hasPhoto ? (
+          <img
+            src={data.photo}
+            alt={`Recuerdo de ${data.title}`}
+            style={{
+              position:
+                "absolute",
+
+              inset:
+                0,
+
+              width:
+                "100%",
+
+              height:
+                "100%",
+
+              objectFit:
+                "cover",
+
+              display:
+                "block",
+            }}
+          />
+        ) : data.mapBackground ? (
+          <MemoryMapCanvas
+            center={
+              data.mapBackground
+                .center
+            }
+            path={
+              data.mapBackground
+                .path
+            }
+            memories={
+              data.mapBackground
+                .memories
+            }
+          />
+        ) : (
+          <div
+            style={{
+              position:
+                "absolute",
+
+              inset:
+                0,
+
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              justifyContent:
+                "center",
+
+              color:
+                "rgba(255,255,255,0.42)",
+
+              fontSize:
+                "11px",
+            }}
+          >
+            Preparando visualización…
+          </div>
+        )}
+
+        {/* Degradado mínimo */}
+        <div
+          aria-hidden="true"
+          style={{
+            position:
+              "absolute",
+
+            inset:
+              0,
+
+            background:
+              "linear-gradient(to top, rgba(4,4,4,0.28), transparent 44%)",
+
+            pointerEvents:
+              "none",
+          }}
+        />
+
+        {/* NOTA REAL DEL USUARIO: MÁXIMO 1/4 DEL ÁREA */}
+        {hasUserNote && (
+          <div
+            style={{
+              position:
+                "absolute",
+
+              left:
+                "12px",
+
+              right:
+                "12px",
+
+              bottom:
+                "12px",
+
+              zIndex:
+                3,
+
+              maxHeight:
+                "72px",
+
+              overflow:
+                "hidden",
+
+              padding:
+                "9px 11px",
+
+              borderRadius:
+                "12px",
+
+              background:
+                "rgba(8,8,8,0.78)",
+
+              border:
+                "1px solid rgba(255,255,255,0.09)",
+
+              backdropFilter:
+                "blur(9px)",
+            }}
+          >
+            <p
+              style={{
+                margin:
+                  0,
+
+                color:
+                  "#FFFFFF",
+
+                fontSize:
+                  "11px",
+
+                lineHeight:
+                  1.4,
+
+                fontStyle:
+                  "italic",
+
+                fontWeight:
+                  550,
+
+                textAlign:
+                  "left",
+
+                display:
+                  "-webkit-box",
+
+                WebkitLineClamp:
+                  3,
+
+                WebkitBoxOrient:
+                  "vertical",
+
+                overflow:
+                  "hidden",
+              }}
+            >
+              “{data.note?.trim()}”
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* MÉTRICAS */}
+      <section
+        style={{
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "repeat(3, minmax(0, 1fr))",
+
+          gap:
+            "7px",
+
+          margin:
+            "12px 14px 0",
+
+          padding:
+            "12px 8px",
+
+          borderRadius:
+            "14px",
+
+          backgroundColor:
+            "rgba(255,255,255,0.045)",
+
+          border:
+            "1px solid rgba(255,255,255,0.06)",
+
+          textAlign:
+            "center",
+        }}
+      >
+        <Metric
+          label="Distancia"
+          value={
+            formattedDistance
+          }
+        />
+
+        <Metric
+          label="Tiempo"
+          value={
+            formattedTime
+          }
+        />
+
+        <Metric
+          label="Hitos"
+          value={`${data.stats.totalMemories} 🔮`}
+          accent
+        />
+      </section>
+
+      {/* TIMELINE */}
+      {data.waypoints &&
+        data.waypoints.length > 0 && (
+          <div
+            style={{
+              margin:
+                "10px 14px 0",
+            }}
+          >
+            <MiniMap
+              nodes={
+                data.waypoints
+              }
+              height="82px"
+              theme="dark"
+            />
+          </div>
+        )}
+
+      {/* ESTADO Y ACCIONES */}
+      <footer
+        style={{
+          padding:
+            "14px 14px 11px",
+        }}
+      >
+        <div
+          style={{
+            display:
+              "flex",
+
+            alignItems:
+              "center",
+
+            justifyContent:
+              "space-between",
+
+            gap:
+              "9px",
+
+            flexWrap:
+              "wrap",
+          }}
+        >
+          <div
+            style={{
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              gap:
+                "7px",
+
+              minHeight:
+                "40px",
+
+              boxSizing:
+                "border-box",
+
+              padding:
+                "7px 11px",
+
+              borderRadius:
+                "999px",
+
+              background:
+                status.background,
+
+              border:
+                `1px solid ${status.border}`,
+
+              color:
+                status.color,
+
+              fontSize:
+                "10px",
+
+              fontWeight:
+                800,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                color:
+                  status.color,
+
+                fontSize:
+                  "15px",
+
+                lineHeight:
+                  1,
+              }}
+            >
+              {status.icon}
+            </span>
+
+            <span>
+              {status.label}
+            </span>
           </div>
 
-          {/* MiniMap del Trayecto Acoplado de Forma Reutilizable */}
-          {data.waypoints && data.waypoints.length > 0 && (
-            <div style={{ marginBottom: "12px" }}>
-              <MiniMap nodes={data.waypoints} height="65px" theme="dark" />
-            </div>
-          )}
+          <div
+            style={{
+              display:
+                "flex",
 
-          {/* Branding y Acciones */}
-           {/* Contenedor del Logo (Cerrado Correctamente) */}
-            
+              alignItems:
+                "center",
 
-          <div style={{ display: "flex", gap: "6px" }}>
+              gap:
+                "7px",
+            }}
+          >
             {onDownload && (
               <button
-                onClick={onDownload}
-                style={{ background: "rgba(255,255,255,0.06)", border: "none", color: "#fff", padding: "6px 10px", borderRadius: "8px", cursor: "pointer" }}
+                type="button"
+                onClick={
+                  onDownload
+                }
+                aria-label="Descargar imagen"
+                title="Descargar imagen"
+                style={{
+                  width:
+                    "42px",
+
+                  height:
+                    "40px",
+
+                  borderRadius:
+                    "12px",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.11)",
+
+                  background:
+                    "rgba(255,255,255,0.06)",
+
+                  color:
+                    "#FFFFFF",
+
+                  cursor:
+                    "pointer",
+
+                  fontSize:
+                    "17px",
+
+                  fontWeight:
+                    800,
+                }}
               >
-                💾
+                ↓
               </button>
             )}
+
             <button
-              onClick={onShare}
+              type="button"
+              onClick={
+                onShare
+              }
               style={{
-                padding: "6px 14px",
-                borderRadius: Theme.Radius.pill,
-                border: "none",
-                backgroundColor: Theme.Colors.primary,
-                color: "#fff",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: "0 4px 10px rgba(255,0,122,0.3)"
+                minHeight:
+                  "40px",
+
+                padding:
+                  "8px 18px",
+
+                border:
+                  "none",
+
+                borderRadius:
+                  Theme.Radius.pill,
+
+                backgroundColor:
+                  Theme.Colors.primary,
+
+                color:
+                  "#FFFFFF",
+
+                fontSize:
+                  "12px",
+
+                fontWeight:
+                  800,
+
+                cursor:
+                  "pointer",
+
+                boxShadow:
+                  "0 5px 14px rgba(255,0,122,0.30)",
               }}
             >
               Compartir
             </button>
           </div>
         </div>
-      </div>
+
+        <p
+          style={{
+            margin:
+              "14px 0 0",
+
+            color:
+              "rgba(255,255,255,0.32)",
+
+            fontSize:
+              "8px",
+
+            fontWeight:
+              750,
+
+            letterSpacing:
+              "0.08em",
+
+            textAlign:
+              "center",
+
+            textTransform:
+              "uppercase",
+          }}
+        >
+          Explora la esencia oculta de la ciudad.
+        </p>
+      </footer>
+    </article>
+  );
+}
+
+type MetricProps = {
+  label: string;
+  value: string;
+  accent?: boolean;
+};
+
+function Metric({
+  label,
+  value,
+  accent = false,
+}: MetricProps) {
+  return (
+    <div
+      style={{
+        minWidth:
+          0,
+      }}
+    >
+      <span
+        style={{
+          display:
+            "block",
+
+          color:
+            "rgba(255,255,255,0.38)",
+
+          fontSize:
+            "8px",
+
+          textTransform:
+            "uppercase",
+
+          letterSpacing:
+            "0.03em",
+        }}
+      >
+        {label}
+      </span>
+
+      <strong
+        style={{
+          display:
+            "block",
+
+          marginTop:
+            "5px",
+
+          color:
+            accent
+              ? Theme.Colors.primary
+              : "#FFFFFF",
+
+          fontSize:
+            "12px",
+
+          fontFamily:
+            "monospace",
+
+          whiteSpace:
+            "nowrap",
+        }}
+      >
+        {value}
+      </strong>
     </div>
-    );
+  );
 }
 
 export default MemoryCard;

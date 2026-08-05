@@ -29,238 +29,280 @@ export function MiniMap({
       <div
         style={{
           height,
+
+          borderRadius:
+            Theme.Radius.medium,
+
+          display: "flex",
+
+          alignItems:
+            "center",
+
+          justifyContent:
+            "center",
+
           backgroundColor:
             theme === "dark"
               ? "#0C0C0F"
               : "#F4F4F5",
-          borderRadius: Theme.Radius.medium,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+
           border:
-            theme === "dark"
-              ? "1px dashed rgba(255,255,255,0.08)"
-              : "1px dashed rgba(0,0,0,0.12)",
+            "1px dashed rgba(255,255,255,0.08)",
+
           color:
-            theme === "dark"
-              ? "#71717A"
-              : "#71717A",
-          fontSize: "11px",
-          fontFamily: "monospace",
+            "#71717A",
+
+          fontSize:
+            "10px",
         }}
       >
-        📍 Sin registros de geolocalización
+        Sin recorrido registrado
       </div>
     );
   }
 
-  const finishNode = [...nodes]
-    .reverse()
-    .find(
-      (node) => node.type === "finish"
+  const hasFinish =
+    nodes.some(
+      (node) =>
+        node.type === "finish"
     );
 
-  const abortNode = [...nodes]
-    .reverse()
-    .find(
-      (node) => node.type === "abort"
+  const hasAbort =
+    nodes.some(
+      (node) =>
+        node.type === "abort"
     );
 
-  const memoryCount = nodes.filter(
-    (node) => node.type === "memory"
-  ).length;
+  const endColor =
+    hasFinish
+      ? "#41E28A"
+      : hasAbort
+        ? "#FF8A00"
+        : Theme.Colors.primary;
 
-  const isCompleted = Boolean(finishNode);
-
-  const isAbandoned = Boolean(
-    abortNode && !finishNode
-  );
-
-  const statusColor = isCompleted
-    ? "#41E28A"
-    : isAbandoned
-      ? "#FF8A00"
-      : Theme.Colors.primary;
-
-  const statusLabel = isCompleted
-    ? "🏁 COMPLETADO"
-    : isAbandoned
-      ? "🟠 CONSERVADO"
-      : "🧭 EN CURSO";
+  const memoryNodes =
+    nodes.filter(
+      (node) =>
+        node.type === "memory"
+    );
 
   return (
     <div
       className="iguide-minimap"
       style={{
         height,
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: "16px",
+
+        position:
+          "relative",
+
+        overflow:
+          "hidden",
+
+        borderRadius:
+          "14px",
+
         border:
           theme === "dark"
             ? "1px solid rgba(255,255,255,0.06)"
             : "1px solid rgba(0,0,0,0.08)",
+
         backgroundColor:
           theme === "dark"
             ? "#09090B"
             : "#FFFFFF",
-        cursor: interactive
-          ? "grab"
-          : "default",
+
+        cursor:
+          interactive
+            ? "grab"
+            : "default",
       }}
     >
-      {/* Fondo discreto */}
+      {/* Fondo */}
       <div
         aria-hidden="true"
         style={{
-          position: "absolute",
+          position:
+            "absolute",
+
           inset: 0,
+
           opacity:
             theme === "dark"
-              ? 0.22
-              : 0.38,
+              ? 0.18
+              : 0.30,
+
           backgroundImage:
             theme === "dark"
-              ? "radial-gradient(rgba(255,255,255,0.18) 1px, transparent 1px)"
+              ? "radial-gradient(rgba(255,255,255,0.20) 1px, transparent 1px)"
               : "radial-gradient(rgba(0,0,0,0.10) 1px, transparent 1px)",
-          backgroundSize: "15px 15px",
+
+          backgroundSize:
+            "14px 14px",
         }}
       />
 
-      {/* Ruta visual resumida */}
+      {/* Línea principal */}
       <div
         aria-hidden="true"
         style={{
-          position: "absolute",
-          left: "13%",
-          right: "13%",
-          top: "52%",
-          height: "4px",
-          borderRadius: "999px",
-          backgroundColor:
-            statusColor,
-          opacity: 0.88,
+          position:
+            "absolute",
+
+          left:
+            "10%",
+
+          right:
+            "10%",
+
+          top:
+            "50%",
+
+          height:
+            "4px",
+
+          borderRadius:
+            "999px",
+
+          background:
+            `linear-gradient(90deg, ${Theme.Colors.primary}, ${endColor})`,
+
           transform:
-            "rotate(-4deg)",
-          boxShadow: `0 0 12px ${statusColor}55`,
-        }}
-      />
+            "translateY(-50%) rotate(-3deg)",
 
-      {/* Punto inicial */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          left: "10%",
-          top: "46%",
-          width: "12px",
-          height: "12px",
-          borderRadius: "50%",
-          backgroundColor:
-            Theme.Colors.primary,
-          border: "2px solid #FFFFFF",
-          zIndex: 2,
           boxShadow:
-            "0 0 10px rgba(255,0,122,0.35)",
+            `0 0 13px ${Theme.Colors.primary}55`,
         }}
       />
 
-      {/* Punto final o abandono */}
+      {/* Inicio */}
       <div
         aria-hidden="true"
         style={{
-          position: "absolute",
-          right: "10%",
-          top: "41%",
-          width: "14px",
-          height: "14px",
-          borderRadius: "50%",
+          position:
+            "absolute",
+
+          left:
+            "8%",
+
+          top:
+            "50%",
+
+          width:
+            "12px",
+
+          height:
+            "12px",
+
+          transform:
+            "translateY(-50%)",
+
+          borderRadius:
+            "50%",
+
           backgroundColor:
-            statusColor,
-          border: "2px solid #FFFFFF",
-          zIndex: 2,
-          boxShadow: `0 0 10px ${statusColor}55`,
+            "#6D163E",
+
+          border:
+            "2px solid #FFFFFF",
+
+          zIndex: 3,
         }}
       />
 
-      {/* Estado superior único */}
-      <div
-        style={{
-          position: "absolute",
-          top: "9px",
-          right: "9px",
-          zIndex: 3,
-          padding: "4px 8px",
-          borderRadius: "999px",
-          backgroundColor:
-            "rgba(9,9,11,0.88)",
-          border: `1px solid ${statusColor}55`,
-          color: statusColor,
-          fontSize: "9px",
-          fontWeight: 800,
-          fontFamily: "monospace",
-          letterSpacing: "0.03em",
-        }}
-      >
-        {statusLabel}
-      </div>
+      {/* Recuerdos */}
+      {memoryNodes.map(
+        (node, index) => {
+          const progress =
+            (index + 1) /
+            (memoryNodes.length + 1);
 
-      {/* Inicio superior izquierdo */}
+          const left =
+            10 + progress * 78;
+
+          const verticalOffset =
+            index % 2 === 0
+              ? -7
+              : 5;
+
+          return (
+            <div
+              key={`${node.lat}-${node.lng}-${index}`}
+              aria-hidden="true"
+              style={{
+                position:
+                  "absolute",
+
+                left:
+                  `${left}%`,
+
+                top:
+                  `calc(50% + ${verticalOffset}px)`,
+
+                width:
+                  "10px",
+
+                height:
+                  "10px",
+
+                transform:
+                  "translate(-50%, -50%)",
+
+                borderRadius:
+                  "50%",
+
+                backgroundColor:
+                  Theme.Colors.primary,
+
+                border:
+                  "2px solid #FFFFFF",
+
+                zIndex: 3,
+
+                boxShadow:
+                  "0 0 8px rgba(255,0,122,0.55)",
+              }}
+            />
+          );
+        }
+      )}
+
+      {/* Final, abandono o ruta activa */}
       <div
+        aria-hidden="true"
         style={{
-          position: "absolute",
-          top: "9px",
-          left: "9px",
-          zIndex: 3,
-          padding: "4px 8px",
-          borderRadius: "999px",
+          position:
+            "absolute",
+
+          right:
+            "8%",
+
+          top:
+            "50%",
+
+          width:
+            "14px",
+
+          height:
+            "14px",
+
+          transform:
+            "translateY(-50%)",
+
+          borderRadius:
+            "50%",
+
           backgroundColor:
-            "rgba(9,9,11,0.88)",
+            endColor,
+
           border:
-            "1px solid rgba(255,0,122,0.30)",
-          color:
-            Theme.Colors.primary,
-          fontSize: "9px",
-          fontWeight: 800,
-          fontFamily: "monospace",
-        }}
-      >
-        🚀 INICIO
-      </div>
+            "2px solid #FFFFFF",
 
-      {/* Resumen inferior */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "9px",
-          left: "9px",
-          right: "9px",
           zIndex: 3,
-          display: "flex",
-          justifyContent:
-            "space-between",
-          alignItems: "center",
-          gap: "8px",
-          padding: "5px 8px",
-          borderRadius: "9px",
-          backgroundColor:
-            "rgba(9,9,11,0.88)",
-          border:
-            "1px solid rgba(255,255,255,0.06)",
-          color: "#D4D4D8",
-          fontSize: "9px",
-          fontFamily: "monospace",
-        }}
-      >
-        <span>🧭 Ruta registrada</span>
 
-        <span>
-          🔮 {memoryCount}{" "}
-          {memoryCount === 1
-            ? "recuerdo"
-            : "recuerdos"}
-        </span>
-      </div>
+          boxShadow:
+            `0 0 10px ${endColor}66`,
+        }}
+      />
     </div>
   );
 }

@@ -1,31 +1,164 @@
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+} from "react-router-dom";
 
-import { catalog } from "../data/catalog";
-import { loadUserProfile } from "../data/user";
+import {
+  catalog,
+} from "../data/catalog";
 
-import { getRecommendations } from "../engine/recommendationEngine";
-import { getHospesMessage } from "../engine/hospesContextEngine";
-import { selectHomeExperience } from "../engine/homeRecommendationEngine";
+import {
+  loadUserProfile,
+} from "../data/user";
 
-import { useWeather } from "../context/WeatherContext";
+import {
+  getRecommendations,
+} from "../engine/recommendationEngine";
+
+import {
+  getHospesMessage,
+} from "../engine/hospesContextEngine";
+
+import {
+  selectHomeExperience,
+} from "../engine/homeRecommendationEngine";
+
+import {
+  useWeather,
+} from "../context/WeatherContext";
 
 import Hero from "./Hero";
-import HospesBanner from "./hospes/HospesBanner";
-import MoodCarousel from "./MoodCarousel";
-import PlaceHighlightCard from "./PlaceHighlightCard";
 
-import { Theme } from "../styles/theme";
+import HospesBanner from "./hospes/HospesBanner";
+
+import QuickActionsGrid from "./home/QuickActionsGrid";
+
+import {
+  Theme,
+} from "../styles/theme";
+
+import type {
+  Experience,
+} from "../types/experience";
+
+import pachamancaImage from "../assets/placeholders/pachamanca.webp";
+import cerritoImage from "../assets/placeholders/cerrito-libertad.webp";
+import santiagoImage from "../assets/placeholders/fiesta-santiago.webp";
+
+
+function getSearchableText(
+  experience: Experience
+): string {
+  return [
+    experience.title,
+    experience.description,
+    experience.type,
+    ...(experience.tags ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function findFoodExperience(
+  experiences: Experience[]
+): Experience | null {
+  return (
+    experiences.find(
+      (experience) =>
+        experience.type ===
+          "restaurant" ||
+        experience.type ===
+          "cafe"
+    ) ?? null
+  );
+}
+
+function findCornerExperience(
+  experiences: Experience[]
+): Experience | null {
+  const preferred =
+    experiences.find(
+      (experience) => {
+        const text =
+          getSearchableText(
+            experience
+          );
+
+        return (
+          experience.type ===
+            "expedition" &&
+          [
+            "mirador",
+            "fotografía",
+            "fotografia",
+            "oculto",
+            "rincón",
+            "rincon",
+            "cerrito",
+            "torre torre",
+          ].some((term) =>
+            text.includes(term)
+          )
+        );
+      }
+    );
+
+  return (
+    preferred ??
+    experiences.find(
+      (experience) =>
+        experience.type ===
+        "expedition"
+    ) ??
+    null
+  );
+}
+
+function findSurpriseExperience(
+  experiences: Experience[]
+): Experience | null {
+  const festival =
+    experiences.find(
+      (experience) =>
+        experience.type ===
+        "festival"
+    );
+
+  if (festival) {
+    return festival;
+  }
+
+  return (
+    experiences.find(
+      (experience) => {
+        const text =
+          getSearchableText(
+            experience
+          );
+
+        return [
+          "evento",
+          "fiesta",
+          "feria",
+          "tradición",
+          "tradicion",
+          "patronal",
+          "local",
+        ].some((term) =>
+          text.includes(term)
+        );
+      }
+    ) ?? null
+  );
+}
 
 function HomeLayout() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const profile = loadUserProfile();
+  const profile =
+    loadUserProfile();
 
-  /*
-   * ÚNICA FUENTE METEOROLÓGICA:
-   * WeatherProvider consulta la API y comparte
-   * el mismo clima con toda la aplicación.
-   */
   const {
     weather: liveWeather,
     isLoading: weatherLoading,
@@ -36,40 +169,117 @@ function HomeLayout() {
       profile,
     });
 
-  /*
-   * Hospes no toma automáticamente el primer
-   * resultado. El motor filtra según hora y clima.
-   */
+  const availableExperiences =
+    recommendations.length > 0
+      ? recommendations
+      : catalog;
+
   const suggestedExperience =
     selectHomeExperience({
       experiences:
-        recommendations.length > 0
-          ? recommendations
-          : catalog,
+        availableExperiences,
+
       weather: liveWeather,
     });
 
   const hospesMessage =
     getHospesMessage({
       screen: "home",
-      userName: profile.name,
-      weather: liveWeather,
+
+      userName:
+        profile.name,
+
+      weather:
+        liveWeather,
+
       suggestedExperience,
     });
 
-  const highlights =
-    recommendations.length > 0
-      ? recommendations.slice(0, 4)
-      : catalog.slice(0, 4);
+  const foodExperience =
+    findFoodExperience(
+      availableExperiences
+    ) ??
+    findFoodExperience(
+      catalog
+    );
+
+  const cornerExperience =
+    findCornerExperience(
+      availableExperiences
+    ) ??
+    findCornerExperience(
+      catalog
+    );
+
+  const surpriseExperience =
+    findSurpriseExperience(
+      availableExperiences
+    ) ??
+    findSurpriseExperience(
+      catalog
+    );
+
+  const totalExperiences =
+    catalog.filter(
+      (experience) =>
+        experience.isActive !==
+        false
+    ).length;
+
+  const visitedCount =
+    new Set(
+      profile.visitedExperiences
+    ).size;
+
+  const progressPercent =
+    totalExperiences > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (visitedCount /
+              totalExperiences) *
+              100
+          )
+        )
+      : 0;
+
+  const currentLevelXp =
+    profile.experience % 300;
+
+  const xpToNextLevel =
+    currentLevelXp === 0 &&
+    profile.experience > 0
+      ? 300
+      : 300 -
+        currentLevelXp;
+
+  function openExperience(
+    experience:
+      | Experience
+      | null
+  ) {
+    if (!experience) {
+      navigate("/explorer");
+      return;
+    }
+
+    navigate(
+      `/expedition/${experience.slug}`
+    );
+  }
 
   function handleHospesAction() {
-    const action = hospesMessage.action;
+    const action =
+      hospesMessage.action;
 
     if (!action) {
       return;
     }
 
-    if (action.type === "open-experience") {
+    if (
+      action.type ===
+      "open-experience"
+    ) {
       navigate(
         `/expedition/${action.target}`
       );
@@ -80,76 +290,119 @@ function HomeLayout() {
     navigate(action.target);
   }
 
+  const quickActions = [
+   {
+  id: "food",
+  title: "Comer increíble",
+  subtitle: "Sabores que los locales recomiendan",
+  icon: "🍽️",
+  image: pachamancaImage,
+  accent: "#FF00FF",
+  onClick: () =>
+    openExperience(foodExperience),
+},
+{
+  id: "corners",
+  title: "Descubrir rincones",
+  subtitle: "Miradores, historias y lugares ocultos",
+  icon: "📷",
+  image: cerritoImage,
+  accent: "#FF00FF",
+  onClick: () =>
+    openExperience(cornerExperience),
+},
+{
+  id: "surprise",
+  title: "Sorpresa local",
+  subtitle: "Algo que Huancayo está viviendo hoy",
+  icon: "🎉",
+  image: santiagoImage,
+  accent: "#FF8A00",
+  onClick: () =>
+    openExperience(surpriseExperience),
+},
+    {
+      id: "nearby",
+
+      title:
+        "Cerca de ti",
+
+      subtitle:
+        "Abre el mapa y descubre qué tienes alrededor",
+
+      icon: "📍",
+
+      accent:
+        "#FF00FF",
+
+      variant:
+        "map" as const,
+
+      onClick: () =>
+        navigate("/mapa"),
+    },
+  ];
+
   return (
     <div
       style={{
         display: "flex",
-        flexDirection: "column",
-        gap: Theme.Space.lg,
+
+        flexDirection:
+          "column",
+
+        gap: "12px",
+
         width: "100%",
+
         minWidth: 0,
+
+        paddingBottom:
+          Theme.Space.xl,
       }}
     >
       <Hero
-        weather={liveWeather}
+        weather={
+          liveWeather
+        }
         isWeatherLoading={
           weatherLoading
         }
       />
 
       <HospesBanner
-        message={hospesMessage}
+        message={
+          hospesMessage
+        }
         onAction={
           handleHospesAction
         }
+        progress={{
+          level:
+            profile.level,
+
+          xp:
+            profile.experience,
+
+          xpToNextLevel,
+
+          progressPercent,
+
+          visitedCount,
+
+          totalCount:
+            totalExperiences,
+        }}
+        onProgressClick={() =>
+          navigate("/perfil")
+        }
       />
 
-      <MoodCarousel />
-
-      <section>
-        <h2
-          style={{
-            color: Theme.Colors.text,
-            fontSize: "20px",
-            marginBottom: "14px",
-          }}
-        >
-          Seleccionado para ti
-        </h2>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent:
-              "flex-start",
-            width: "100%",
-            paddingLeft: "8px",
-            margin: 0,
-            boxSizing: "border-box",
-            gap: "16px",
-            overflowX: "auto",
-          }}
-        >
-          {highlights.map(
-            (experience) => (
-              <div
-                key={
-                  experience.experienceId
-                }
-                style={{
-                  minWidth: "260px",
-                }}
-              >
-                <PlaceHighlightCard
-                  expedition={
-                    experience
-                  }
-                />
-              </div>
-            )
-          )}
-        </div>
-      </section>
+      <QuickActionsGrid
+        actions={
+          quickActions
+        }
+      />
     </div>
   );
 }

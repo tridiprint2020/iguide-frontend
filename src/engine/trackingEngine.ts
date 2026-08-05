@@ -671,7 +671,54 @@ export function addMemoryToTrack(
   );
   saveTrack(track);
 }
+export function updateMemoryNote(
+  experienceId: string,
+  memoryId: string,
+  note: string
+): ExpeditionTrack | null {
+  const track = loadTrack(
+    experienceId
+  );
 
+  if (!track) {
+    console.warn(
+      "No se encontró el recorrido para actualizar la nota:",
+      experienceId
+    );
+
+    return null;
+  }
+
+  const memoryItem =
+    track.timeline.find(
+      (item) =>
+        item.id === memoryId &&
+        item.type === "memory"
+    );
+
+  if (!memoryItem) {
+    console.warn(
+      "No se encontró la memoria dentro del recorrido:",
+      memoryId
+    );
+
+    return null;
+  }
+
+  const cleanNote =
+    note.trim();
+
+  if (cleanNote) {
+    memoryItem.note =
+      cleanNote;
+  } else {
+    delete memoryItem.note;
+  }
+
+  saveTrack(track);
+
+  return track;
+}
 /**
  * Registra el punto donde el usuario decidió abandonar
  * una expedición sin certificarla como completada.

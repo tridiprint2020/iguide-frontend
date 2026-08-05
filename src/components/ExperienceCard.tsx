@@ -15,41 +15,74 @@ import {
 } from "../engine/noriEngine";
 
 import {
-  Theme,
-} from "../styles/theme";
-
-import {
   useJourney,
 } from "../context/JourneyContext";
 
 import FavoriteButton from "./FavoriteButton";
 
+import {
+  Theme,
+} from "../styles/theme";
+
 type Props = {
   expedition: Experience;
+
+  onStarted?: () => void;
 };
 
 function ExperienceCard({
   expedition,
+  onStarted,
 }: Props) {
   const [
     showHint,
     setShowHint,
   ] = useState(false);
 
+  const [
+    isStarting,
+    setIsStarting,
+  ] = useState(false);
+
   const {
     startWalking,
   } = useJourney();
 
+  function handleStart() {
+    if (isStarting) {
+      return;
+    }
+
+    setIsStarting(true);
+
+    try {
+      startWalking(
+        expedition
+      );
+
+      onStarted?.();
+    } finally {
+      /*
+       * La obtención del GPS es asíncrona.
+       * Liberamos el botón después de un breve
+       * margen para impedir múltiples pulsaciones.
+       */
+      window.setTimeout(
+        () =>
+          setIsStarting(false),
+        1800
+      );
+    }
+  }
+
   return (
     <article
       className="ig-hover"
-      onClick={() =>
-        startWalking(
-          expedition
-        )
-      }
       style={{
         position: "relative",
+
+        boxSizing:
+          "border-box",
 
         border:
           `1px solid ${Theme.Colors.textSoft}22`,
@@ -65,8 +98,6 @@ function ExperienceCard({
 
         color:
           Theme.Colors.text,
-
-        cursor: "pointer",
 
         transition:
           "transform 0.2s, box-shadow 0.2s",
@@ -92,19 +123,11 @@ function ExperienceCard({
       </div>
 
       <div
-        onMouseEnter={(
-          event
-        ) => {
-          event.stopPropagation();
-
-          setShowHint(
-            true
-          );
-        }}
+        onMouseEnter={() =>
+          setShowHint(true)
+        }
         onMouseLeave={() =>
-          setShowHint(
-            false
-          )
+          setShowHint(false)
         }
         style={{
           position:
@@ -114,7 +137,7 @@ function ExperienceCard({
             "inline-block",
 
           maxWidth:
-            "calc(100% - 54px)",
+            "calc(100% - 58px)",
         }}
       >
         <h2
@@ -135,54 +158,57 @@ function ExperienceCard({
           {expedition.title}
         </h2>
 
-        {showHint && (
-          <div
-            style={{
-              position:
-                "absolute",
+        {showHint &&
+          expedition.type ===
+            "expedition" && (
+            <div
+              style={{
+                position:
+                  "absolute",
 
-              top: "100%",
+                top: "100%",
 
-              left: 0,
+                left: 0,
 
-              marginTop:
-                "4px",
+                zIndex: 20,
 
-              backgroundColor:
-                "#FFFFFF",
+                marginTop:
+                  "4px",
 
-              color:
-                "#1A202C",
+                maxWidth:
+                  "240px",
 
-              borderLeft:
-                `3px solid ${Theme.Colors.secondary}`,
+                padding:
+                  "8px 12px",
 
-              borderRadius:
-                "8px",
+                borderRadius:
+                  "8px",
 
-              padding:
-                "8px 12px",
+                borderLeft:
+                  `3px solid ${Theme.Colors.primary}`,
 
-              fontSize:
-                "12px",
+                backgroundColor:
+                  "#FFFFFF",
 
-              whiteSpace:
-                "nowrap",
+                color:
+                  "#1A202C",
 
-              boxShadow:
-                Theme.Shadows.card,
+                boxShadow:
+                  Theme.Shadows.card,
 
-              zIndex: 20,
-            }}
-          >
-            ✦{" "}
-            {expedition.type ===
-              "expedition" &&
-              getPlaceHint(
+                fontSize:
+                  "12px",
+
+                whiteSpace:
+                  "normal",
+              }}
+            >
+              ✦{" "}
+              {getPlaceHint(
                 expedition
               )}
-          </div>
-        )}
+            </div>
+          )}
       </div>
 
       <div
@@ -194,61 +220,86 @@ function ExperienceCard({
           gap:
             Theme.Space.sm,
 
-          fontSize:
-            "13px",
+          marginBottom:
+            "14px",
 
           color:
             Theme.Colors.textSoft,
 
-          marginBottom:
-            Theme.Space.sm,
+          fontSize:
+            "13px",
         }}
       >
         {expedition.type ===
           "expedition" && (
-          <span>
-            📍{" "}
-            {expedition.distance}
-          </span>
-        )}
+          <>
+            <span>
+              📍{" "}
+              {expedition.distance}
+            </span>
 
-        {expedition.type ===
-          "expedition" && (
-          <span>
-            🚗{" "}
-            {expedition.driveTime}
-          </span>
-        )}
+            <span>
+              🚗{" "}
+              {expedition.driveTime}
+            </span>
 
-        {expedition.type ===
-          "expedition" && (
-          <span>
-            ⭐{" "}
-            {
-              difficultyLabels[
-                expedition.difficulty
-              ]
-            }
-          </span>
+            <span>
+              ⭐{" "}
+              {
+                difficultyLabels[
+                  expedition.difficulty
+                ]
+              }
+            </span>
+          </>
         )}
       </div>
 
-      <span
+      <button
+        type="button"
+        onClick={handleStart}
+        disabled={isStarting}
         style={{
-          display:
-            "inline-block",
+          width: "100%",
 
-          color:
+          minHeight: "44px",
+
+          padding:
+            "10px 14px",
+
+          border: "none",
+
+          borderRadius:
+            Theme.Radius.medium,
+
+          backgroundColor:
             Theme.Colors.primary,
 
-          fontSize:
-            "13px",
+          color:
+            "#FFFFFF",
 
-          fontWeight: 600,
+          fontSize: "13px",
+
+          fontWeight: 800,
+
+          cursor:
+            isStarting
+              ? "wait"
+              : "pointer",
+
+          opacity:
+            isStarting
+              ? 0.68
+              : 1,
+
+          boxShadow:
+            "0 6px 16px rgba(255,0,122,0.26)",
         }}
       >
-        Iniciar paseo →
-      </span>
+        {isStarting
+          ? "Buscando GPS…"
+          : "🧭 Iniciar recorrido →"}
+      </button>
     </article>
   );
 }

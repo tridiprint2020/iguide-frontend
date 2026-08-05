@@ -10,10 +10,14 @@ import ItineraryQuiz from "./pages/ItineraryQuiz";
 import Hospes from "./pages/Hospes";
 import MapPage from "./pages/MapPage";
 import Favorites from "./pages/Favorites";
-
+import Profile from "./pages/Profile";
 import {
   MainContainer,
 } from "./pages/MainContainer";
+
+import {
+  WalkingView,
+} from "./components/journey/WalkingView";
 
 import ActiveJourneyBubble from "./components/journey/ActiveJourneyBubble";
 
@@ -23,58 +27,53 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={
-            <MainContainer />
-          }
+          element={<MainContainer />}
+        />
+
+        <Route
+          path="/journey"
+          element={<WalkingView />}
         />
 
         <Route
           path="/expedition/:slug"
-          element={
-            <Expedition />
-          }
+          element={<Expedition />}
         />
-
+<Route
+  path="/perfil"
+  element={<Profile />}
+/>
         <Route
           path="/explorer"
-          element={
-            <Explorer />
-          }
+          element={<Explorer />}
         />
 
         <Route
           path="/favoritos"
-          element={
-            <Favorites />
-          }
+          element={<Favorites />}
         />
-
+<Route
+  path="/perfil"
+  element={<Profile />}
+/>
         <Route
           path="/itinerario"
-          element={
-            <ItineraryQuiz />
-          }
+          element={<ItineraryQuiz />}
         />
 
         <Route
           path="/itinerario/resultado"
-          element={
-            <ItineraryResult />
-          }
+          element={<ItineraryResult />}
         />
 
         <Route
           path="/hospes"
-          element={
-            <Hospes />
-          }
+          element={<Hospes />}
         />
 
         <Route
           path="/mapa"
-          element={
-            <MapPage />
-          }
+          element={<MapPage />}
         />
       </Routes>
 
