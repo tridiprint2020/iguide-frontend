@@ -1,4 +1,11 @@
 import {
+  Camera,
+  MapPin,
+  PartyPopper,
+  Utensils,
+} from "lucide-react";
+
+import {
   useNavigate,
 } from "react-router-dom";
 
@@ -27,9 +34,7 @@ import {
 } from "../context/WeatherContext";
 
 import Hero from "./Hero";
-
 import HospesBanner from "./hospes/HospesBanner";
-
 import QuickActionsGrid from "./home/QuickActionsGrid";
 
 import {
@@ -40,10 +45,9 @@ import type {
   Experience,
 } from "../types/experience";
 
-import pachamancaImage from "../assets/placeholders/pachamanca.webp";
-import cerritoImage from "../assets/placeholders/cerrito-libertad.webp";
-import santiagoImage from "../assets/placeholders/fiesta-santiago.webp";
-
+import pachamancaImage from "../assets/optimized/pachamanca.webp";
+import cerritoImage from "../assets/optimized/cerrito-libertad.webp";
+import santiagoImage from "../assets/optimized/fiesta-santiago.webp";
 
 function getSearchableText(
   experience: Experience
@@ -179,7 +183,8 @@ function HomeLayout() {
       experiences:
         availableExperiences,
 
-      weather: liveWeather,
+      weather:
+        liveWeather,
     });
 
   const hospesMessage =
@@ -236,9 +241,10 @@ function HomeLayout() {
       ? Math.min(
           100,
           Math.round(
-            (visitedCount /
-              totalExperiences) *
-              100
+            (
+              visitedCount /
+              totalExperiences
+            ) * 100
           )
         )
       : 0;
@@ -259,7 +265,10 @@ function HomeLayout() {
       | null
   ) {
     if (!experience) {
-      navigate("/explorer");
+      navigate(
+        "/explorer"
+      );
+
       return;
     }
 
@@ -287,40 +296,84 @@ function HomeLayout() {
       return;
     }
 
-    navigate(action.target);
+    navigate(
+      action.target
+    );
   }
 
   const quickActions = [
-   {
-  id: "food",
-  title: "Comer increíble",
-  subtitle: "Sabores que los locales recomiendan",
-  icon: "🍽️",
-  image: pachamancaImage,
-  accent: "#FF00FF",
-  onClick: () =>
-    openExperience(foodExperience),
-},
-{
-  id: "corners",
-  title: "Descubrir rincones",
-  subtitle: "Miradores, historias y lugares ocultos",
-  icon: "📷",
-  image: cerritoImage,
-  accent: "#FF00FF",
-  onClick: () =>
-    openExperience(cornerExperience),
-},
-{
-  id: "surprise",
-  title: "Sorpresa local",
-  subtitle: "Algo que Huancayo está viviendo hoy",
-  icon: "🎉",
-  image: santiagoImage,
-  accent: "#FF8A00",
-  onClick: () =>
-    openExperience(surpriseExperience),
-},
+    {
+      id: "food",
+
+      title:
+        "Comer increíble",
+
+      subtitle:
+        "Sabores que los locales recomiendan",
+
+      icon:
+        Utensils,
+
+      tone:
+        "magenta" as const,
+
+      image:
+        pachamancaImage,
+
+      onClick: () =>
+        openExperience(
+          foodExperience
+        ),
+    },
+
+    {
+      id: "corners",
+
+      title:
+        "Descubrir rincones",
+
+      subtitle:
+        "Miradores, historias y lugares ocultos",
+
+      icon:
+        Camera,
+
+      tone:
+        "cyan" as const,
+
+      image:
+        cerritoImage,
+
+      onClick: () =>
+        openExperience(
+          cornerExperience
+        ),
+    },
+
+    {
+      id: "surprise",
+
+      title:
+        "Sorpresa local",
+
+      subtitle:
+        "Algo que Huancayo está viviendo hoy",
+
+      icon:
+        PartyPopper,
+
+      tone:
+        "magenta" as const,
+
+      image:
+        santiagoImage,
+
+      onClick: () =>
+        openExperience(
+          surpriseExperience
+        ),
+    },
+
     {
       id: "nearby",
 
@@ -328,18 +381,21 @@ function HomeLayout() {
         "Cerca de ti",
 
       subtitle:
-        "Abre el mapa y descubre qué tienes alrededor",
+        "Descubre qué tienes alrededor",
 
-      icon: "📍",
+      icon:
+        MapPin,
 
-      accent:
-        "#FF00FF",
+      tone:
+        "cyan" as const,
 
       variant:
         "map" as const,
 
       onClick: () =>
-        navigate("/mapa"),
+        navigate(
+          "/mapa"
+        ),
     },
   ];
 
@@ -394,7 +450,9 @@ function HomeLayout() {
             totalExperiences,
         }}
         onProgressClick={() =>
-          navigate("/perfil")
+          navigate(
+            "/perfil"
+          )
         }
       />
 

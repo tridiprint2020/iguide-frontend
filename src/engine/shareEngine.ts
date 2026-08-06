@@ -1,64 +1,325 @@
-import type { MemoryCardData } from "../types/memoryCard";
+import {
+  toBlob,
+  toPng,
+} from "html-to-image";
+
+import type {
+  MemoryCardData,
+} from "../types/memoryCard";
 
 export interface SharePayload {
   title: string;
   text: string;
-  url?: string;
 }
 
-async function share(payload: SharePayload) {
-  if (navigator.share) {
-    try {
-      await navigator.share(payload);
-      return true;
-    } catch {
-      return false;
-    }
+function sanitizeFileName(
+  value: string
+): string {
+  return value
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .replace(
+      /[^a-zA-Z0-9-_]+/g,
+      "-"
+    )
+    .replace(
+      /-+/g,
+      "-"
+    )
+    .replace(
+      /(^-|-$)/g,
+      ""
+    )
+    .toLowerCase();
+}
+
+function buildShareText(
+  cardData: MemoryCardData
+): string {
+  const note =
+    cardData.note?.trim();
+
+  const sections = [
+    `Completé ${cardData.title} en ${cardData.city} con I.GUIDE.`,
+    note
+      ? `“${note}”`
+      : null,
+    `${cardData.stats.totalDistanceKm.toFixed(2)} km · ${cardData.stats.totalMemories} recuerdo(s)`,
+    "No visites. Pertenece. Vive la ciudad como un local.",
+    "#IGuide #LiveLikeLocal #FeelTheCity",
+  ];
+
+  return sections
+    .filter(
+      (
+        section
+      ): section is string =>
+        Boolean(section)
+    )
+    .join("\n\n");
+}
+
+async function renderCardBlob(
+  nodeRef: HTMLElement
+): Promise<Blob> {
+  const blob =
+    await toBlob(
+      nodeRef,
+      {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor:
+          "#090A12",
+        filter: (node) => {
+          if (
+            node instanceof HTMLElement &&
+            node.dataset
+              .exportIgnore ===
+              "true"
+          ) {
+            return false;
+          }
+
+          return true;
+        },
+      }
+    );
+
+  if (!blob) {
+    throw new Error(
+      "No se pudo crear la imagen de la MemoryCard."
+    );
   }
 
-  const fallback =
-    payload.url != null
-      ? `${payload.text}\n${payload.url}`
-      : payload.text;
+  return blob;
+}
 
-  await navigator.clipboard.writeText(fallback);
-  alert("¡Copiado! Pégalo en tus redes favoritas 📲");
-  return false;
+async function nativeShare(
+  payload: SharePayload,
+  file?: File
+): Promise<boolean> {
+  if (!navigator.share) {
+    await navigator.clipboard.writeText(
+      payload.text
+    );
+
+    alert(
+      "Descripción copiada. Ya puedes pegarla en tu red favorita."
+    );
+
+    return false;
+  }
+
+  try {
+    const shareData:
+      ShareData = {
+      title:
+        payload.title,
+      text:
+        payload.text,
+    };
+
+    if (
+      file &&
+      navigator.canShare?.({
+        files: [file],
+      })
+    ) {
+      shareData.files =
+        [file];
+    }
+
+    await navigator.share(
+      shareData
+    );
+
+    return true;
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      error.name ===
+        "AbortError"
+    ) {
+      return false;
+    }
+
+    throw error;
+  }
 }
 
 export const shareEngine = {
-  // ✅ Corregido: Se eliminó la alerta ts(6133) usando guiones bajos estrictos
-  downloadImage: async (_cardData: MemoryCardData, _nodeRef: HTMLDivElement | null): Promise<boolean> => {
-    console.log("shareEngine -> Renderizando canvas premium para:", _cardData.placeLabel);
-    if (!_nodeRef) return false;
-    
-    alert("Generando captura de imagen de tu recorrido... 🖼️");
-    return true;
+  async downloadImage(
+    cardData: MemoryCardData,
+    nodeRef: HTMLElement | null
+  ): Promise<boolean> {
+    if (!nodeRef) {
+      alert(
+        "La MemoryCard todavía no está lista para exportarse."
+      );
+
+      return false;
+    }
+
+    try {
+      const dataUrl =
+        await toPng(
+          nodeRef,
+          {
+            cacheBust: true,
+            pixelRatio: 2,
+            backgroundColor:
+              "#090A12",
+            filter: (node) => {
+              if (
+                node instanceof HTMLElement &&
+                node.dataset
+                  .exportIgnore ===
+                  "true"
+              ) {
+                return false;
+              }
+
+              return true;
+            },
+          }
+        );
+
+      const anchor =
+        document.createElement(
+          "a"
+        );
+
+      anchor.href =
+        dataUrl;
+
+      anchor.download =
+        `iguide-${sanitizeFileName(
+          cardData.title ||
+            cardData.placeLabel ||
+            "memory-card"
+        )}-${Date.now()}.png`;
+
+      document.body.appendChild(
+        anchor
+      );
+
+      anchor.click();
+      anchor.remove();
+
+      return true;
+    } catch (error) {
+      console.error(
+        "No se pudo descargar la MemoryCard:",
+        error
+      );
+
+      alert(
+        "No se pudo generar la imagen. Inténtalo nuevamente con el mapa completamente cargado."
+      );
+
+      return false;
+    }
   },
 
-  shareMemory: (cardData: MemoryCardData) => {
-    const fallbackUrl = `https://i.guide{btoa(cardData.placeLabel).substring(0, 8)}`;
-    return share({
-      title: "Mi momento en I.GUIDE",
-      // ✅ Clones de copy exactos extraídos de tu diseño de redes sociales
-      text: `¡Mi momento en ${cardData.city || "Huancayo"}! 📍\n\n"${cardData.note ?? "Los mejores detalles están en el camino."}"\n\n#IGuide #LiveLikeLocal #FeelTheCity`,
-      url: fallbackUrl,
+  async shareMemory(
+    cardData: MemoryCardData,
+    nodeRef?: HTMLElement | null
+  ): Promise<boolean> {
+    const payload:
+      SharePayload = {
+      title:
+        `Mi momento en ${cardData.title}`,
+      text:
+        buildShareText(
+          cardData
+        ),
+    };
+
+    try {
+      if (nodeRef) {
+        const blob =
+          await renderCardBlob(
+            nodeRef
+          );
+
+        const file =
+          new File(
+            [blob],
+            `iguide-${sanitizeFileName(
+              cardData.title
+            )}.png`,
+            {
+              type:
+                "image/png",
+            }
+          );
+
+        return await nativeShare(
+          payload,
+          file
+        );
+      }
+
+      return await nativeShare(
+        payload
+      );
+    } catch (error) {
+      console.error(
+        "No se pudo compartir la MemoryCard:",
+        error
+      );
+
+      await navigator.clipboard.writeText(
+        payload.text
+      );
+
+      alert(
+        "No se pudo adjuntar la imagen, pero la descripción quedó copiada."
+      );
+
+      return false;
+    }
+  },
+
+  async copyShareText(
+    cardData: MemoryCardData
+  ): Promise<string> {
+    const text =
+      buildShareText(
+        cardData
+      );
+
+    await navigator.clipboard.writeText(
+      text
+    );
+
+    alert(
+      "Descripción copiada."
+    );
+
+    return text;
+  },
+
+  async copyShareLink(
+    cardData: MemoryCardData
+  ): Promise<string> {
+    return this.copyShareText(
+      cardData
+    );
+  },
+
+  async shareAchievement(
+    title: string,
+    description: string
+  ): Promise<boolean> {
+    return nativeShare({
+      title:
+        `Explorador de ${title}`,
+      text:
+        `${description}\n\nNo visites. Pertenece. Vive la ciudad como un local.\n\n#IGuide #LiveLikeLocal`,
     });
   },
-
-  shareAchievement: (title: string, description: string, url?: string) => {
-    return share({
-      title: `Explorador de ${title}`,
-      text: `${description}\n\n🏆 Cada paso, una historia. Cada historia, un recuerdo.\n\n#IGuide #LiveLikeLocal`,
-      url,
-    });
-  },
-
-  // ✅ Corregido: Removida la advertencia ts(6133) de la línea 58 usando la variable limpia
-  copyShareLink: async (_cardData: MemoryCardData) => {
-    const url = `https://i.guide{btoa(cardData.placeLabel).substring(0, 8)}`;
-    await navigator.clipboard.writeText(url);
-    alert("Enlace de descubrimiento copiado 📋");
-    return url;
-  }
 };

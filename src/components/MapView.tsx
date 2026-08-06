@@ -8,12 +8,12 @@ import {
 } from "react-router-dom";
 
 import {
-  CircleMarker,
   MapContainer,
   Marker,
   Polyline,
   Popup,
   TileLayer,
+  useMapEvents,
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
@@ -67,130 +67,432 @@ interface Props {
 type TrackBundle = {
   experience: Experience;
   track: ExpeditionTrack;
-
-  routePath: [
-    number,
-    number,
-  ][];
-
-  startPoint:
-    | TimelineItem
-    | null;
-
-  abortPoint:
-    | TimelineItem
-    | null;
-
-  finishPoint:
-    | TimelineItem
-    | null;
-
+  routePath: [number, number][];
+  startPoint: TimelineItem | null;
+  abortPoint: TimelineItem | null;
+  finishPoint: TimelineItem | null;
   memoryNodes: TimelineItem[];
 };
 
-/*
- * Corrección de los iconos
- * predeterminados de Leaflet.
- */
-delete (
-  L.Icon.Default.prototype as
-    L.Icon.Default & {
-      _getIconUrl?: unknown;
-    }
-)._getIconUrl;
+type PinKind =
+  | "catalog"
+  | "visited"
+  | "start"
+  | "memory"
+  | "finish"
+  | "abort";
 
-L.Icon.Default.mergeOptions({
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-const DEFAULT_CENTER: [
-  number,
-  number,
-] = [
+const DEFAULT_CENTER: [number, number] = [
   -12.06513,
   -75.20486,
 ];
 
-const WINE = "#7A123D";
+const DEFAULT_ZOOM = 15;
+const MAP_VIEW_STORAGE_KEY =
+  "iguide_explorer_map_view";
+const MAX_VISIBLE_ROUTE_POINTS = 110;
+
+type SavedMapView = {
+  center: [number, number];
+  zoom: number;
+};
+
+const pinCache =
+  new Map<string, L.DivIcon>();
+
+function loadSavedMapView(): SavedMapView | null {
+  try {
+    const raw =
+      localStorage.getItem(
+        MAP_VIEW_STORAGE_KEY
+      );
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed =
+      JSON.parse(raw) as
+        Partial<SavedMapView>;
+
+    if (
+      !Array.isArray(parsed.center) ||
+      parsed.center.length !== 2 ||
+      typeof parsed.center[0] !== "number" ||
+      typeof parsed.center[1] !== "number" ||
+      typeof parsed.zoom !== "number"
+    ) {
+      return null;
+    }
+
+    return {
+      center: [
+        parsed.center[0],
+        parsed.center[1],
+      ],
+      zoom: Math.min(
+        20,
+        Math.max(12, parsed.zoom)
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function simplifyRoutePath(
+  path: [number, number][],
+  maxPoints =
+    MAX_VISIBLE_ROUTE_POINTS
+): [number, number][] {
+  if (path.length <= maxPoints) {
+    return path;
+  }
+
+  const lastIndex =
+    path.length - 1;
+
+  const simplified:
+    [number, number][] = [];
+
+  for (
+    let index = 0;
+    index < maxPoints;
+    index += 1
+  ) {
+    const sourceIndex =
+      Math.round(
+        (index / (maxPoints - 1)) *
+          lastIndex
+      );
+
+    const point =
+      path[sourceIndex];
+
+    if (
+      simplified.length === 0 ||
+      simplified[
+        simplified.length - 1
+      ][0] !== point[0] ||
+      simplified[
+        simplified.length - 1
+      ][1] !== point[1]
+    ) {
+      simplified.push(point);
+    }
+  }
+
+  return simplified;
+}
+
+function MapViewPersistence() {
+  useMapEvents({
+    moveend(event) {
+      const map =
+        event.target;
+
+      const center =
+        map.getCenter();
+
+      const savedView:
+        SavedMapView = {
+        center: [
+          center.lat,
+          center.lng,
+        ],
+        zoom:
+          map.getZoom(),
+      };
+
+      localStorage.setItem(
+        MAP_VIEW_STORAGE_KEY,
+        JSON.stringify(savedView)
+      );
+    },
+  });
+
+  return null;
+}
+
+const MAGENTA = "#FF00FF";
+const CYAN = "#00E6FF";
 const ORANGE = "#FF8A00";
+
+function escapeHtml(
+  value: string
+): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+function createIguidePin(
+  kind: PinKind,
+  title: string
+): L.DivIcon {
+  const cacheKey =
+    `${kind}:${title}`;
+
+  const cached =
+    pinCache.get(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+  const isAbort =
+    kind === "abort";
+
+  const isCatalog =
+    kind === "catalog";
+
+  const isMemory =
+    kind === "memory";
+
+  const isVisited =
+    kind === "visited";
+
+  const isStart =
+    kind === "start";
+
+  const isFinish =
+    kind === "finish";
+
+  const size =
+    isStart || isFinish
+      ? 52
+      : isAbort || isVisited
+        ? 44
+        : isMemory
+          ? 32
+          : 40;
+
+ const color =
+  isAbort
+    ? ORANGE
+    : isCatalog
+      ? MAGENTA
+      : CYAN;
+
+  const safeTitle =
+    escapeHtml(title);
+
+  const symbol = isStart
+    ? `
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <path
+          d="M11 25V7l14 9-14 9Z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+      </svg>
+    `
+    : isFinish || isVisited
+      ? `
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path
+            d="m9 16 4.5 4.5L23 11"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      `
+      : isAbort
+        ? `
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path
+              d="M10 10 22 22M22 10 10 22"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        `
+        : isMemory
+          ? `
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <rect
+                x="7"
+                y="10"
+                width="18"
+                height="14"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+
+              <path
+                d="m12 10 1.5-3h5L20 10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
+
+              <circle
+                cx="16"
+                cy="17"
+                r="4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+            </svg>
+          `
+          : `
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path
+                d="
+                  M16 29
+                  C16 29 25 21.2 25 12.5
+                  C25 7.25 20.97 3 16 3
+                  C11.03 3 7 7.25 7 12.5
+                  C7 21.2 16 29 16 29Z
+                "
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linejoin="round"
+              />
+
+              <circle
+                cx="16"
+                cy="12.5"
+                r="5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+
+              <path
+                d="
+                  M16 8.7
+                  L17.2 11
+                  L19.8 11.4
+                  L17.9 13.2
+                  L18.4 15.8
+                  L16 14.6
+                  L13.6 15.8
+                  L14.1 13.2
+                  L12.2 11.4
+                  L14.8 11
+                  Z
+                "
+                fill="currentColor"
+              />
+            </svg>
+          `;
+
+  const html = `
+    <div
+      class="
+        iguide-neon-pin
+        iguide-neon-pin--${kind}
+      "
+      title="${safeTitle}"
+      style="
+        --pin-color: ${color};
+        --pin-size: ${size}px;
+      "
+    >
+      <span class="iguide-neon-pin__halo"></span>
+
+      <span class="iguide-neon-pin__icon">
+        ${symbol}
+      </span>
+
+      ${
+        isStart || isFinish
+          ? `
+            <span class="iguide-neon-pin__pulse"></span>
+          `
+          : ""
+      }
+    </div>
+  `;
+
+  const icon =
+    L.divIcon({
+      html,
+
+      className:
+        "iguide-leaflet-div-icon",
+
+      iconSize: [
+        size,
+        size,
+      ],
+
+      iconAnchor: [
+        size / 2,
+        size / 2,
+      ],
+
+      popupAnchor: [
+        0,
+        -(size / 2) - 8,
+      ],
+    });
+
+  pinCache.set(
+    cacheKey,
+    icon
+  );
+
+  return icon;
+}
 
 function findLastTimelineItem(
   timeline: TimelineItem[],
   type: TimelineItem["type"]
 ): TimelineItem | null {
   for (
-    let index =
-      timeline.length - 1;
+    let index = timeline.length - 1;
     index >= 0;
     index -= 1
   ) {
-    if (
-      timeline[index].type ===
-      type
-    ) {
+    if (timeline[index].type === type) {
       return timeline[index];
     }
   }
-
   return null;
 }
 
-function MapView({
-  track,
-}: Props) {
-  const navigate =
-    useNavigate();
+function MapView({ track }: Props) {
+  const navigate = useNavigate();
+  const [selectedCard, setSelectedCard] =
+    useState<MemoryCardData | null>(null);
+  const [showQhapaqNan, setShowQhapaqNan] =
+    useState(false);
+  const user = loadUserProfile();
 
-  const [
-    selectedCard,
-    setSelectedCard,
-  ] =
-    useState<MemoryCardData | null>(
-      null
+  const savedMapView =
+    useMemo(
+      () => loadSavedMapView(),
+      []
     );
 
-  const [
-    showQhapaqNan,
-    setShowQhapaqNan,
-  ] = useState(false);
-
-  const user =
-    loadUserProfile();
-
-  /*
-   * Explorer recupera todas las sesiones:
-   *
-   * - activas;
-   * - completadas;
-   * - abandonadas;
-   * - históricas.
-   *
-   * Así los recuerdos continúan apareciendo
-   * aunque el puntero activo haya sido eliminado.
-   */
   const trackBundles =
     useMemo<TrackBundle[]>(() => {
-      const bundles: TrackBundle[] =
-        [];
+      const bundles: TrackBundle[] = [];
 
-      for (
-        const experience of catalog
-      ) {
+      for (const experience of catalog) {
         const storedSessions =
           loadAllTrackSessions(
             experience.experienceId
           );
 
-        for (
-          const persistedTrack of storedSessions
-        ) {
+        for (const persistedTrack of storedSessions) {
           const routeNodes =
             persistedTrack.timeline.filter(
               (item) =>
@@ -200,49 +502,39 @@ function MapView({
                 item.type === "finish"
             );
 
-          const routePath: [
-            number,
-            number,
-          ][] =
-            routeNodes.map(
-              (point) => [
-                point.lat,
-                point.lng,
-              ]
-            );
-
-          const startPoint =
-            persistedTrack.timeline.find(
-              (item) =>
-                item.type === "start"
-            ) ?? null;
-
-          const abortPoint =
-            findLastTimelineItem(
-              persistedTrack.timeline,
-              "abort"
-            );
-
-          const finishPoint =
-            findLastTimelineItem(
-              persistedTrack.timeline,
-              "finish"
-            );
-
-          const memoryNodes =
-            persistedTrack.timeline.filter(
-              (item) =>
-                item.type === "memory"
+          const routePath =
+            simplifyRoutePath(
+              routeNodes.map(
+                (point) =>
+                  [
+                    point.lat,
+                    point.lng,
+                  ] as [number, number]
+              )
             );
 
           bundles.push({
             experience,
             track: persistedTrack,
             routePath,
-            startPoint,
-            abortPoint,
-            finishPoint,
-            memoryNodes,
+            startPoint:
+              persistedTrack.timeline.find(
+                (item) => item.type === "start"
+              ) ?? null,
+            abortPoint:
+              findLastTimelineItem(
+                persistedTrack.timeline,
+                "abort"
+              ),
+            finishPoint:
+              findLastTimelineItem(
+                persistedTrack.timeline,
+                "finish"
+              ),
+            memoryNodes:
+              persistedTrack.timeline.filter(
+                (item) => item.type === "memory"
+              ),
           });
         }
       }
@@ -259,40 +551,36 @@ function MapView({
         item.type === "finish"
     ) ?? [];
 
-  const mapCenter: [
-    number,
-    number,
-  ] =
+  const mapCenter: [number, number] =
     activePath.length > 0
       ? [
-          activePath[0].lat,
-          activePath[0].lng,
+          activePath[
+            activePath.length - 1
+          ].lat,
+          activePath[
+            activePath.length - 1
+          ].lng,
         ]
-      : DEFAULT_CENTER;
+      : savedMapView?.center ??
+        DEFAULT_CENTER;
 
-  function closeMemoryCard() {
-    setSelectedCard(null);
-  }
+  const initialZoom =
+    activePath.length > 0
+      ? 17
+      : savedMapView?.zoom ??
+        DEFAULT_ZOOM;
 
-  /*
-   * La tarjeta se construye solamente
-   * cuando el usuario toca un hito.
-   */
   function openTimelineCard(
     experience: Experience,
     expeditionTrack: ExpeditionTrack,
     item: TimelineItem
   ) {
-    const cardData =
-      MemoryCardEngine
-        .buildFromTimelineItem(
-          experience,
-          expeditionTrack,
-          item
-        );
-
     setSelectedCard(
-      cardData
+      MemoryCardEngine.buildFromTimelineItem(
+        experience,
+        expeditionTrack,
+        item
+      )
     );
   }
 
@@ -300,518 +588,275 @@ function MapView({
     <>
       <section
         style={{
-          backgroundColor:
-            Theme.Colors.surface,
-
+          background:
+            "linear-gradient(145deg, rgba(24,25,47,0.98), rgba(10,11,22,0.98))",
+          border:
+            "1px solid rgba(255,61,232,0.15)",
           borderRadius:
             Theme.Radius.large,
-
           padding: "10px",
-
           boxShadow:
-            Theme.Shadows.card,
-
+            "0 18px 42px rgba(0,0,0,0.30), 0 0 24px rgba(255,61,232,0.06)",
           marginTop:
             Theme.Space.md,
-
           marginLeft: "-6px",
           marginRight: "-6px",
         }}
       >
-        <header
-          style={{
-            display: "flex",
-
-            justifyContent:
-              "space-between",
-
-            alignItems: "center",
-
-            gap: "10px",
-
-            marginBottom: "10px",
-          }}
-        >
-          <div>
-            <strong
-              style={{
-                color:
-                  Theme.Colors.text,
-
-                fontSize: "14px",
-              }}
-            >
-              Mapa de exploración
-            </strong>
-
-            <p
-              style={{
-                margin:
-                  "3px 0 0",
-
-                color:
-                  Theme.Colors.textSoft,
-
-                fontSize: "10px",
-              }}
-            >
-              Rutas, experiencias y
-              patrimonio
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              setShowQhapaqNan(
-                (current) =>
-                  !current
-              )
-            }
-            aria-pressed={
-              showQhapaqNan
-            }
-            style={{
-              minHeight: "38px",
-
-              padding:
-                "7px 11px",
-
-              borderRadius:
-                "11px",
-
-              border:
-                showQhapaqNan
-                  ? `1px solid ${ORANGE}`
-                  : "1px solid rgba(255,255,255,0.12)",
-
-              backgroundColor:
-                showQhapaqNan
-                  ? "rgba(255,138,0,0.15)"
-                  : "rgba(255,255,255,0.05)",
-
-              color:
-                showQhapaqNan
-                  ? ORANGE
-                  : Theme.Colors.text,
-
-              fontSize: "11px",
-
-              fontWeight: 800,
-
-              cursor: "pointer",
-            }}
-          >
-            {showQhapaqNan
-              ? "✓ Qhapaq Ñan"
-              : "Qhapaq Ñan"}
-          </button>
-        </header>
-
-        {showQhapaqNan && (
-          <div
-            style={{
-              display: "flex",
-
-              alignItems: "center",
-
-              gap: "7px",
-
-              marginBottom:
-                "9px",
-
-              padding:
-                "7px 9px",
-
-              borderRadius:
-                "9px",
-
-              backgroundColor:
-                "rgba(255,138,0,0.09)",
-
-              color:
-                Theme.Colors.textSoft,
-
-              fontSize: "10px",
-
-              lineHeight: 1.35,
-            }}
-          >
-            <span
-              style={{
-                display:
-                  "inline-block",
-
-                width: "24px",
-
-                borderTop:
-                  `3px dashed ${ORANGE}`,
-              }}
-            />
-
-            Camino prehispánico del
-            Valle del Mantaro
-          </div>
-        )}
-
         <div
           style={{
             position: "relative",
-
             height: "520px",
-
             borderRadius:
               Theme.Radius.medium,
-
             overflow: "hidden",
+            backgroundColor: "#F5F7FA",
           }}
         >
           <MapContainer
             center={mapCenter}
-            zoom={13}
+            zoom={initialZoom}
             scrollWheelZoom
+            zoomControl
+            doubleClickZoom
+            touchZoom
             preferCanvas
             style={{
               height: "100%",
               width: "100%",
             }}
           >
+            <MapViewPersistence />
+
             <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              maxZoom={20}
             />
 
             <QhapaqNanLayer
-              visible={
-                showQhapaqNan
-              }
+              visible={showQhapaqNan}
             />
 
-            {/* PINES DEL CATÁLOGO */}
-            {catalog.map(
-              (experience) => {
-                const isVisited =
-                  user.visitedExperiences
-                    ?.includes(
-                      experience.experienceId
-                    ) ?? false;
+            {catalog.map((experience) => {
+              const isVisited =
+                user.visitedExperiences?.includes(
+                  experience.experienceId
+                ) ?? false;
 
-                const experienceImage =
-                  experience.image ||
-                  experience.coverImage;
+              const experienceImage =
+                experience.image ||
+                experience.coverImage;
 
-                return (
-                  <Marker
-                    key={
-                      experience.experienceId
-                    }
-                    position={[
-                      experience.latitude,
-                      experience.longitude,
-                    ]}
+              return (
+                <Marker
+                  key={experience.experienceId}
+                  position={[
+                    experience.latitude,
+                    experience.longitude,
+                  ]}
+                  icon={createIguidePin(
+                    isVisited ? "visited" : "catalog",
+                    experience.title
+                  )}
+                >
+                  <Popup
+                    minWidth={270}
+                    className="iguide-premium-popup"
                   >
-                    <Popup
-                      minWidth={260}
+                    <article
+                      style={{
+                        width: "240px",
+                        color: "#F8FAFC",
+                      }}
                     >
-                      <article
+                      {experienceImage && (
+                        <img
+                          src={experienceImage}
+                          alt={experience.title}
+                          loading="lazy"
+                          style={{
+                            width: "100%",
+                            height: "112px",
+                            objectFit: "cover",
+                            borderRadius: "13px",
+                            marginBottom: "10px",
+                            backgroundColor: "#171827",
+                          }}
+                        />
+                      )}
+
+                      <div
                         style={{
-                          width: "235px",
-                          color: "#161616",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: "8px",
                         }}
                       >
-                        {experienceImage && (
-                          <img
-                            src={
-                              experienceImage
-                            }
-                            alt={
-                              experience.title
-                            }
-                            loading="lazy"
+                        <div>
+                          <p
                             style={{
-                              width:
-                                "100%",
-
-                              height:
-                                "105px",
-
-                              objectFit:
-                                "cover",
-
-                              borderRadius:
-                                "11px",
-
-                              marginBottom:
-                                "9px",
-
-                              backgroundColor:
-                                "#EFEFEF",
+                              margin: "0 0 3px",
+                              color: isVisited ? MAGENTA : CYAN,
+                              fontSize: "9px",
+                              fontWeight: 850,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.09em",
                             }}
-                          />
-                        )}
-
-                        <div
-                          style={{
-                            display:
-                              "flex",
-
-                            justifyContent:
-                              "space-between",
-
-                            alignItems:
-                              "flex-start",
-
-                            gap: "8px",
-                          }}
-                        >
-                          <div>
-                            <p
-                              style={{
-                                margin:
-                                  "0 0 3px",
-
-                                color:
-                                  Theme
-                                    .Colors
-                                    .primary,
-
-                                fontSize:
-                                  "10px",
-
-                                fontWeight:
-                                  800,
-
-                                textTransform:
-                                  "uppercase",
-
-                                letterSpacing:
-                                  "0.08em",
-                              }}
-                            >
-                              {
-                                experience.type
-                              }
-                            </p>
-
-                            <h3
-                              style={{
-                                margin:
-                                  0,
-
-                                fontSize:
-                                  "17px",
-                              }}
-                            >
-                              {
-                                experience.title
-                              }
-                            </h3>
-                          </div>
-
-                          {isVisited && (
-                            <span
-                              title="Lugar visitado"
-                              style={{
-                                fontSize:
-                                  "17px",
-                              }}
-                            >
-                              ✔️
-                            </span>
-                          )}
+                          >
+                            {experience.type}
+                          </p>
+                          <h3
+                            style={{
+                              margin: 0,
+                              color: "#FFFFFF",
+                              fontSize: "17px",
+                              lineHeight: 1.12,
+                            }}
+                          >
+                            {experience.title}
+                          </h3>
                         </div>
 
-                        <p
-                          style={{
-                            margin:
-                              "8px 0 10px",
+                        {isVisited && (
+                          <span
+                            title="Lugar visitado"
+                            style={{
+                              minWidth: "27px",
+                              height: "27px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "50%",
+                              color: "#FFFFFF",
+                              backgroundColor: MAGENTA,
+                              boxShadow:
+                                "0 0 12px rgba(255,0,255,0.55)",
+                              fontSize: "13px",
+                              fontWeight: 900,
+                            }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </div>
 
-                            color:
-                              "#666666",
+                      <p
+                        style={{
+                          margin: "9px 0 11px",
+                          color: "rgba(255,255,255,0.68)",
+                          fontSize: "11px",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        {experience.description}
+                      </p>
 
-                            fontSize:
-                              "12px",
+                      {"openingHours" in experience &&
+                        experience.openingHours && (
+                          <p
+                            style={{
+                              margin: "0 0 11px",
+                              color: "rgba(255,255,255,0.74)",
+                              fontSize: "10px",
+                              fontWeight: 650,
+                            }}
+                          >
+                            Horario: {experience.openingHours}
+                          </p>
+                        )}
 
-                            lineHeight:
-                              1.4,
-                          }}
-                        >
-                          {
-                            experience.description
-                          }
-                        </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/expedition/${experience.slug}`
+                          )
+                        }
+                        style={{
+                          width: "100%",
+                          minHeight: "42px",
+                          border:
+                            "1px solid rgba(255,255,255,0.12)",
+                          borderRadius: "12px",
+                          background:
+                            "linear-gradient(145deg, #FF3DE8, #D4008D)",
+                          color: "#FFFFFF",
+                          boxShadow:
+                            "0 8px 22px rgba(255,0,184,0.25)",
+                          fontWeight: 850,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ver misión
+                      </button>
+                    </article>
+                  </Popup>
+                </Marker>
+              );
+            })}
 
-                        {"openingHours" in
-                          experience &&
-                          experience.openingHours && (
-                            <p
-                              style={{
-                                margin:
-                                  "0 0 10px",
-
-                                color:
-                                  "#444444",
-
-                                fontSize:
-                                  "11px",
-
-                                fontWeight:
-                                  600,
-                              }}
-                            >
-                              🕒{" "}
-                              {
-                                experience.openingHours
-                              }
-                            </p>
-                          )}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate(
-                              `/expedition/${experience.slug}`
-                            )
-                          }
-                          style={{
-                            width:
-                              "100%",
-
-                            minHeight:
-                              "42px",
-
-                            border:
-                              "none",
-
-                            borderRadius:
-                              "11px",
-
-                            backgroundColor:
-                              Theme
-                                .Colors
-                                .primary,
-
-                            color:
-                              "#FFFFFF",
-
-                            fontWeight:
-                              800,
-
-                            cursor:
-                              "pointer",
-                          }}
-                        >
-                          Ver plan e iniciar
-                        </button>
-                      </article>
-                    </Popup>
-                  </Marker>
-                );
-              }
-            )}
-
-            {/* RUTAS HISTÓRICAS Y ACTIVAS */}
             {trackBundles.map(
               ({
                 experience,
-                track:
-                  expeditionTrack,
+                track: expeditionTrack,
                 routePath,
               }) => {
-                if (
-                  routePath.length < 2
-                ) {
+                if (routePath.length < 2) {
                   return null;
                 }
-
-                const hasAbort =
-                  expeditionTrack.timeline.some(
-                    (item) =>
-                      item.type === "abort"
-                  );
-
-                const hasFinish =
-                  expeditionTrack.timeline.some(
-                    (item) =>
-                      item.type === "finish"
-                  );
-
-                const routeColor =
-                  hasAbort &&
-                  !hasFinish
-                    ? ORANGE
-                    : Theme.Colors.primary;
 
                 return (
                   <Polyline
                     key={`track-${experience.experienceId}-${expeditionTrack.sessionId}`}
-                    positions={
-                      routePath
-                    }
+                    positions={routePath}
+                    className="iguide-route-line"
                     pathOptions={{
-                      color:
-                        routeColor,
-
-                      weight: 4,
-
-                      lineCap:
-                        "round",
-
-                      lineJoin:
-                        "round",
-
-                      opacity:
-                        0.88,
+                      color: MAGENTA,
+                      weight: 6,
+                      lineCap: "round",
+                      lineJoin: "round",
+                      opacity: 1,
                     }}
                   />
                 );
               }
             )}
 
-            {/* INICIO, ABANDONO Y FINAL */}
-            {trackBundles.map(
+            {trackBundles.flatMap(
               ({
                 experience,
-                track:
-                  expeditionTrack,
+                track: expeditionTrack,
                 startPoint,
                 abortPoint,
                 finishPoint,
-              }) => (
-                <div
-                  key={`edges-${experience.experienceId}-${expeditionTrack.sessionId}`}
-                >
-                  {startPoint && (
-                    <CircleMarker
-                      center={[
+                memoryNodes,
+              }) => {
+                const nodes: React.ReactNode[] = [];
+
+                if (startPoint) {
+                  nodes.push(
+                    <Marker
+                      key={`start-${experience.experienceId}-${expeditionTrack.sessionId}`}
+                      position={[
                         startPoint.lat,
                         startPoint.lng,
                       ]}
-                      radius={11}
-                      pathOptions={{
-                        color:
-                          "#FFFFFF",
-
-                        weight: 2,
-
-                        fillColor:
-                          WINE,
-
-                        fillOpacity:
-                          1,
-                      }}
+                      icon={createIguidePin(
+                        "start",
+                        `Inicio: ${experience.title}`
+                      )}
                     >
                       <Popup
-                        minWidth={210}
+                        minWidth={220}
+                        className="iguide-premium-popup"
                       >
                         <TimelinePopup
-                          title="🚀 Inicio del recorrido"
-                          experienceTitle={
-                            experience.title
-                          }
-                          buttonColor={
-                            WINE
-                          }
+                          eyebrow="Inicio"
+                          title="Comienzo del recorrido"
+                          experienceTitle={experience.title}
+                          tone="magenta"
                           onOpen={() =>
                             openTimelineCard(
                               experience,
@@ -821,86 +866,67 @@ function MapView({
                           }
                         />
                       </Popup>
-                    </CircleMarker>
-                  )}
+                    </Marker>
+                  );
+                }
 
-                  {abortPoint &&
-                    !finishPoint && (
-                      <CircleMarker
-                        center={[
-                          abortPoint.lat,
-                          abortPoint.lng,
-                        ]}
-                        radius={10}
-                        pathOptions={{
-                          color:
-                            "#FFFFFF",
-
-                          weight: 2,
-
-                          fillColor:
-                            ORANGE,
-
-                          fillOpacity:
-                            1,
-                        }}
+                if (abortPoint && !finishPoint) {
+                  nodes.push(
+                    <Marker
+                      key={`abort-${experience.experienceId}-${expeditionTrack.sessionId}`}
+                      position={[
+                        abortPoint.lat,
+                        abortPoint.lng,
+                      ]}
+                      icon={createIguidePin(
+                        "abort",
+                        `Ruta conservada: ${experience.title}`
+                      )}
+                    >
+                      <Popup
+                        minWidth={220}
+                        className="iguide-premium-popup"
                       >
-                        <Popup
-                          minWidth={
-                            210
+                        <TimelinePopup
+                          eyebrow="Ruta conservada"
+                          title="Recorrido interrumpido"
+                          experienceTitle={experience.title}
+                          tone="orange"
+                          onOpen={() =>
+                            openTimelineCard(
+                              experience,
+                              expeditionTrack,
+                              abortPoint
+                            )
                           }
-                        >
-                          <TimelinePopup
-                            title="🟠 Recorrido conservado"
-                            experienceTitle={
-                              experience.title
-                            }
-                            buttonColor={
-                              ORANGE
-                            }
-                            onOpen={() =>
-                              openTimelineCard(
-                                experience,
-                                expeditionTrack,
-                                abortPoint
-                              )
-                            }
-                          />
-                        </Popup>
-                      </CircleMarker>
-                    )}
+                        />
+                      </Popup>
+                    </Marker>
+                  );
+                }
 
-                  {finishPoint && (
-                    <CircleMarker
-                      center={[
+                if (finishPoint) {
+                  nodes.push(
+                    <Marker
+                      key={`finish-${experience.experienceId}-${expeditionTrack.sessionId}`}
+                      position={[
                         finishPoint.lat,
                         finishPoint.lng,
                       ]}
-                      radius={12}
-                      pathOptions={{
-                        color:
-                          "#FFFFFF",
-
-                        weight: 2,
-
-                        fillColor:
-                          WINE,
-
-                        fillOpacity:
-                          1,
-                      }}
+                      icon={createIguidePin(
+                        "finish",
+                        `Llegada: ${experience.title}`
+                      )}
                     >
                       <Popup
-                        minWidth={210}
+                        minWidth={220}
+                        className="iguide-premium-popup"
                       >
                         <TimelinePopup
-                          title="🏁 Expedición completada"
-                          experienceTitle={
-                            experience.title
-                          }
-                          buttonColor={
-                            WINE
-                          }
+                          eyebrow="Misión completada"
+                          title="Llegada certificada"
+                          experienceTitle={experience.title}
+                          tone="magenta"
                           onOpen={() =>
                             openTimelineCard(
                               experience,
@@ -910,61 +936,35 @@ function MapView({
                           }
                         />
                       </Popup>
-                    </CircleMarker>
-                  )}
-                </div>
-              )
-            )}
+                    </Marker>
+                  );
+                }
 
-            {/* RECUERDOS DE TODAS LAS SESIONES */}
-            {trackBundles.flatMap(
-              ({
-                experience,
-                track:
-                  expeditionTrack,
-                memoryNodes,
-              }) =>
-                memoryNodes.map(
-                  (
-                    memory,
-                    index
-                  ) => (
-                    <CircleMarker
+                memoryNodes.forEach((memory, index) => {
+                  nodes.push(
+                    <Marker
                       key={
                         memory.id ||
                         `memory-${experience.experienceId}-${expeditionTrack.sessionId}-${index}`
                       }
-                      center={[
+                      position={[
                         memory.lat,
                         memory.lng,
                       ]}
-                      radius={11}
-                      pathOptions={{
-                        color:
-                          "#FFFFFF",
-
-                        weight: 2,
-
-                        fillColor:
-                          Theme.Colors
-                            .primary,
-
-                        fillOpacity:
-                          1,
-                      }}
+                      icon={createIguidePin(
+                        "memory",
+                        `Recuerdo: ${experience.title}`
+                      )}
                     >
                       <Popup
-                        minWidth={210}
+                        minWidth={220}
+                        className="iguide-premium-popup"
                       >
                         <TimelinePopup
-                          title="📸 Recuerdo guardado"
-                          experienceTitle={
-                            experience.title
-                          }
-                          buttonColor={
-                            Theme.Colors
-                              .primary
-                          }
+                          eyebrow="Recuerdo"
+                          title="Momento guardado"
+                          experienceTitle={experience.title}
+                          tone="magenta"
                           onOpen={() =>
                             openTimelineCard(
                               experience,
@@ -974,67 +974,424 @@ function MapView({
                           }
                         />
                       </Popup>
-                    </CircleMarker>
-                  )
-                )
+                    </Marker>
+                  );
+                });
+
+                return nodes;
+              }
             )}
           </MapContainer>
         </div>
+
+        <header
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "10px",
+            marginTop: "12px",
+            marginBottom: 0,
+          }}
+        >
+          <div>
+            <strong
+              style={{
+                color: Theme.Colors.text,
+                fontSize: "14px",
+              }}
+            >
+              Exploración guardada
+            </strong>
+            <p
+              style={{
+                margin: "3px 0 0",
+                color: Theme.Colors.textSoft,
+                fontSize: "10px",
+              }}
+            >
+              El mapa recuerda tu última posición y nivel de zoom
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowQhapaqNan(
+                (current) => !current
+              )
+            }
+            aria-pressed={showQhapaqNan}
+            style={{
+              minHeight: "38px",
+              padding: "7px 11px",
+              borderRadius: "11px",
+              border: showQhapaqNan
+                ? `1px solid ${ORANGE}`
+                : "1px solid rgba(255,255,255,0.12)",
+              backgroundColor: showQhapaqNan
+                ? "rgba(255,138,0,0.15)"
+                : "rgba(255,255,255,0.05)",
+              color: showQhapaqNan
+                ? ORANGE
+                : Theme.Colors.text,
+              fontSize: "11px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            {showQhapaqNan
+              ? "Ocultar Qhapaq Ñan"
+              : "Activar Qhapaq Ñan"}
+          </button>
+        </header>
+
+
+        {showQhapaqNan && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "7px",
+              marginBottom: "9px",
+              padding: "7px 9px",
+              borderRadius: "9px",
+              backgroundColor:
+                "rgba(255,138,0,0.09)",
+              color: Theme.Colors.textSoft,
+              fontSize: "10px",
+              lineHeight: 1.35,
+            }}
+          >
+            <span
+              style={{
+                width: "24px",
+                borderTop:
+                  `3px dashed ${ORANGE}`,
+              }}
+            />
+            Camino prehispánico del Valle del Mantaro
+          </div>
+        )}
+
       </section>
 
       <MemoryCardModal
-        open={
-          selectedCard !== null
-        }
+        open={selectedCard !== null}
         data={selectedCard}
-        onClose={
-          closeMemoryCard
-        }
+        onClose={() => setSelectedCard(null)}
         onShare={(data) =>
-          shareEngine.shareMemory(
-            data
-          )
+          shareEngine.shareMemory(data)
         }
       />
+
+     <style>
+  {`
+    .iguide-leaflet-div-icon {
+      background: transparent !important;
+      border: none !important;
+    }
+
+    .iguide-neon-pin {
+      position: relative;
+
+      width: var(--pin-size);
+      height: var(--pin-size);
+
+      display: grid;
+      place-items: center;
+
+      color: var(--pin-color);
+
+      isolation: isolate;
+
+      pointer-events: auto;
+    }
+
+    .iguide-neon-pin__halo {
+      position: absolute;
+
+      inset: 13%;
+
+      z-index: 1;
+
+      border-radius: 50%;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--pin-color) 32%,
+          transparent
+        );
+
+      filter: blur(5px);
+
+      opacity: 0.62;
+
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .iguide-neon-pin__icon {
+      position: relative;
+
+      z-index: 3;
+
+      width: 100%;
+      height: 100%;
+
+      display: grid;
+      place-items: center;
+
+      color:
+        color-mix(
+          in srgb,
+          var(--pin-color) 78%,
+          white
+        );
+
+      filter:
+  drop-shadow(
+    0 0 2px
+    rgba(0,0,0,0.95)
+  )
+  drop-shadow(
+    0 0 3px
+    rgba(255,255,255,0.95)
+  )
+  drop-shadow(
+    0 0 7px
+    var(--pin-color)
+  )
+  drop-shadow(
+    0 0 16px
+    color-mix(
+      in srgb,
+      var(--pin-color) 88%,
+      transparent
+    )
+  )
+  drop-shadow(
+    0 0 16px
+    color-mix(
+      in srgb,
+      var(--pin-color) 48%,
+      transparent
+    )
+  );
+
+      transition:
+        transform 0.18s ease,
+        filter 0.18s ease;
+    }
+
+    .iguide-neon-pin__icon svg {
+      width: 100%;
+      height: 100%;
+
+      overflow: visible;
+    }
+
+    .iguide-neon-pin:hover
+    .iguide-neon-pin__icon {
+      transform:
+        translateY(-2px)
+        scale(1.08);
+
+      filter:
+        drop-shadow(
+          0 0 3px
+          rgba(255,255,255,0.90)
+        )
+        drop-shadow(
+          0 0 7px
+          var(--pin-color)
+        )
+        drop-shadow(
+          0 0 15px
+          color-mix(
+            in srgb,
+            var(--pin-color) 82%,
+            transparent
+          )
+        )
+        drop-shadow(
+          0 0 16px
+          color-mix(
+            in srgb,
+            var(--pin-color) 45%,
+            transparent
+          )
+        );
+    }
+
+    .iguide-neon-pin:hover
+    .iguide-neon-pin__halo {
+      opacity: 1;
+
+      transform:
+        scale(1.15);
+    }
+
+    .iguide-neon-pin__pulse {
+      position: absolute;
+
+      inset: 4%;
+
+      z-index: 0;
+
+      border:
+        1px solid
+        color-mix(
+          in srgb,
+          var(--pin-color) 75%,
+          transparent
+        );
+
+      border-radius: 50%;
+
+      opacity: 0.7;
+
+      animation:
+        iguideNeonPinPulse
+        2.2s ease-out
+        infinite;
+
+      pointer-events: none;
+    }
+
+    .iguide-neon-pin--memory
+    .iguide-neon-pin__icon {
+      width: 86%;
+      height: 86%;
+    }
+
+    .iguide-neon-pin--catalog
+    .iguide-neon-pin__halo {
+      background:
+        rgba(0,230,255,0.24);
+    }
+
+    .iguide-neon-pin--abort
+    .iguide-neon-pin__halo {
+      background:
+        rgba(255,138,0,0.26);
+    }
+
+    .iguide-neon-pin--visited
+    .iguide-neon-pin__icon,
+    .iguide-neon-pin--finish
+    .iguide-neon-pin__icon {
+      filter:
+        drop-shadow(
+          0 0 3px
+          rgba(255,255,255,0.90)
+        )
+        drop-shadow(
+          0 0 7px
+          rgba(255,0,255,0.98)
+        )
+        drop-shadow(
+          0 0 13px
+          rgba(255,0,255,0.70)
+        );
+    }
+
+    .iguide-route-line {
+      filter:
+        drop-shadow(
+          0 0 3px
+          rgba(255,0,255,0.92)
+        )
+        drop-shadow(
+          0 0 8px
+          rgba(255,0,255,0.48)
+        );
+
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    @keyframes iguideNeonPinPulse {
+      0% {
+        transform: scale(0.72);
+        opacity: 0.72;
+      }
+
+      75% {
+        transform: scale(1.35);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1.35);
+        opacity: 0;
+      }
+    }
+  `}
+</style>
     </>
   );
 }
 
 type TimelinePopupProps = {
+  eyebrow: string;
   title: string;
   experienceTitle: string;
-  buttonColor: string;
+  tone: "magenta" | "orange";
   onOpen: () => void;
 };
 
 function TimelinePopup({
+  eyebrow,
   title,
   experienceTitle,
-  buttonColor,
+  tone,
   onOpen,
 }: TimelinePopupProps) {
+  const accent =
+    tone === "orange"
+      ? ORANGE
+      : MAGENTA;
+
   return (
     <div
       style={{
-        padding: "7px",
-
-        color: "#161616",
-
-        textAlign: "center",
+        padding: "5px",
+        color: "#FFFFFF",
+        textAlign: "left",
       }}
     >
-      <strong>
+      <span
+        style={{
+          display: "block",
+          marginBottom: "4px",
+          color: accent,
+          fontSize: "9px",
+          fontWeight: 850,
+          letterSpacing: "0.09em",
+          textTransform: "uppercase",
+        }}
+      >
+        {eyebrow}
+      </span>
+
+      <strong
+        style={{
+          display: "block",
+          fontSize: "15px",
+          lineHeight: 1.2,
+        }}
+      >
         {title}
       </strong>
 
       <p
         style={{
-          margin:
-            "7px 0 11px",
-
-          fontSize: "12px",
-
-          color: "#666666",
+          margin: "6px 0 11px",
+          fontSize: "11px",
+          color: "rgba(255,255,255,0.64)",
         }}
       >
         {experienceTitle}
@@ -1045,21 +1402,20 @@ function TimelinePopup({
         onClick={onOpen}
         style={{
           width: "100%",
-
-          minHeight: "38px",
-
-          border: "none",
-
-          borderRadius:
-            "10px",
-
-          backgroundColor:
-            buttonColor,
-
+          minHeight: "39px",
+          border:
+            "1px solid rgba(255,255,255,0.12)",
+          borderRadius: "11px",
+          background:
+            `linear-gradient(145deg, ${accent}, ${
+              tone === "orange"
+                ? "#D66300"
+                : "#D4008D"
+            })`,
           color: "#FFFFFF",
-
-          fontWeight: 700,
-
+          boxShadow:
+            `0 7px 18px ${accent}44`,
+          fontWeight: 800,
           cursor: "pointer",
         }}
       >

@@ -2,6 +2,14 @@ import {
   useState,
 } from "react";
 
+import {
+  Car,
+  Gauge,
+  LoaderCircle,
+  MapPin,
+  Route,
+} from "lucide-react";
+
 import type {
   Experience,
 } from "../types/experience";
@@ -26,7 +34,6 @@ import {
 
 type Props = {
   expedition: Experience;
-
   onStarted?: () => void;
 };
 
@@ -62,11 +69,6 @@ function ExperienceCard({
 
       onStarted?.();
     } finally {
-      /*
-       * La obtención del GPS es asíncrona.
-       * Liberamos el botón después de un breve
-       * margen para impedir múltiples pulsaciones.
-       */
       window.setTimeout(
         () =>
           setIsStarting(false),
@@ -79,7 +81,8 @@ function ExperienceCard({
     <article
       className="ig-hover"
       style={{
-        position: "relative",
+        position:
+          "relative",
 
         boxSizing:
           "border-box",
@@ -105,13 +108,17 @@ function ExperienceCard({
     >
       <div
         style={{
-          position: "absolute",
+          position:
+            "absolute",
 
-          top: "12px",
+          top:
+            "12px",
 
-          right: "12px",
+          right:
+            "12px",
 
-          zIndex: 5,
+          zIndex:
+            5,
         }}
       >
         <FavoriteButton
@@ -166,11 +173,14 @@ function ExperienceCard({
                 position:
                   "absolute",
 
-                top: "100%",
+                top:
+                  "100%",
 
-                left: 0,
+                left:
+                  0,
 
-                zIndex: 20,
+                zIndex:
+                  20,
 
                 marginTop:
                   "4px",
@@ -203,7 +213,6 @@ function ExperienceCard({
                   "normal",
               }}
             >
-              ✦{" "}
               {getPlaceHint(
                 expedition
               )}
@@ -211,76 +220,91 @@ function ExperienceCard({
           )}
       </div>
 
-      <div
-        style={{
-          display: "flex",
+      {expedition.type ===
+        "expedition" && (
+        <div
+          style={{
+            display:
+              "flex",
 
-          flexWrap: "wrap",
+            flexWrap:
+              "wrap",
 
-          gap:
-            Theme.Space.sm,
+            gap:
+              "8px",
 
-          marginBottom:
-            "14px",
+            marginBottom:
+              "14px",
+          }}
+        >
+          <MetaChip
+            icon={MapPin}
+            text={
+              expedition.distance
+            }
+          />
 
-          color:
-            Theme.Colors.textSoft,
+          <MetaChip
+            icon={Car}
+            text={
+              expedition.driveTime
+            }
+          />
 
-          fontSize:
-            "13px",
-        }}
-      >
-        {expedition.type ===
-          "expedition" && (
-          <>
-            <span>
-              📍{" "}
-              {expedition.distance}
-            </span>
-
-            <span>
-              🚗{" "}
-              {expedition.driveTime}
-            </span>
-
-            <span>
-              ⭐{" "}
-              {
-                difficultyLabels[
-                  expedition.difficulty
-                ]
-              }
-            </span>
-          </>
-        )}
-      </div>
+          <MetaChip
+            icon={Gauge}
+            text={
+              difficultyLabels[
+                expedition.difficulty
+              ]
+            }
+          />
+        </div>
+      )}
 
       <button
         type="button"
-        onClick={handleStart}
-        disabled={isStarting}
+        onClick={
+          handleStart
+        }
+        disabled={
+          isStarting
+        }
         style={{
-          width: "100%",
+          width:
+            "100%",
 
-          minHeight: "44px",
+          minHeight:
+            "62px",
+
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "44px minmax(0, 1fr)",
+
+          alignItems:
+            "center",
+
+          gap:
+            "11px",
 
           padding:
-            "10px 14px",
+            "9px 14px",
 
-          border: "none",
+          border:
+            "1px solid rgba(255,255,255,0.14)",
 
           borderRadius:
-            Theme.Radius.medium,
+            "17px",
 
-          backgroundColor:
-            Theme.Colors.primary,
+          background:
+            isStarting
+              ? "linear-gradient(145deg, rgba(255,61,232,0.58), rgba(125,0,110,0.72))"
+              : "linear-gradient(145deg, #FF3DE8 0%, #D4008D 58%, #7D006E 100%)",
 
           color:
             "#FFFFFF",
-
-          fontSize: "13px",
-
-          fontWeight: 800,
 
           cursor:
             isStarting
@@ -289,18 +313,162 @@ function ExperienceCard({
 
           opacity:
             isStarting
-              ? 0.68
+              ? 0.78
               : 1,
 
+          textAlign:
+            "left",
+
           boxShadow:
-            "0 6px 16px rgba(255,0,122,0.26)",
+            "0 12px 28px rgba(255,0,184,0.26), 0 0 18px rgba(255,0,255,0.12)",
         }}
       >
-        {isStarting
-          ? "Buscando GPS…"
-          : "🧭 Iniciar recorrido →"}
+        <span
+          aria-hidden="true"
+          style={{
+            width:
+              "42px",
+
+            height:
+              "42px",
+
+            display:
+              "grid",
+
+            placeItems:
+              "center",
+
+            borderRadius:
+              "14px",
+
+            background:
+              "rgba(8,9,18,0.24)",
+
+            border:
+              "1px solid rgba(255,255,255,0.16)",
+          }}
+        >
+          {isStarting ? (
+            <LoaderCircle
+              size={23}
+              strokeWidth={1.8}
+            />
+          ) : (
+            <Route
+              size={23}
+              strokeWidth={1.8}
+            />
+          )}
+        </span>
+
+        <span
+          style={{
+            minWidth:
+              0,
+          }}
+        >
+          <strong
+            style={{
+              display:
+                "block",
+
+              fontSize:
+                "14px",
+
+              lineHeight:
+                1.15,
+
+              fontWeight:
+                900,
+            }}
+          >
+            {isStarting
+              ? "Buscando GPS…"
+              : "Comenzar exploración"}
+          </strong>
+
+          <span
+            style={{
+              display:
+                "block",
+
+              marginTop:
+                "4px",
+
+              color:
+                "rgba(255,255,255,0.74)",
+
+              fontSize:
+                "10px",
+
+              fontWeight:
+                650,
+            }}
+          >
+            Registrar ruta, recuerdos y llegada
+          </span>
+        </span>
       </button>
     </article>
+  );
+}
+
+type MetaChipProps = {
+  icon: typeof MapPin;
+  text: string;
+};
+
+function MetaChip({
+  icon: Icon,
+  text,
+}: MetaChipProps) {
+  return (
+    <span
+      style={{
+        display:
+          "inline-flex",
+
+        alignItems:
+          "center",
+
+        gap:
+          "6px",
+
+        minHeight:
+          "30px",
+
+        padding:
+          "5px 9px",
+
+        borderRadius:
+          "999px",
+
+        background:
+          "rgba(255,255,255,0.045)",
+
+        border:
+          "1px solid rgba(255,255,255,0.07)",
+
+        color:
+          Theme.Colors.textSoft,
+
+        fontSize:
+          "11px",
+
+        fontWeight:
+          700,
+      }}
+    >
+      <Icon
+        size={14}
+        strokeWidth={1.8}
+        color={
+          Theme.Colors.primary
+        }
+      />
+
+      {text}
+    </span>
   );
 }
 

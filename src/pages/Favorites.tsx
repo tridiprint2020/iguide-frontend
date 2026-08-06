@@ -2,7 +2,19 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ReactNode,
 } from "react";
+
+import {
+  ArrowRight,
+  Bookmark,
+  Compass,
+  Flame,
+  Heart,
+  House,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 
 import {
   useNavigate,
@@ -27,6 +39,8 @@ import type {
 import ExperienceCard from "../components/ExperienceCard";
 import Sidebar from "../components/Sidebar";
 
+import logoIG from "../assets/optimized/logo-iguide.webp";
+
 import {
   Theme,
 } from "../styles/theme";
@@ -35,35 +49,34 @@ type FilterId =
   | "all"
   | FavoriteReaction;
 
-const reactionLabels: Record<
+type ReactionMeta = {
+  icon: string;
+  label: string;
+};
+
+const REACTION_LABELS: Record<
   FavoriteReaction,
-  {
-    icon: string;
-    label: string;
-  }
+  ReactionMeta
 > = {
   saved: {
     icon: "♡",
     label: "Guardado",
   },
-
   recommended: {
     icon: "👍",
     label: "Recomendable",
   },
-
   loved: {
     icon: "❤️",
     label: "Me encantó",
   },
-
   must_try: {
     icon: "🔥",
     label: "Imperdible",
   },
 };
 
-const filters: Array<{
+const FILTERS: Array<{
   id: FilterId;
   label: string;
 }> = [
@@ -89,24 +102,22 @@ const filters: Array<{
   },
 ];
 
+const REACTION_OPTIONS: FavoriteReaction[] = [
+  "recommended",
+  "loved",
+  "must_try",
+];
+
 function Favorites() {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
-  const [
-    profile,
-    setProfile,
-  ] = useState<UserProfile>(
-    () =>
+  const [profile, setProfile] =
+    useState<UserProfile>(() =>
       loadUserProfile()
-  );
+    );
 
-  const [
-    activeFilter,
-    setActiveFilter,
-  ] = useState<FilterId>(
-    "all"
-  );
+  const [activeFilter, setActiveFilter] =
+    useState<FilterId>("all");
 
   useEffect(() => {
     function syncProfile() {
@@ -120,32 +131,53 @@ function Favorites() {
       syncProfile
     );
 
+    window.addEventListener(
+      "storage",
+      syncProfile
+    );
+
     return () => {
       window.removeEventListener(
         "iguide-user-updated",
         syncProfile
       );
+
+      window.removeEventListener(
+        "storage",
+        syncProfile
+      );
     };
   }, []);
 
-  const visibleFavorites =
-    useMemo(() => {
-      if (
-        activeFilter ===
-        "all"
-      ) {
-        return profile.favorites;
-      }
+  const reactionCounts = useMemo(() => {
+    return profile.favorites.reduce(
+      (counts, favorite) => {
+        counts[favorite.reaction] += 1;
+        return counts;
+      },
+      {
+        saved: 0,
+        recommended: 0,
+        loved: 0,
+        must_try: 0,
+      } as Record<FavoriteReaction, number>
+    );
+  }, [profile.favorites]);
 
-      return profile.favorites.filter(
-        (favorite) =>
-          favorite.reaction ===
-          activeFilter
-      );
-    }, [
-      activeFilter,
-      profile.favorites,
-    ]);
+  const visibleFavorites = useMemo(() => {
+    if (activeFilter === "all") {
+      return profile.favorites;
+    }
+
+    return profile.favorites.filter(
+      (favorite) =>
+        favorite.reaction ===
+        activeFilter
+    );
+  }, [
+    activeFilter,
+    profile.favorites,
+  ]);
 
   const favoriteExperiences =
     visibleFavorites
@@ -154,8 +186,7 @@ function Favorites() {
           favorite
         ): {
           favorite: UserFavorite;
-          experience:
-            (typeof catalog)[number];
+          experience: (typeof catalog)[number];
         } | null => {
           const experience =
             catalog.find(
@@ -179,8 +210,7 @@ function Favorites() {
           item
         ): item is NonNullable<
           typeof item
-        > =>
-          item !== null
+        > => item !== null
       );
 
   function updateReaction(
@@ -193,9 +223,7 @@ function Favorites() {
         reaction
       );
 
-    setProfile(
-      updated
-    );
+    setProfile(updated);
   }
 
   function handleRemove(
@@ -206,290 +234,336 @@ function Favorites() {
         experienceId
       );
 
-    setProfile(
-      updated
-    );
+    setProfile(updated);
   }
+
+  const hasFavorites =
+    profile.favorites.length > 0;
+
+  const isFilteredEmpty =
+    hasFavorites &&
+    favoriteExperiences.length === 0;
 
   return (
     <div
       style={{
-        minHeight:
-          "100vh",
-
-        backgroundColor:
-          Theme.Colors.background,
-
-        color:
-          Theme.Colors.text,
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at 52% 0%, rgba(255,0,255,0.12), transparent 30%), radial-gradient(circle at 100% 28%, rgba(0,230,255,0.08), transparent 24%), #0D0E13",
+        color: Theme.Colors.text,
       }}
     >
       <Sidebar />
 
       <main
         style={{
-          marginLeft:
-            "64px",
-
-          width:
-            "calc(100% - 64px)",
-
-          boxSizing:
-            "border-box",
-
-          padding:
-            "24px 16px 48px",
+          minHeight: "100vh",
+          marginLeft: "64px",
+          width: "calc(100% - 64px)",
+          boxSizing: "border-box",
+          padding: "16px 14px 44px",
         }}
       >
         <div
           style={{
-            maxWidth:
-              "760px",
-
-            margin:
-              "0 auto",
+            width: "100%",
+            maxWidth: "620px",
+            margin: "0 auto",
           }}
         >
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/")
-            }
+          {/* CABECERA COHERENTE CON PERFIL */}
+          <header
             style={{
-              border:
-                "none",
-
-              background:
-                "transparent",
-
-              color:
-                Theme.Colors.textSoft,
-
-              cursor:
-                "pointer",
-
-              marginBottom:
-                "14px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              marginBottom: "18px",
             }}
           >
-            ← Inicio
-          </button>
-
-          <h1
-            style={{
-              margin:
-                "0 0 6px",
-
-              fontFamily:
-                Theme.Typography.title,
-
-              fontSize:
-                "30px",
-            }}
-          >
-            Mis lugares
-          </h1>
-
-          <p
-            style={{
-              margin:
-                "0 0 20px",
-
-              color:
-                Theme.Colors.textSoft,
-
-              lineHeight: 1.5,
-            }}
-          >
-            Guarda lo que quieres
-            conocer y clasifica tus
-            mejores descubrimientos.
-          </p>
-
-          <div
-            style={{
-              display:
-                "flex",
-
-              gap:
-                "8px",
-
-              overflowX:
-                "auto",
-
-              paddingBottom:
-                "8px",
-
-              marginBottom:
-                "20px",
-            }}
-          >
-            {filters.map(
-              (filter) => {
-                const active =
-                  activeFilter ===
-                  filter.id;
-
-                return (
-                  <button
-                    key={
-                      filter.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      setActiveFilter(
-                        filter.id
-                      )
-                    }
-                    style={{
-                      flexShrink: 0,
-
-                      border:
-                        active
-                          ? `1px solid ${Theme.Colors.primary}`
-                          : "1px solid rgba(255,255,255,0.10)",
-
-                      borderRadius:
-                        Theme.Radius.pill,
-
-                      padding:
-                        "8px 13px",
-
-                      backgroundColor:
-                        active
-                          ? "rgba(255,0,122,0.16)"
-                          : Theme.Colors.surface,
-
-                      color:
-                        active
-                          ? Theme.Colors.primary
-                          : Theme.Colors.text,
-
-                      fontWeight:
-                        active
-                          ? 800
-                          : 600,
-
-                      cursor:
-                        "pointer",
-                    }}
-                  >
-                    {
-                      filter.label
-                    }
-                  </button>
-                );
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/")
               }
-            )}
-          </div>
-
-          {favoriteExperiences.length ===
-          0 ? (
-            <section
               style={{
-                backgroundColor:
-                  Theme.Colors.surface,
-
+                minHeight: "40px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "8px 13px",
+                borderRadius: "12px",
                 border:
-                  "1px solid rgba(255,255,255,0.07)",
+                  "1px solid rgba(255,255,255,0.10)",
+                background:
+                  "rgba(255,255,255,0.06)",
+                color: "#FFFFFF",
+                fontSize: "12px",
+                fontWeight: 750,
+                cursor: "pointer",
+              }}
+            >
+              <House
+                size={16}
+                strokeWidth={2.2}
+              />
+              Inicio
+            </button>
 
-                borderRadius:
-                  Theme.Radius.large,
+            <img
+              src={logoIG}
+              alt="I.GUIDE"
+              style={{
+                width: "68px",
+                maxHeight: "46px",
+                display: "block",
+                objectFit: "contain",
+              }}
+            />
+          </header>
 
-                padding:
-                  "32px 20px",
+          {/* IDENTIDAD DE LA COLECCIÓN */}
+          <section
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              marginBottom: "16px",
+              padding: "18px",
+              borderRadius: "22px",
+              background:
+                "linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.035))",
+              border:
+                "1px solid rgba(255,255,255,0.08)",
+              boxShadow:
+                "0 16px 35px rgba(0,0,0,0.22)",
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                width: "150px",
+                height: "150px",
+                right: "-55px",
+                top: "-75px",
+                borderRadius: "50%",
+                background:
+                  "rgba(255,0,255,0.12)",
+                filter: "blur(4px)",
+              }}
+            />
 
-                textAlign:
-                  "center",
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                gap: "15px",
               }}
             >
               <div
+                aria-hidden="true"
                 style={{
-                  fontSize:
-                    "42px",
-
-                  marginBottom:
-                    "12px",
+                  width: "68px",
+                  height: "68px",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "22px",
+                  background:
+                    "linear-gradient(145deg, #FF00FF, #C60073)",
+                  color: "#FFFFFF",
+                  boxShadow:
+                    "0 10px 28px rgba(255,0,122,0.30)",
                 }}
               >
-                ♡
+                <Heart
+                  size={31}
+                  strokeWidth={2}
+                />
               </div>
 
-              <h2
+              <div
                 style={{
-                  margin:
-                    "0 0 8px",
+                  minWidth: 0,
+                  flex: 1,
                 }}
               >
-                Todavía no hay lugares
-                en esta colección
-              </h2>
+                <span
+                  style={{
+                    display: "block",
+                    marginBottom: "4px",
+                    color:
+                      Theme.Colors.primary,
+                    fontSize: "9px",
+                    fontWeight: 850,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Tu mapa emocional
+                </span>
 
-              <p
-                style={{
-                  color:
-                    Theme.Colors.textSoft,
+                <h1
+                  style={{
+                    margin: 0,
+                    color: "#FFFFFF",
+                    fontFamily:
+                      Theme.Typography.title,
+                    fontSize:
+                      "clamp(1.7rem, 7vw, 2.35rem)",
+                    lineHeight: 1.05,
+                  }}
+                >
+                  Mis lugares
+                </h1>
 
-                  lineHeight:
-                    1.5,
-                }}
-              >
-                Explora Huancayo y toca
-                el corazón cuando
-                encuentres algo que
-                quieras conocer.
-              </p>
+                <p
+                  style={{
+                    margin: "7px 0 0",
+                    color:
+                      Theme.Colors.textSoft,
+                    fontSize: "12px",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Lugares que quieres vivir,
+                  recomendar o repetir.
+                </p>
+              </div>
+            </div>
+          </section>
 
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(
-                    "/explorer"
-                  )
-                }
-                style={{
-                  marginTop:
-                    "12px",
+          {/* RESUMEN VISUAL */}
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(3, minmax(0, 1fr))",
+              gap: "9px",
+              marginBottom: "16px",
+            }}
+          >
+            <CollectionStat
+              icon={<Bookmark size={17} />}
+              value={`${profile.favorites.length}`}
+              label="Guardados"
+            />
 
-                  minHeight:
-                    "44px",
+            <CollectionStat
+              icon={<Heart size={17} />}
+              value={`${reactionCounts.loved}`}
+              label="Amados"
+            />
 
-                  padding:
-                    "10px 18px",
+            <CollectionStat
+              icon={<Flame size={17} />}
+              value={`${reactionCounts.must_try}`}
+              label="Imperdibles"
+            />
+          </section>
 
-                  border:
-                    "none",
+          {/* FILTROS */}
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              overflowX: "auto",
+              paddingBottom: "8px",
+              marginBottom: "14px",
+              scrollbarWidth: "none",
+            }}
+          >
+            {FILTERS.map((filter) => {
+              const active =
+                activeFilter === filter.id;
 
-                  borderRadius:
-                    Theme.Radius.medium,
+              const count =
+                filter.id === "all"
+                  ? profile.favorites.length
+                  : reactionCounts[filter.id];
 
-                  backgroundColor:
-                    Theme.Colors.primary,
+              return (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() =>
+                    setActiveFilter(
+                      filter.id
+                    )
+                  }
+                  style={{
+                    flexShrink: 0,
+                    minHeight: "38px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "7px",
+                    padding: "8px 12px",
+                    borderRadius:
+                      Theme.Radius.pill,
+                    border: active
+                      ? `1px solid ${Theme.Colors.primary}`
+                      : "1px solid rgba(255,255,255,0.10)",
+                    background: active
+                      ? "linear-gradient(145deg, rgba(255,0,255,0.18), rgba(21,22,35,0.98))"
+                      : "rgba(255,255,255,0.045)",
+                    color: active
+                      ? Theme.Colors.primary
+                      : Theme.Colors.text,
+                    fontWeight: active
+                      ? 800
+                      : 650,
+                    cursor: "pointer",
+                  }}
+                >
+                  {filter.label}
 
-                  color:
-                    "#FFFFFF",
+                  <span
+                    style={{
+                      minWidth: "18px",
+                      height: "18px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "999px",
+                      background:
+                        "rgba(255,255,255,0.08)",
+                      color: "inherit",
+                      fontSize: "9px",
+                    }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-                  fontWeight:
-                    800,
-
-                  cursor:
-                    "pointer",
-                }}
-              >
-                Explorar lugares →
-              </button>
-            </section>
+          {!hasFavorites ? (
+            <EmptyCollection
+              title="Tu colección empieza en la calle"
+              description="Explora Huancayo y guarda ese lugar que un local sí recomendaría."
+              actionLabel="Descubrir lugares locales"
+              onAction={() =>
+                navigate("/explorer")
+              }
+            />
+          ) : isFilteredEmpty ? (
+            <EmptyCollection
+              title="Aún no hay lugares aquí"
+              description="Prueba otra colección o sigue explorando para sumar nuevos descubrimientos."
+              actionLabel="Ver todos"
+              onAction={() =>
+                setActiveFilter("all")
+              }
+            />
           ) : (
             <div
               style={{
-                display:
-                  "flex",
-
-                flexDirection:
-                  "column",
-
-                gap:
-                  "16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
               }}
             >
               {favoriteExperiences.map(
@@ -498,7 +572,7 @@ function Favorites() {
                   experience,
                 }) => {
                   const meta =
-                    reactionLabels[
+                    REACTION_LABELS[
                       favorite.reaction
                     ];
 
@@ -508,109 +582,91 @@ function Favorites() {
                         experience.experienceId
                       }
                       style={{
-                        borderRadius:
-                          Theme.Radius.large,
-
-                        backgroundColor:
-                          Theme.Colors.surface,
-
-                        padding:
-                          "12px",
-
+                        overflow: "hidden",
+                        borderRadius: "22px",
+                        background:
+                          "linear-gradient(145deg, rgba(255,255,255,0.065), rgba(255,255,255,0.025))",
                         border:
-                          "1px solid rgba(255,255,255,0.07)",
+                          "1px solid rgba(255,255,255,0.08)",
+                        boxShadow:
+                          "0 16px 32px rgba(0,0,0,0.20)",
                       }}
                     >
-                      <ExperienceCard
-                        expedition={
-                          experience
-                        }
-                      />
+                      <div
+                        style={{
+                          padding: "12px",
+                        }}
+                      >
+                        <ExperienceCard
+                          expedition={
+                            experience
+                          }
+                        />
+                      </div>
 
                       <div
                         style={{
-                          marginTop:
-                            "12px",
-
-                          paddingTop:
-                            "12px",
-
+                          padding:
+                            "13px 14px 14px",
                           borderTop:
-                            "1px solid rgba(255,255,255,0.08)",
+                            "1px solid rgba(255,255,255,0.07)",
+                          background:
+                            "rgba(8,9,16,0.42)",
                         }}
                       >
                         <div
                           style={{
-                            display:
-                              "flex",
-
+                            display: "flex",
                             justifyContent:
                               "space-between",
-
-                            alignItems:
-                              "center",
-
-                            gap:
-                              "8px",
-
-                            marginBottom:
-                              "10px",
+                            alignItems: "center",
+                            gap: "10px",
+                            marginBottom: "10px",
                           }}
                         >
-                          <strong
+                          <div
                             style={{
-                              fontSize:
-                                "13px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "7px",
+                              color: "#FFFFFF",
+                              fontSize: "12px",
+                              fontWeight: 800,
                             }}
                           >
-                            Tu valoración
-                          </strong>
+                            <Sparkles
+                              size={15}
+                              color={
+                                Theme.Colors.primary
+                              }
+                            />
+                            Tu vínculo local
+                          </div>
 
                           <span
                             style={{
                               color:
                                 Theme.Colors.primary,
-
-                              fontSize:
-                                "12px",
-
-                              fontWeight:
-                                800,
+                              fontSize: "11px",
+                              fontWeight: 850,
                             }}
                           >
-                            {
-                              meta.icon
-                            }{" "}
-                            {
-                              meta.label
-                            }
+                            {meta.icon} {meta.label}
                           </span>
                         </div>
 
                         <div
                           style={{
-                            display:
-                              "grid",
-
+                            display: "grid",
                             gridTemplateColumns:
                               "repeat(3, minmax(0, 1fr))",
-
-                            gap:
-                              "7px",
+                            gap: "7px",
                           }}
                         >
-                          {(
-                            [
-                              "recommended",
-                              "loved",
-                              "must_try",
-                            ] as FavoriteReaction[]
-                          ).map(
-                            (
-                              reaction
-                            ) => {
+                          {REACTION_OPTIONS.map(
+                            (reaction) => {
                               const option =
-                                reactionLabels[
+                                REACTION_LABELS[
                                   reaction
                                 ];
 
@@ -620,104 +676,121 @@ function Favorites() {
 
                               return (
                                 <button
-                                  key={
-                                    reaction
-                                  }
+                                  key={reaction}
                                   type="button"
-                                  onClick={(
-                                    event
-                                  ) => {
+                                  onClick={(event) => {
                                     event.stopPropagation();
-
                                     updateReaction(
                                       experience.experienceId,
                                       reaction
                                     );
                                   }}
                                   style={{
-                                    minHeight:
-                                      "44px",
-
-                                    border:
-                                      active
-                                        ? `1px solid ${Theme.Colors.primary}`
-                                        : "1px solid rgba(255,255,255,0.10)",
-
-                                    borderRadius:
-                                      "11px",
-
-                                    backgroundColor:
-                                      active
-                                        ? "rgba(255,0,122,0.16)"
-                                        : "rgba(255,255,255,0.04)",
-
-                                    color:
-                                      active
-                                        ? Theme.Colors.primary
-                                        : Theme.Colors.text,
-
-                                    cursor:
-                                      "pointer",
-
-                                    fontSize:
-                                      "11px",
-
-                                    fontWeight:
-                                      700,
+                                    minHeight: "52px",
+                                    padding: "7px 5px",
+                                    borderRadius: "13px",
+                                    border: active
+                                      ? `1px solid ${Theme.Colors.primary}`
+                                      : "1px solid rgba(255,255,255,0.09)",
+                                    background: active
+                                      ? "linear-gradient(145deg, rgba(255,0,255,0.18), rgba(20,21,34,0.98))"
+                                      : "rgba(255,255,255,0.035)",
+                                    color: active
+                                      ? Theme.Colors.primary
+                                      : Theme.Colors.text,
+                                    cursor: "pointer",
+                                    fontSize: "10px",
+                                    fontWeight: 750,
                                   }}
                                 >
-                                  {
-                                    option.icon
-                                  }
-                                  <br />
-                                  {
-                                    option.label
-                                  }
+                                  <span
+                                    style={{
+                                      display: "block",
+                                      marginBottom: "3px",
+                                      fontSize: "16px",
+                                    }}
+                                  >
+                                    {option.icon}
+                                  </span>
+
+                                  {option.label}
                                 </button>
                               );
                             }
                           )}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={(
-                            event
-                          ) => {
-                            event.stopPropagation();
-
-                            handleRemove(
-                              experience.experienceId
-                            );
-                          }}
+                        <div
                           style={{
-                            width:
-                              "100%",
-
-                            marginTop:
-                              "9px",
-
-                            padding:
-                              "8px",
-
-                            border:
-                              "none",
-
-                            background:
-                              "transparent",
-
-                            color:
-                              Theme.Colors.textSoft,
-
-                            cursor:
-                              "pointer",
-
-                            fontSize:
-                              "12px",
+                            display: "grid",
+                            gridTemplateColumns:
+                              "minmax(0, 1fr) 46px",
+                            gap: "8px",
+                            marginTop: "10px",
                           }}
                         >
-                          Quitar de Mis lugares
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(
+                                `/expedition/${experience.slug}`
+                              )
+                            }
+                            style={{
+                              minHeight: "44px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "7px",
+                              border: "none",
+                              borderRadius: "13px",
+                              background:
+                                "linear-gradient(145deg, #FF00FF, #E0008A)",
+                              color: "#FFFFFF",
+                              fontSize: "11px",
+                              fontWeight: 850,
+                              cursor: "pointer",
+                              boxShadow:
+                                "0 8px 22px rgba(255,0,122,0.22)",
+                            }}
+                          >
+                            Vivir esta misión
+                            <ArrowRight
+                              size={16}
+                            />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleRemove(
+                                experience.experienceId
+                              );
+                            }}
+                            aria-label={`Quitar ${experience.title} de favoritos`}
+                            title="Quitar de favoritos"
+                            style={{
+                              minHeight: "44px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: "13px",
+                              border:
+                                "1px solid rgba(255,255,255,0.09)",
+                              background:
+                                "rgba(255,255,255,0.04)",
+                              color:
+                                Theme.Colors.textSoft,
+                              cursor: "pointer",
+                            }}
+                          >
+                            <Trash2
+                              size={17}
+                              strokeWidth={1.8}
+                            />
+                          </button>
+                        </div>
                       </div>
                     </section>
                   );
@@ -725,9 +798,232 @@ function Favorites() {
               )}
             </div>
           )}
+
+          {hasFavorites && (
+            <section
+              style={{
+                marginTop: "16px",
+                padding: "17px",
+                borderRadius: "20px",
+                background:
+                  "linear-gradient(145deg, rgba(0,230,255,0.08), rgba(255,255,255,0.03))",
+                border:
+                  "1px solid rgba(0,230,255,0.16)",
+                textAlign: "center",
+              }}
+            >
+              <Compass
+                size={23}
+                color="#00E6FF"
+              />
+
+              <h2
+                style={{
+                  margin: "8px 0 5px",
+                  color: "#FFFFFF",
+                  fontSize: "16px",
+                }}
+              >
+                Tu ciudad todavía tiene secretos
+              </h2>
+
+              <p
+                style={{
+                  margin: "0 0 13px",
+                  color:
+                    Theme.Colors.textSoft,
+                  fontSize: "11px",
+                  lineHeight: 1.5,
+                }}
+              >
+                Sigue guardando lugares que te
+                hagan sentir más local.
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/explorer")
+                }
+                style={{
+                  width: "100%",
+                  minHeight: "44px",
+                  border: "none",
+                  borderRadius: "13px",
+                  background:
+                    "rgba(0,230,255,0.12)",
+                  color: "#00E6FF",
+                  fontSize: "11px",
+                  fontWeight: 850,
+                  cursor: "pointer",
+                }}
+              >
+                Encontrar otro lugar →
+              </button>
+            </section>
+          )}
         </div>
       </main>
     </div>
+  );
+}
+
+type CollectionStatProps = {
+  icon: ReactNode;
+  value: string;
+  label: string;
+};
+
+function CollectionStat({
+  icon,
+  value,
+  label,
+}: CollectionStatProps) {
+  return (
+    <article
+      style={{
+        minWidth: 0,
+        minHeight: "92px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "10px 6px",
+        borderRadius: "17px",
+        background: Theme.Colors.surface,
+        border:
+          "1px solid rgba(255,255,255,0.07)",
+        textAlign: "center",
+      }}
+    >
+      <span
+        style={{
+          display: "inline-flex",
+          color: Theme.Colors.primary,
+        }}
+      >
+        {icon}
+      </span>
+
+      <strong
+        style={{
+          display: "block",
+          marginTop: "7px",
+          color: "#FFFFFF",
+          fontSize: "19px",
+        }}
+      >
+        {value}
+      </strong>
+
+      <span
+        style={{
+          display: "block",
+          marginTop: "2px",
+          color: Theme.Colors.textSoft,
+          fontSize: "9px",
+          fontWeight: 700,
+        }}
+      >
+        {label}
+      </span>
+    </article>
+  );
+}
+
+type EmptyCollectionProps = {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+};
+
+function EmptyCollection({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: EmptyCollectionProps) {
+  return (
+    <section
+      style={{
+        padding: "30px 20px",
+        borderRadius: "22px",
+        background:
+          "linear-gradient(145deg, rgba(255,0,255,0.08), rgba(255,255,255,0.035))",
+        border:
+          "1px solid rgba(255,0,255,0.15)",
+        textAlign: "center",
+        boxShadow:
+          "0 16px 34px rgba(0,0,0,0.18)",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          width: "60px",
+          height: "60px",
+          margin: "0 auto 13px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "20px",
+          background:
+            "linear-gradient(145deg, #FF00FF, #C60073)",
+          color: "#FFFFFF",
+          boxShadow:
+            "0 10px 28px rgba(255,0,122,0.25)",
+        }}
+      >
+        <Heart
+          size={28}
+          strokeWidth={2}
+        />
+      </div>
+
+      <h2
+        style={{
+          margin: "0 0 7px",
+          color: "#FFFFFF",
+          fontSize: "18px",
+        }}
+      >
+        {title}
+      </h2>
+
+      <p
+        style={{
+          maxWidth: "360px",
+          margin: "0 auto 15px",
+          color: Theme.Colors.textSoft,
+          fontSize: "11px",
+          lineHeight: 1.55,
+        }}
+      >
+        {description}
+      </p>
+
+      <button
+        type="button"
+        onClick={onAction}
+        style={{
+          width: "100%",
+          minHeight: "46px",
+          border: "none",
+          borderRadius: "13px",
+          background:
+            "linear-gradient(145deg, #FF00FF, #E0008A)",
+          color: "#FFFFFF",
+          fontSize: "12px",
+          fontWeight: 850,
+          cursor: "pointer",
+          boxShadow:
+            "0 9px 24px rgba(255,0,122,0.24)",
+        }}
+      >
+        {actionLabel} →
+      </button>
+    </section>
   );
 }
 

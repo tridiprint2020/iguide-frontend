@@ -1,6 +1,5 @@
 import type { Experience } from "../../../types/experience/experience";
-import placeholder from "../../../assets/placeholders/logo-iguide.png";
-
+import placeholder from "../../../assets/optimized/logo-iguide.webp";
 export const crafts: Experience[] = [
     {
     experienceId:"CRA-0001",

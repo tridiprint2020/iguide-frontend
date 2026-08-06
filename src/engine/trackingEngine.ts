@@ -884,25 +884,39 @@ export function canCompleteJourney(
   const configuredRadiusMeters =
     experience
       .certificationRadiusMeters ??
-    20;
+    25;
+
+  const arrivalExperience =
+    experience as typeof experience & {
+      arrivalLatitude?: number;
+      arrivalLongitude?: number;
+    };
+
+  const targetLatitude =
+    arrivalExperience.arrivalLatitude ??
+    experience.latitude;
+
+  const targetLongitude =
+    arrivalExperience.arrivalLongitude ??
+    experience.longitude;
 
   /*
-   * Tolerancia realista para GPS móvil.
-   * Conservamos el radio del establecimiento,
-   * pero nunca certificamos con menos de 35 m.
+   * Debe coincidir con la tolerancia usada por
+   * locationTracker. En calles estrechas y edificios
+   * altos, el GPS móvil puede reportar 40–70 metros.
    */
   const certificationRadiusMeters =
     Math.max(
       configuredRadiusMeters,
-      35
+      70
     );
 
   const inside =
     isInsideCertificationArea(
       finish.lat,
       finish.lng,
-      experience.latitude,
-      experience.longitude,
+      targetLatitude,
+      targetLongitude,
       certificationRadiusMeters
     );
 
@@ -929,4 +943,3 @@ export function canCompleteJourney(
       `Llegada certificada en ${experience.title}.`,
   };
 }
-

@@ -1,18 +1,47 @@
-import QuickActionCard from "./QuickActionCard";
+import type {
+  LucideIcon,
+} from "lucide-react";
+
+import {
+  Navigation,
+  Radar,
+} from "lucide-react";
+
+import NeonIcon from "../ui/NeonIcon";
+
+import {
+  NeonTheme,
+} from "../../styles/neonTheme";
+
+type ActionTone =
+  | "magenta"
+  | "cyan";
 
 type QuickAction = {
   id: string;
+
   title: string;
+
   subtitle: string;
-  icon: string;
+
+  icon: LucideIcon;
+
+  tone:
+    ActionTone;
+
   image?: string;
-  accent?: string;
-  variant?: "photo" | "map";
-  onClick: () => void;
+
+  variant?:
+    "default"
+    | "map";
+
+  onClick:
+    () => void;
 };
 
 type Props = {
-  actions: QuickAction[];
+  actions:
+    QuickAction[];
 };
 
 function QuickActionsGrid({
@@ -23,36 +52,301 @@ function QuickActionsGrid({
       aria-label="Acciones rápidas"
       style={{
         width: "100%",
+
+        display: "grid",
+
+        gridTemplateColumns:
+          "repeat(2, minmax(0, 1fr))",
+
+        gap: "10px",
+      }}
+    >
+      {actions.map(
+        (action) => (
+          <QuickActionCard
+            key={
+              action.id
+            }
+            action={
+              action
+            }
+          />
+        )
+      )}
+    </section>
+  );
+}
+
+type QuickActionCardProps = {
+  action:
+    QuickAction;
+};
+
+function QuickActionCard({
+  action,
+}: QuickActionCardProps) {
+  const isCyan =
+    action.tone ===
+    "cyan";
+
+  const toneColor =
+    isCyan
+      ? NeonTheme
+          .Colors
+          .cyan
+      : NeonTheme
+          .Colors
+          .magenta;
+
+  const glowColor =
+    isCyan
+      ? "rgba(0,230,255,0.28)"
+      : "rgba(255,61,232,0.28)";
+
+  const isMap =
+    action.variant ===
+    "map";
+
+  return (
+    <button
+      type="button"
+      onClick={
+        action.onClick
+      }
+      style={{
+        position: "relative",
+
+        width: "100%",
+
+        minWidth: 0,
+
+        minHeight: "160px",
+
+        boxSizing:
+          "border-box",
+
+        overflow: "hidden",
+
+        display: "flex",
+
+        flexDirection:
+          "column",
+
+        alignItems:
+          "flex-start",
+
+        justifyContent:
+          "space-between",
+
+        padding: "13px",
+
+        borderRadius:
+          "20px",
+
+        border:
+          `1px solid ${toneColor}44`,
+
+        background:
+          action.image
+            ? `
+              linear-gradient(
+                180deg,
+                rgba(6,7,16,0.10) 0%,
+                rgba(6,7,16,0.32) 32%,
+                rgba(6,7,16,0.94) 100%
+              ),
+              url(${action.image})
+            `
+            : `
+              radial-gradient(
+                circle at 72% 28%,
+                ${glowColor},
+                transparent 34%
+              ),
+              linear-gradient(
+                145deg,
+                #181A31,
+                #0A0B16
+              )
+            `,
+
+        backgroundSize:
+          "cover",
+
+        backgroundPosition:
+          "center",
+
+        color:
+          "#FFFFFF",
+
+        textAlign:
+          "left",
+
+        cursor:
+          "pointer",
+
+        boxShadow:
+          `
+            0 13px 30px rgba(0,0,0,0.29),
+            0 0 19px ${glowColor}
+          `,
+
+        transition:
+          "transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease",
+      }}
+    >
+      <NeonIcon
+        icon={
+          action.icon
+        }
+        tone={
+          action.tone
+        }
+        size={23}
+        strokeWidth={
+          1.5
+        }
+        framed
+      />
+
+      {isMap && (
+        <MapDecoration />
+      )}
+
+      <div
+        style={{
+          position:
+            "relative",
+
+          zIndex: 2,
+
+          width: "100%",
+        }}
+      >
+        <h2
+          style={{
+            margin:
+              "0 0 5px",
+
+            color:
+              "#FFFFFF",
+
+            fontSize:
+              "clamp(1rem, 4.2vw, 1.25rem)",
+
+            fontWeight:
+              850,
+
+            lineHeight:
+              1.04,
+
+            letterSpacing:
+              "-0.02em",
+
+            textShadow:
+              "0 3px 11px rgba(0,0,0,0.94)",
+          }}
+        >
+          {action.title}
+        </h2>
+
+        <p
+          style={{
+            margin: 0,
+
+            color:
+              "rgba(255,255,255,0.80)",
+
+            fontSize:
+              "10px",
+
+            lineHeight:
+              1.35,
+
+            textShadow:
+              "0 2px 8px rgba(0,0,0,0.96)",
+          }}
+        >
+          {
+            action.subtitle
+          }
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function MapDecoration() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position:
+          "absolute",
+
+        inset: 0,
+
+        pointerEvents:
+          "none",
       }}
     >
       <div
         style={{
-          display: "grid",
+          position:
+            "absolute",
 
-          gridTemplateColumns:
-            "repeat(2, minmax(0, 1fr))",
+          right: "18px",
 
-          gap: "10px",
+          top: "31px",
 
-          width: "100%",
+          color:
+            NeonTheme
+              .Colors
+              .cyan,
 
-          boxSizing: "border-box",
+          filter:
+            NeonTheme
+              .Glow
+              .cyan,
         }}
       >
-        {actions.map((action) => (
-          <QuickActionCard
-            key={action.id}
-            title={action.title}
-            subtitle={action.subtitle}
-            icon={action.icon}
-            image={action.image}
-            accent={action.accent}
-            variant={action.variant}
-            onClick={action.onClick}
-          />
-        ))}
+        <Radar
+          size={53}
+          strokeWidth={
+            1.15
+          }
+        />
       </div>
-    </section>
+
+      <div
+        style={{
+          position:
+            "absolute",
+
+          right: "35px",
+
+          top: "48px",
+
+          color:
+            NeonTheme
+              .Colors
+              .magenta,
+
+          filter:
+            NeonTheme
+              .Glow
+              .magenta,
+        }}
+      >
+        <Navigation
+          size={19}
+          strokeWidth={
+            1.6
+          }
+          fill="rgba(255,61,232,0.18)"
+        />
+      </div>
+    </div>
   );
 }
 

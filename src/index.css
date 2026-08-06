@@ -143,3 +143,32 @@ code {
   width: 280px !important;
   height: 500px !important; /* Fuerza la altura de la tarjeta de memoria proporcional al aspecto 9:16 */
 }
+html {
+  touch-action: manipulation;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-width: 320px;
+}
+
+/*
+ * No bloquear el zoom del navegador.
+ * Los controles interactivos conservan un tamaño accesible.
+ */
+button,
+a,
+input,
+textarea,
+select {
+  min-height: 44px;
+}
+
+/*
+ * El mapa usa sus propios gestos.
+ * Fuera del mapa, el navegador puede ampliar normalmente.
+ */
+.leaflet-container {
+  touch-action: pan-x pan-y;
+}

@@ -14,7 +14,8 @@ import type { TimelineItem } from "../types/tracking/tracking";
 import { loadTrack } from "../engine/trackingEngine";
 import HospesBanner from "../components/hospes/HospesBanner";
 import { getHospesMessage } from "../engine/hospesContextEngine";
-import logoIG from "../assets/placeholders/logoIG.png";
+import logoIG from "../assets/optimized/logoIG.webp";
+import { Route } from "lucide-react";
 
 type ExpeditionExperience = Experience & {
   distance: string;
@@ -130,9 +131,6 @@ const hospesBannerMessage =
   });
 
 
-  const handleShareAdventureStart = () => {
-    };
-
   return (
     <div style={{ backgroundColor: "#0A0A0A", minHeight: "100vh", padding: Theme.Space.lg }}>
       <div style={{ maxWidth: "600px", margin: "0 auto" }}>
@@ -217,94 +215,114 @@ const hospesBannerMessage =
           />
           
           {isTrackingActive ? (
-            <div style={{ marginTop: "20px" }}>
-<TrackingPanel
-    experienceId={expedition.experienceId}
-    track={currentTrack}
-    onUpdate={() => {}}
-/>
-          </div>
+            <div
+              style={{
+                marginTop: "20px",
+              }}
+            >
+              <TrackingPanel
+                experienceId={
+                  expedition.experienceId
+                }
+                track={currentTrack}
+                onUpdate={() => {}}
+              />
+            </div>
           ) : (
-            <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div
+              style={{
+                marginTop: "24px",
+              }}
+            >
               <button
+                type="button"
                 onClick={() => {
-  if (!navigator.geolocation) {
-    console.error(
-      "Geolocalización no disponible."
-    );
+                  if (!navigator.geolocation) {
+                    console.error(
+                      "Geolocalización no disponible."
+                    );
 
-    return;
-  }
+                    return;
+                  }
 
-  startWalking(expedition);
-}}
+                  startWalking(
+                    expedition
+                  );
+                }}
                 style={{
-                  padding: "16px",
-                  borderRadius: "14px",
-                  border: "none",
-                  backgroundColor: Theme.Colors.primary,
-                  color: "#FFFFFF",
-                  fontSize: "14px",
-                  fontWeight: 800,
-                  cursor: "pointer",
+                  position: "relative",
                   width: "100%",
-                  boxShadow: "0 4px 14px rgba(255, 0, 255, 1)",
-                  display: "flex",
+                  minHeight: "66px",
+                  overflow: "hidden",
+                  display: "grid",
+                  gridTemplateColumns:
+                    "48px minmax(0, 1fr)",
                   alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px"
+                  gap: "12px",
+                  padding: "11px 16px",
+                  borderRadius: "18px",
+                  border:
+                    "1px solid rgba(255,255,255,0.14)",
+                  background:
+                    "linear-gradient(145deg, #FF3DE8 0%, #D4008D 58%, #7D006E 100%)",
+                  color: "#FFFFFF",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  boxShadow:
+                    "0 14px 32px rgba(255,0,184,0.30), 0 0 20px rgba(255,0,255,0.16)",
                 }}
               >
-                <button
-  onClick={() => {
-    if (!navigator.geolocation) {
-      console.error("Geolocalización no disponible.");
-      return;
-    }
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: "46px",
+                    height: "46px",
+                    display: "grid",
+                    placeItems: "center",
+                    borderRadius: "15px",
+                    background:
+                      "rgba(8,9,18,0.24)",
+                    border:
+                      "1px solid rgba(255,255,255,0.18)",
+                    boxShadow:
+                      "inset 0 0 16px rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <Route
+                    size={25}
+                    strokeWidth={1.8}
+                  />
+                </span>
 
-    startWalking(expedition);
-  }}
-  style={{
-    padding: "16px",
-    borderRadius: "14px",
-    border: "none",
-    backgroundColor: Theme.Colors.primary,
-    color: "#FFFFFF",
-    fontSize: "14px",
-    fontWeight: 800,
-    cursor: "pointer",
-    width: "100%",
-    boxShadow: "0 4px 14px rgba(255,0,255,1)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-  }}
->
-  <span>🧭</span>
-  Comenzar Línea de Exploración
-</button>
-              </button>
+                <span
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
+                  <strong
+                    style={{
+                      display: "block",
+                      fontSize: "15px",
+                      lineHeight: 1.15,
+                      fontWeight: 900,
+                    }}
+                  >
+                    Comenzar exploración
+                  </strong>
 
-              <button
-                onClick={handleShareAdventureStart}
-                style={{
-                  padding: "12px",
-                  borderRadius: "12px",
-                  border: `1px solid ${Theme.Colors.primary}`,
-                  backgroundColor: "rgba(255,0,255,0.04)",
-                  color: "#FFFFFF",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px"
-                }}
-              >
-                <span>✨</span> Compartir
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: "4px",
+                      color:
+                        "rgba(255,255,255,0.76)",
+                      fontSize: "10px",
+                      fontWeight: 650,
+                    }}
+                  >
+                    Registrar ruta, recuerdos y llegada
+                  </span>
+                </span>
               </button>
             </div>
           )}
@@ -316,13 +334,7 @@ const hospesBannerMessage =
           isOpen={shareOpen}
           onClose={() => setShareOpen(false)}
          memoryData={activeMemory}
-          experienceContext={{
-            experienceId: expedition.experienceId,
-            slug: expedition.slug,
-            title: expedition.title,
-            city: expedition.city,
-             type: expedition.type
-        }}
+          experienceContext={expedition}
         mapContext={{
           center: [
             expedition.latitude || -12.06513,

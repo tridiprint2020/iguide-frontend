@@ -1,8 +1,26 @@
-import type { Interest } from "./interest";
-import type { JourneyStats } from "../engine/trackingEngine";
-import type { TimelineItem } from "./tracking/tracking";
+import type {
+  Interest,
+} from "./interest";
 
+import type {
+  TimelineItem,
+} from "./tracking/tracking";
+
+import type {
+  JourneyStats,
+} from "../engine/trackingEngine";
+
+/**
+ * Datos necesarios para construir, mostrar,
+ * compartir y descargar una MemoryCard I.GUIDE.
+ */
 export interface MemoryCardData {
+  /**
+   * Permite guardar reacciones y favoritos
+   * sobre la experiencia original.
+   */
+  experienceId?: string;
+
   title: string;
   placeLabel: string;
   city: string;
@@ -14,8 +32,17 @@ export interface MemoryCardData {
   lat?: number;
   lng?: number;
 
-  center?: [number, number];
-  path?: [number, number][];
+  center?: [
+    number,
+    number,
+  ];
+
+  path?: Array<
+    [
+      number,
+      number,
+    ]
+  >;
 
   waypoints?: TimelineItem[];
 
@@ -24,8 +51,18 @@ export interface MemoryCardData {
   stats: JourneyStats;
 
   mapBackground?: {
-    center: [number, number];
-    path: [number, number][];
+    center: [
+      number,
+      number,
+    ];
+
+    path: Array<
+      [
+        number,
+        number,
+      ]
+    >;
+
     memories: TimelineItem[];
   };
 }

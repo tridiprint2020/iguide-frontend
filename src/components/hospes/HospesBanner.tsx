@@ -1,6 +1,15 @@
+import {
+  ArrowRight,
+  Compass,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
+
 import type {
   HospesMessage,
 } from "../../types/hospes";
+
+import NeonIcon from "../ui/NeonIcon";
 
 type ProgressData = {
   level: number;
@@ -13,266 +22,22 @@ type ProgressData = {
 
 type Props = {
   message: HospesMessage;
+
   onAction?: () => void;
+
   progress?: ProgressData;
+
   onProgressClick?: () => void;
 };
 
-function ProgressTimeline({
-  level,
-  xp,
-  xpToNextLevel,
-  progressPercent,
-  visitedCount,
-  totalCount,
-  onClick,
-}: ProgressData & {
-  onClick?: () => void;
-}) {
-  const normalizedProgress =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        progressPercent
-      )
-    );
-
-  const activeDotCount =
-    Math.min(
-      4,
-      Math.max(
-        0,
-        Math.ceil(
-          normalizedProgress / 25
-        )
-      )
-    );
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        width: "100%",
-        minHeight: "100%",
-
-        padding: "11px 9px",
-
-        border:
-          "1px solid rgba(255,0,255,0.24)",
-
-        borderRadius: "14px",
-
-        background:
-          "linear-gradient(180deg, rgba(255,0,255,0.10), rgba(255,255,255,0.025))",
-
-        color: "#FFFFFF",
-
-        cursor: onClick
-          ? "pointer"
-          : "default",
-
-        textAlign: "left",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-
-          justifyContent:
-            "space-between",
-
-          alignItems: "center",
-
-          gap: "6px",
-        }}
-      >
-        <span
-          style={{
-            color:
-              "rgba(255,255,255,0.56)",
-
-            fontSize: "8px",
-
-            fontWeight: 800,
-
-            letterSpacing: "0.08em",
-
-            textTransform:
-              "uppercase",
-          }}
-        >
-          Nivel
-        </span>
-
-        <strong
-          style={{
-            color: "#FF00FF",
-
-            fontSize: "17px",
-          }}
-        >
-          {level}
-        </strong>
-      </div>
-
-      <div
-        style={{
-          marginTop: "8px",
-
-          fontSize: "9px",
-
-          color:
-            "rgba(255,255,255,0.72)",
-        }}
-      >
-        {xp} XP
-      </div>
-
-      <div
-        style={{
-          width: "100%",
-          height: "4px",
-
-          marginTop: "5px",
-
-          overflow: "hidden",
-
-          borderRadius: "999px",
-
-          background:
-            "rgba(255,255,255,0.09)",
-        }}
-      >
-        <div
-          style={{
-            width:
-              `${normalizedProgress}%`,
-
-            height: "100%",
-
-            borderRadius: "999px",
-
-            backgroundColor:
-              "#FF00FF",
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          marginTop: "4px",
-
-          fontSize: "8px",
-
-          color:
-            "rgba(255,255,255,0.44)",
-        }}
-      >
-        {xpToNextLevel} XP restantes
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-
-          alignItems: "center",
-
-          marginTop: "10px",
-        }}
-      >
-        {[0, 1, 2, 3].map(
-          (dotIndex) => {
-            const isActive =
-              dotIndex <
-              activeDotCount;
-
-            return (
-              <div
-                key={dotIndex}
-                style={{
-                  display: "flex",
-
-                  flex: dotIndex < 3
-                    ? 1
-                    : "initial",
-
-                  alignItems:
-                    "center",
-                }}
-              >
-                <span
-                  style={{
-                    width: "7px",
-                    height: "7px",
-
-                    flexShrink: 0,
-
-                    borderRadius:
-                      "50%",
-
-                    backgroundColor:
-                      isActive
-                        ? "#FF00FF"
-                        : "#4A4A4A",
-
-                    boxShadow:
-                      isActive
-                        ? "0 0 8px rgba(255,0,255,0.65)"
-                        : "none",
-                  }}
-                />
-
-                {dotIndex < 3 && (
-                  <span
-                    style={{
-                      width:
-                        "100%",
-
-                      height:
-                        "1px",
-
-                      backgroundColor:
-                        dotIndex <
-                        activeDotCount - 1
-                          ? "#FF00FF"
-                          : "#454545",
-                    }}
-                  />
-                )}
-              </div>
-            );
-          }
-        )}
-      </div>
-
-      <div
-        style={{
-          marginTop: "8px",
-
-          display: "flex",
-
-          justifyContent:
-            "space-between",
-
-          gap: "4px",
-
-          fontSize: "8px",
-
-          color:
-            "rgba(255,255,255,0.58)",
-        }}
-      >
-        <span>
-          {visitedCount}/{totalCount}
-        </span>
-
-        <span>
-          {normalizedProgress}%
-        </span>
-      </div>
-    </button>
+function clamp(
+  value: number,
+  minimum: number,
+  maximum: number
+): number {
+  return Math.min(
+    Math.max(value, minimum),
+    maximum
   );
 }
 
@@ -286,50 +51,92 @@ export default function HospesBanner({
     Boolean(message.action) &&
     Boolean(onAction);
 
+  const progressValue =
+    progress
+      ? clamp(
+          progress.progressPercent,
+          0,
+          100
+        )
+      : 0;
+
   return (
     <section
       style={{
+        position: "relative",
+
         width: "100%",
         maxWidth: "100%",
 
         boxSizing: "border-box",
-
         overflow: "hidden",
 
-        background: "#111111",
+        padding: "16px",
+
+        borderRadius: "22px",
 
         border:
-          "1px solid rgba(255,255,255,0.08)",
+          "1px solid rgba(255,61,232,0.22)",
 
-        borderRadius: "20px",
+        background: `
+          radial-gradient(
+            circle at 10% 12%,
+            rgba(255,61,232,0.17),
+            transparent 32%
+          ),
+          radial-gradient(
+            circle at 92% 88%,
+            rgba(0,230,255,0.09),
+            transparent 35%
+          ),
+          linear-gradient(
+            145deg,
+            rgba(24,25,47,0.98),
+            rgba(9,10,21,0.99)
+          )
+        `,
 
-        padding: "14px",
-
-        display: "grid",
-
-        gridTemplateColumns:
-          progress
-            ? "minmax(0, 1fr) 88px"
-            : "minmax(0, 1fr)",
-
-        gap: "10px",
-
-        alignItems: "stretch",
-
-        boxShadow:
-          "0 12px 30px rgba(0,0,0,0.18)",
+        boxShadow: `
+          0 18px 42px rgba(0,0,0,0.34),
+          0 0 26px rgba(255,61,232,0.08)
+        `,
       }}
     >
+      {/* Brillo superior decorativo */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+
+          top: "-42px",
+          left: "26px",
+
+          width: "120px",
+          height: "84px",
+
+          borderRadius: "50%",
+
+          background:
+            "rgba(255,61,232,0.15)",
+
+          filter: "blur(34px)",
+
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* MENSAJE PRINCIPAL */}
       <div
         style={{
-          minWidth: 0,
+          position: "relative",
+          zIndex: 2,
 
           display: "grid",
 
           gridTemplateColumns:
-            "42px minmax(0, 1fr)",
+            "54px minmax(0, 1fr)",
 
-          gap: "11px",
+          gap: "13px",
 
           alignItems: "start",
         }}
@@ -337,25 +144,39 @@ export default function HospesBanner({
         <div
           aria-hidden="true"
           style={{
-            width: "42px",
-            height: "42px",
+            position: "relative",
 
-            borderRadius: "50%",
-
-            backgroundColor:
-              "rgba(255,255,255,0.05)",
+            width: "54px",
+            height: "54px",
 
             display: "flex",
-
             alignItems: "center",
-
-            justifyContent:
-              "center",
-
-            fontSize: "24px",
+            justifyContent: "center",
           }}
         >
-          {message.icon}
+          <NeonIcon
+            icon={Compass}
+            tone="magenta"
+            size={31}
+            strokeWidth={1.35}
+            framed
+          />
+
+          <Sparkles
+            aria-hidden="true"
+            size={13}
+            strokeWidth={1.7}
+            color="#00E6FF"
+            style={{
+              position: "absolute",
+
+              top: "-1px",
+              right: "-2px",
+
+              filter:
+                "drop-shadow(0 0 7px rgba(0,230,255,0.92))",
+            }}
+          />
         </div>
 
         <div
@@ -365,18 +186,20 @@ export default function HospesBanner({
         >
           <div
             style={{
-              color: message.color,
+              marginBottom: "7px",
 
-              fontWeight: 800,
+              color: "#FF3DE8",
 
-              marginBottom: "5px",
+              fontSize: "13px",
+              fontWeight: 850,
+              lineHeight: 1.25,
 
-              fontSize: "12px",
+              letterSpacing: "0.025em",
 
-              lineHeight: 1.2,
+              overflowWrap: "anywhere",
 
-              overflowWrap:
-                "anywhere",
+              textShadow:
+                "0 0 12px rgba(255,61,232,0.32)",
             }}
           >
             {message.title}
@@ -384,14 +207,13 @@ export default function HospesBanner({
 
           <div
             style={{
-              color: "#E8E8E8",
+              color:
+                "rgba(255,255,255,0.88)",
 
-              lineHeight: 1.42,
+              fontSize: "12px",
+              lineHeight: 1.5,
 
-              fontSize: "11px",
-
-              overflowWrap:
-                "anywhere",
+              overflowWrap: "anywhere",
             }}
           >
             {message.message}
@@ -404,54 +226,209 @@ export default function HospesBanner({
                 onClick={onAction}
                 style={{
                   width: "100%",
+                  minHeight: "44px",
 
-                  minHeight: "36px",
+                  marginTop: "14px",
+                  padding: "10px 13px",
 
-                  marginTop: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
 
-                  padding:
-                    "7px 10px",
+                  gap: "7px",
 
-                  border: "none",
+                  border:
+                    "1px solid rgba(255,255,255,0.12)",
 
-                  borderRadius:
-                    "10px",
+                  borderRadius: "13px",
 
-                  backgroundColor:
-                    message.color,
+                  background:
+                    "linear-gradient(145deg, #FF3DE8, #D4008D)",
 
                   color: "#FFFFFF",
 
-                  fontSize: "10px",
+                  boxShadow:
+                    "0 9px 24px rgba(255,61,232,0.27)",
 
-                  fontWeight: 800,
+                  fontSize: "12px",
+                  fontWeight: 850,
 
                   cursor: "pointer",
-
-                  whiteSpace:
-                    "normal",
-
-                  overflowWrap:
-                    "anywhere",
                 }}
               >
-                {
-                  message.action
-                    .label
-                }{" "}
-                →
+                {message.action.label}
+
+                <ArrowRight
+                  size={16}
+                  strokeWidth={2.2}
+                />
               </button>
             )}
         </div>
       </div>
 
+      {/* PROGRESO COMPACTO */}
       {progress && (
-        <ProgressTimeline
-          {...progress}
-          onClick={
-            onProgressClick
-          }
-        />
+        <button
+          type="button"
+          onClick={onProgressClick}
+          disabled={!onProgressClick}
+          aria-label="Abrir mi progreso"
+          style={{
+            position: "relative",
+            zIndex: 2,
+
+            width: "100%",
+
+            marginTop: "15px",
+            padding: "11px 12px",
+
+            display: "block",
+
+            borderRadius: "15px",
+
+            border:
+              "1px solid rgba(0,230,255,0.14)",
+
+            background:
+              "rgba(255,255,255,0.035)",
+
+            color: "#FFFFFF",
+
+            textAlign: "left",
+
+            cursor:
+              onProgressClick
+                ? "pointer"
+                : "default",
+
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+
+              alignItems: "center",
+              justifyContent:
+                "space-between",
+
+              gap: "10px",
+
+              marginBottom: "8px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+
+                alignItems: "center",
+
+                gap: "7px",
+              }}
+            >
+              <TrendingUp
+                size={15}
+                strokeWidth={2.1}
+                color="#00E6FF"
+                style={{
+                  filter:
+                    "drop-shadow(0 0 6px rgba(0,230,255,0.66))",
+                }}
+              />
+
+              <span
+                style={{
+                  color:
+                    "rgba(255,255,255,0.76)",
+
+                  fontSize: "10px",
+                  fontWeight: 750,
+
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Progreso local
+              </span>
+            </div>
+
+            <strong
+              style={{
+                color: "#00E6FF",
+
+                fontSize: "11px",
+
+                textShadow:
+                  "0 0 8px rgba(0,230,255,0.38)",
+              }}
+            >
+              Nivel {progress.level}
+            </strong>
+          </div>
+
+          <div
+            style={{
+              width: "100%",
+              height: "6px",
+
+              overflow: "hidden",
+
+              borderRadius: "999px",
+
+              background:
+                "rgba(255,255,255,0.09)",
+            }}
+          >
+            <div
+              style={{
+                width:
+                  `${progressValue}%`,
+
+                height: "100%",
+
+                borderRadius: "999px",
+
+                background:
+                  "linear-gradient(90deg, #00E6FF, #3B82F6)",
+
+                boxShadow:
+                  "0 0 10px rgba(0,230,255,0.48)",
+
+                transition:
+                  "width 0.35s ease",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+
+              justifyContent:
+                "space-between",
+
+              gap: "10px",
+
+              marginTop: "7px",
+
+              color:
+                "rgba(255,255,255,0.52)",
+
+              fontSize: "9px",
+            }}
+          >
+            <span>
+              {progress.visitedCount}/
+              {progress.totalCount} descubrimientos
+            </span>
+
+            <span>
+              {progress.xp} XP ·{" "}
+              {progress.xpToNextLevel} para subir
+            </span>
+          </div>
+        </button>
       )}
     </section>
   );

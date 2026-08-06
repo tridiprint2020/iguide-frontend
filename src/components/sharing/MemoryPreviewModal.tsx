@@ -1,175 +1,337 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Inyectado para control de subventanas
+import {
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Route,
+  X,
+} from "lucide-react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "./ShareDrawer";
-import type { MemoryCardData } from "../../types/memoryCard";
-import { shareEngine } from "../../engine/shareEngine";
-import { Theme } from "../../styles/theme";
-import { useJourney } from "../../context/JourneyContext"; // ✅ Conexión al estado del viaje activo
+
+import {
+  shareEngine,
+} from "../../engine/shareEngine";
+
+import {
+  useJourney,
+} from "../../context/JourneyContext";
+
+
+import type {
+  Experience,
+} from "../../types/experience/experience";
+
+import type {
+  TimelineItem,
+} from "../../types/tracking/tracking";
+
+import type {
+  MemoryCardData,
+} from "../../types/memoryCard";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   memoryData: MemoryCardData | null;
-  experienceContext: any; // ✅ Recibe el objeto Experience crudo para inyectar al motor de rutas
+  experienceContext:
+    | Experience
+    | null;
   mapContext: {
     center: [number, number];
     path: [number, number][];
-    memories: any[];
+    memories: TimelineItem[];
   };
 };
 
-function MemoryPreviewModal({ isOpen, onClose, memoryData, experienceContext, mapContext }: Props) {
-  const navigate = useNavigate();
-  const { startWalking } = useJourney(); // ✅ Despachador de expediciones
-  const [isBtnHovered, setIsBtnHovered] = useState(false);
+function MemoryPreviewModal({
+  isOpen,
+  onClose,
+  memoryData,
+  experienceContext,
+  mapContext,
+}: Props) {
+  const navigate =
+    useNavigate();
 
-  if (!isOpen || !memoryData) return null;
+  const {
+    startWalking,
+  } = useJourney();
 
-  const handleSocialShare = () => {
-    shareEngine.shareMemory(memoryData);
+  const memoryCardRef =
+    useRef<HTMLElement | null>(
+      null
+    );
+
+  const [
+    shareOpen,
+    setShareOpen,
+  ] = useState(false);
+
+  if (
+    !isOpen ||
+    !memoryData
+  ) {
+    return null;
+  }
+
+  const exportData:
+    MemoryCardData = {
+    ...memoryData,
+    experienceId:
+      experienceContext
+        ?.experienceId,
+    mapBackground:
+      mapContext,
   };
 
-  const handleCopyLink = () => {
-    shareEngine.copyShareLink(memoryData);
-  };
+  async function handleSocialShare() {
+    await shareEngine.shareMemory(
+      exportData,
+      memoryCardRef.current
+    );
+  }
 
-  const handleDownload = () => {
-    shareEngine.downloadImage(memoryData, null);
-  };
+  async function handleCopyText() {
+    await shareEngine.copyShareText(
+      exportData
+    );
+  }
 
-  const handleStartActiveJourney = () => {
+  async function handleDownload() {
+    await shareEngine.downloadImage(
+      exportData,
+      memoryCardRef.current
+    );
+  }
+
+  function handleStartActiveJourney() {
     onClose();
-    if (experienceContext && experienceContext.slug) {
-      // ✅ 1. Consume la función declarada para activar el viaje en el estado global
-      startWalking(experienceContext);
-      
-      // ✅ 2. Redirección precisa a la ficha detallada (ej: /expedition/girasoles)
-      navigate(`/expedition/${experienceContext.slug}`); 
-    } else {
-      // Caída de seguridad por si no se detecta el contexto del local
-      navigate("/explorer");
+
+    if (
+      experienceContext
+    ) {
+      startWalking(
+        experienceContext
+      );
+
+      navigate(
+        `/expedition/${experienceContext.slug}`
+      );
+
+      return;
     }
-  };
+
+    navigate(
+      "/explorer"
+    );
+  }
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: "fixed",
+        position:
+          "fixed",
         inset: 0,
-        backgroundColor: "rgba(6, 6, 6, 0.95)",
-        backdropFilter: "blur(16px)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
         zIndex: 99999,
-        padding: "24px",
-        boxSizing: "border-box",
-        overflowY: "auto"
+        boxSizing:
+          "border-box",
+        overflowY:
+          "auto",
+        padding:
+          "max(18px, env(safe-area-inset-top)) 14px max(28px, env(safe-area-inset-bottom))",
+        backgroundColor:
+          "rgba(6,6,6,0.94)",
+        backdropFilter:
+          "blur(16px)",
       }}
     >
-      <div 
-        onClick={(e) => e.stopPropagation()} 
-        style={{ 
-          width: "100%", 
-          maxWidth: "330px", 
-          display: "flex", 
-          flexDirection: "column", 
-          alignItems: "center",
-          gap: "16px"
+      <div
+        onClick={(
+          event
+        ) =>
+          event.stopPropagation()
+        }
+        style={{
+          width:
+            "100%",
+          maxWidth:
+            "390px",
+          margin:
+            "0 auto",
+          display:
+            "flex",
+          flexDirection:
+            "column",
+          gap:
+            "14px",
         }}
       >
-        {/* Cabecera Estable */}
-        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h4 style={{ color: "#ffffff", margin: 0, fontSize: "15px", fontWeight: 700, letterSpacing: "0.5px" }}>
-            Detalles del Descubrimiento
-          </h4>
-          <button 
-            onClick={onClose}
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "none",
-              color: "#A0A0A0",
-              fontSize: "14px",
-              width: "32px",
-              height: "32px",
-              borderRadius: "50%",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Tarjeta Visual de Previsualización */}
-        <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-          <MemoryCard
-            data={{
-              ...memoryData,
-              mapBackground: mapContext
-            }}
-            onShare={handleSocialShare}
-          />
-        </div>
-
-        {/* Panel de Control Inferior */}
-        <div 
-          style={{ 
-            width: "100%", 
-            backgroundColor: "#161616", 
-            padding: "16px", 
-            borderRadius: "24px", 
-            border: "1px solid rgba(255,255,255,0.05)", 
-            boxSizing: "border-box" 
+        <header
+          style={{
+            minHeight:
+              "48px",
+            display:
+              "flex",
+            alignItems:
+              "center",
+            justifyContent:
+              "space-between",
+            gap:
+              "12px",
           }}
         >
-          {/* 🏃‍♂️ BOTÓN ENCABEZADO: ¡VAMOS! ENRUTA DIRECTO AL RECORRIDO */}
+          <div>
+            <p
+              style={{
+                margin:
+                  0,
+                color:
+                  "#FF3DE8",
+                fontSize:
+                  "9px",
+                fontWeight:
+                  900,
+                letterSpacing:
+                  "0.12em",
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              I.GUIDE
+            </p>
+
+            <h2
+              style={{
+                margin:
+                  "3px 0 0",
+                color:
+                  "#FFFFFF",
+                fontSize:
+                  "17px",
+              }}
+            >
+              Descubrimiento local
+            </h2>
+          </div>
+
           <button
-            onClick={handleStartActiveJourney}
-            onMouseEnter={() => setIsBtnHovered(true)}
-            onMouseLeave={() => setIsBtnHovered(false)}
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
             style={{
-              width: "100%",
-              padding: "14px",
-              borderRadius: "14px",
-              border: "none",
-              backgroundColor: Theme.Colors.primary,
-              color: "#FFFFFF",
-              fontSize: "14px",
-              fontWeight: 800,
-              letterSpacing: "0.5px",
-              cursor: "pointer",
-              marginBottom: "16px",
-              boxShadow: isBtnHovered ? "0 6px 16px rgba(255, 0, 122, 0.45)" : "none",
-              transition: "all 0.2s ease",
-              transform: isBtnHovered ? "translateY(-2px)" : "translateY(0px)"
+              width:
+                "42px",
+              height:
+                "42px",
+              display:
+                "grid",
+              placeItems:
+                "center",
+              borderRadius:
+                "50%",
+              border:
+                "1px solid rgba(255,255,255,0.10)",
+              background:
+                "rgba(255,255,255,0.06)",
+              color:
+                "#FFFFFF",
+              cursor:
+                "pointer",
             }}
           >
-            🏃‍♂️ ¡VAMOS! Iniciar Recorrido
-          </button>
-
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px", width: "100%" }}>
-            <p style={{ color: "#A0A0A0", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 12px 0", textAlign: "center" }}>
-              O comparte este descubrimiento
-            </p>
-            
-            <ShareDrawer
-              open={true}
-              onClose={onClose}
-              onInstagram={handleSocialShare}
-              onFacebook={handleSocialShare}
-              onThreads={handleSocialShare}
-              onTwitter={handleSocialShare}
-              onDownload={handleDownload}
-              onCopyLink={handleCopyLink}
+            <X
+              size={19}
             />
-          </div>
-        </div>
+          </button>
+        </header>
+
+        <MemoryCard
+          ref={memoryCardRef}
+          data={
+            exportData
+          }
+          onShare={() =>
+            setShareOpen(
+              true
+            )
+          }
+          onDownload={
+            handleDownload
+          }
+        />
+
+        <button
+          type="button"
+          onClick={
+            handleStartActiveJourney
+          }
+          style={{
+            width:
+              "100%",
+            minHeight:
+              "58px",
+            display:
+              "flex",
+            alignItems:
+              "center",
+            justifyContent:
+              "center",
+            gap:
+              "9px",
+            border:
+              "1px solid rgba(255,255,255,0.13)",
+            borderRadius:
+              "17px",
+            background:
+              "linear-gradient(145deg, #FF3DE8, #D4008D)",
+            color:
+              "#FFFFFF",
+            fontSize:
+              "14px",
+            fontWeight:
+              900,
+            cursor:
+              "pointer",
+            boxShadow:
+              "0 12px 28px rgba(255,0,184,0.25)",
+          }}
+        >
+          <Route
+            size={20}
+            strokeWidth={2}
+          />
+
+          Comenzar misión local
+        </button>
       </div>
+
+      <ShareDrawer
+        open={
+          shareOpen
+        }
+        onClose={() =>
+          setShareOpen(
+            false
+          )
+        }
+        onShare={
+          handleSocialShare
+        }
+        onDownload={
+          handleDownload
+        }
+        onCopyLink={
+          handleCopyText
+        }
+      />
     </div>
   );
 }

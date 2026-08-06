@@ -1,5 +1,6 @@
 import {
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -17,6 +18,9 @@ import {
 
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
+import {
+  shareEngine,
+} from "../../engine/shareEngine";
 import HospesBanner from "../hospes/HospesBanner";
 
 import {
@@ -40,6 +44,11 @@ export default function JourneyCompletedView() {
     shareOpen,
     setShareOpen,
   ] = useState(false);
+
+  const memoryCardRef =
+    useRef<HTMLElement | null>(
+      null
+    );
 
   const activeExperience =
     journey.experience as
@@ -80,6 +89,9 @@ export default function JourneyCompletedView() {
     });
 
   const memoryData = {
+    experienceId:
+      activeExperience?.experienceId,
+
     title:
       activeExperience?.title ??
       "Destino",
@@ -159,84 +171,24 @@ export default function JourneyCompletedView() {
     },
   };
 
-  function handleDownload() {
-    if (!lastPhoto) {
-      alert(
-        "Esta memoria no contiene una fotografía. La exportación gráfica completa de la ruta se habilitará en la siguiente fase."
-      );
-
-      return;
-    }
-
-    const anchor =
-      document.createElement("a");
-
-    anchor.href = lastPhoto;
-
-    anchor.download =
-      `iguide-${activeExperience?.slug ?? "recuerdo"}-${Date.now()}.jpg`;
-
-    document.body.appendChild(
-      anchor
+  async function handleDownload() {
+    await shareEngine.downloadImage(
+      memoryData,
+      memoryCardRef.current
     );
-
-    anchor.click();
-    anchor.remove();
   }
 
   async function handleNativeShare() {
-    const shareText =
-      `Completé ${activeExperience?.title ?? "una experiencia"} con I.GUIDE.`;
-
-    const shareUrl =
-      window.location.href;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title:
-            activeExperience?.title ??
-            "I.GUIDE",
-          text: shareText,
-          url: shareUrl,
-        });
-
-        return;
-      }
-
-      await navigator.clipboard.writeText(
-        `${shareText} ${shareUrl}`
-      );
-
-      alert(
-        "Enlace copiado. Ya puedes compartirlo."
-      );
-    } catch (error) {
-      /*
-       * El usuario puede cancelar el diálogo
-       * nativo sin que sea un error funcional.
-       */
-      console.info(
-        "Compartir cancelado:",
-        error
-      );
-    }
+    await shareEngine.shareMemory(
+      memoryData,
+      memoryCardRef.current
+    );
   }
 
   async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(
-        window.location.href
-      );
-
-      alert(
-        "Enlace copiado."
-      );
-    } catch {
-      alert(
-        "No se pudo copiar el enlace automáticamente."
-      );
-    }
+    await shareEngine.copyShareText(
+      memoryData
+    );
   }
 
   function handleReturnToExplorer() {
@@ -354,6 +306,7 @@ export default function JourneyCompletedView() {
           }}
         >
           <MemoryCard
+            ref={memoryCardRef}
             data={memoryData}
             onShare={() =>
               setShareOpen(true)

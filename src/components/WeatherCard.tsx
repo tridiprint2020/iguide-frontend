@@ -1,58 +1,122 @@
-import { useState } from "react";
+import {
+  Cloud,
+  CloudDrizzle,
+  CloudRain,
+  Moon,
+  Snowflake,
+  Sun,
+} from "lucide-react";
 
-import { getWeatherVisual } from "../engine/weatherEngine";
-import { Theme } from "../styles/theme";
+import {
+  useState,
+} from "react";
+
+import NeonIcon from "./ui/NeonIcon";
+
+type WeatherCondition =
+  | "sunny"
+  | "cloudy"
+  | "rain"
+  | "snow"
+  | "drizzle";
 
 type Props = {
   temperature: number;
 
   weather: {
     condition:
-      | "sunny"
-      | "cloudy"
-      | "rain"
-      | "snow"
-      | "drizzle";
+      WeatherCondition;
   };
 };
+
+function getWeatherPresentation(
+  condition: WeatherCondition,
+  isNight: boolean
+) {
+  if (
+    condition === "sunny" &&
+    isNight
+  ) {
+    return {
+      icon: Moon,
+      label: "Despejado",
+      tone:
+        "cyan" as const,
+    };
+  }
+
+  switch (condition) {
+    case "sunny":
+      return {
+        icon: Sun,
+        label: "Soleado",
+        tone:
+          "magenta" as const,
+      };
+
+    case "cloudy":
+      return {
+        icon: Cloud,
+        label: "Nublado",
+        tone:
+          "cyan" as const,
+      };
+
+    case "rain":
+      return {
+        icon: CloudRain,
+        label: "Lluvia",
+        tone:
+          "cyan" as const,
+      };
+
+    case "snow":
+      return {
+        icon: Snowflake,
+        label: "Nieve",
+        tone:
+          "cyan" as const,
+      };
+
+    case "drizzle":
+      return {
+        icon: CloudDrizzle,
+        label: "Llovizna",
+        tone:
+          "cyan" as const,
+      };
+
+    default:
+      return {
+        icon: Cloud,
+        label: "Clima",
+        tone:
+          "cyan" as const,
+      };
+  }
+}
 
 function WeatherCard({
   temperature,
   weather,
 }: Props) {
-  const [isHovered, setIsHovered] =
-    useState(false);
+  const [
+    isHovered,
+    setIsHovered,
+  ] = useState(false);
 
-  /*
-   * Este ajuste es únicamente visual:
-   *
-   * sunny + día   → ☀️ Soleado
-   * sunny + noche → 🌙 Despejado
-   *
-   * No modifica WeatherStatus ni el motor
-   * contextual de Hospes.
-   */
-  const currentHour =
+  const hour =
     new Date().getHours();
 
   const isNight =
-    currentHour >= 18 ||
-    currentHour < 6;
-
-  const baseVisual =
-    getWeatherVisual(
-      weather.condition
-    );
+    hour >= 18 ||
+    hour < 6;
 
   const visual =
-    weather.condition === "sunny" &&
-    isNight
-      ? {
-          ...baseVisual,
-          icon: "🌙",
-          label: "Despejado",
-        }
-      : baseVisual;
+    getWeatherPresentation(
+      weather.condition,
+      isNight
+    );
 
   return (
     <div
@@ -90,8 +154,7 @@ function WeatherCard({
     >
       <h2
         style={{
-          color:
-            Theme.Colors.primary,
+          color: "#FF00FF",
 
           margin: 0,
 
@@ -102,7 +165,7 @@ function WeatherCard({
         {temperature}°
       </h2>
 
-      <p
+        <div
         style={{
           display: "flex",
 
@@ -124,19 +187,25 @@ function WeatherCard({
           fontSize: "12px",
         }}
       >
+        <NeonIcon
+          icon={visual.icon}
+          tone={visual.tone}
+          size={24}
+          strokeWidth={1.55}
+        />
+
         <span
-          aria-hidden="true"
           style={{
-            fontSize: "19px",
+            color: "#FFFFFF",
+
+            fontSize: "12px",
+
+            fontWeight: 650,
           }}
         >
-          {visual.icon}
-        </span>
-
-        <span>
           {visual.label}
         </span>
-      </p>
+      </div>
     </div>
   );
 }

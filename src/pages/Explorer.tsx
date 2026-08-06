@@ -39,7 +39,10 @@ import type {
   UserProfile,
 } from "../types/user/user";
 
-import logoIG from "../assets/placeholders/logoIG.png";
+import logoIG from "../assets/optimized/logoIG.webp";
+import type {
+  HospesMessage,
+} from "../types/hospes";
 
 import {
   Theme,
@@ -89,42 +92,76 @@ function Explorer() {
         experience.isActive !== false
     ).length;
 
-  const hospesBannerMessage =
-    getHospesMessage({
-      screen: "explorer",
+  const baseHospesBannerMessage =
+  getHospesMessage({
+    screen: "explorer",
 
-      suggestedExperience,
+    suggestedExperience,
 
-      progress: {
-        visitedCount,
+    progress: {
+      visitedCount,
 
-        totalCount:
-          totalActiveExperiences,
-      },
-    });
+      totalCount:
+        totalActiveExperiences,
+    },
+  });
+
+const hospesBannerMessage:
+  HospesMessage = {
+  ...baseHospesBannerMessage,
+
+  title:
+    "MODO EXPLORADOR",
+
+  message:
+    visitedCount === 0
+      ? "Huancayo tiene algo especial preparado para ti. Déjame elegir tu primera misión según el momento."
+      : `Ya descubriste ${visitedCount} de ${totalActiveExperiences} experiencias. Déjame elegir algo diferente para continuar tu historia.`,
+
+  action:
+    suggestedExperience
+      ? {
+          type:
+            "open-experience",
+
+          target:
+            suggestedExperience.slug,
+
+          label:
+            "Sorpréndeme",
+        }
+      : baseHospesBannerMessage.action
+        ? {
+            ...baseHospesBannerMessage.action,
+
+            label:
+              "Sorpréndeme",
+          }
+        : undefined,
+};
 
   function handleHospesAction() {
-    const action =
-      hospesBannerMessage.action;
+  const action =
+    hospesBannerMessage.action;
 
-    if (!action) {
-      navigate("/hospes");
-      return;
-    }
-
-    if (
-      action.type ===
-      "open-experience"
-    ) {
-      navigate(
-        `/expedition/${action.target}`
-      );
-
-      return;
-    }
-
-    navigate(action.target);
+  if (!action) {
+    navigate("/hospes");
+    return;
   }
+
+  if (
+    action.type ===
+    "open-experience"
+  ) {
+    navigate(
+      `/expedition/${action.target}`
+    );
+
+    return;
+  }
+
+  navigate(action.target);
+}
 
   function handleGoHome() {
     /*

@@ -1,178 +1,152 @@
 import {
+  Compass,
+  Heart,
+  House,
+  Map,
+  UserRound,
+} from "lucide-react";
+
+import type {
+  LucideIcon,
+} from "lucide-react";
+
+import {
   NavLink,
-  useNavigate,
 } from "react-router-dom";
 
-import {
-  Theme,
-} from "../styles/theme";
+import NeonIcon from "./ui/NeonIcon";
 
 import {
-  useJourney,
-} from "../context/JourneyContext";
+  NeonTheme,
+} from "../styles/neonTheme";
 
-const navItems = [
+import type {
+  NeonTone,
+} from "../styles/neonTheme";
+
+type NavigationItem = {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  tone: NeonTone;
+  end?: boolean;
+};
+
+const NAVIGATION_ITEMS: NavigationItem[] = [
   {
     to: "/",
-    icon: "🏠",
+    icon: House,
     label: "Inicio",
+    tone: "magenta",
+    end: true,
   },
-
-  {
-    to: "/explorer",
-    icon: "🧭",
-    label: "Explorar",
-  },
-
-  {
-    to: "/favoritos",
-    icon: "❤️",
-    label: "Favoritos",
-  },
-
-  {
-    to: "/mapa",
-    icon: "🗺️",
-    label: "Mapa",
-  },
-
   {
     to: "/perfil",
-    icon: "👤",
+    icon: UserRound,
     label: "Perfil",
+    tone: "magenta",
+  },
+  {
+    to: "/explorer",
+    icon: Compass,
+    label: "Explorar",
+    tone: "cyan",
+  },
+  {
+    to: "/favoritos",
+    icon: Heart,
+    label: "Favoritos",
+    tone: "magenta",
+  },
+  {
+    to: "/mapa",
+    icon: Map,
+    label: "Mapa",
+    tone: "cyan",
   },
 ];
 
 function Sidebar() {
-  const navigate =
-    useNavigate();
-
-  const {
-    resetToHome,
-  } = useJourney();
-
-  function handleHomeClick(
-    event:
-      React.MouseEvent<
-        HTMLAnchorElement
-      >
-  ) {
-    event.preventDefault();
-
-    /*
-     * Pausa la vista de misión sin eliminar
-     * el track persistido. La burbuja activa
-     * permitirá retomarlo después.
-     */
-    resetToHome();
-
-    navigate("/");
-  }
-
   return (
     <aside
+      aria-label="Navegación principal"
       style={{
         position: "fixed",
-
         top: 0,
         bottom: 0,
         left: 0,
-
         width: "64px",
-
         zIndex: 1000,
-
-        boxSizing:
-          "border-box",
-
+        boxSizing: "border-box",
         overflow: "hidden",
-
-        backgroundColor:
-          Theme.Colors.surface,
-
-        borderRight:
-          "1px solid rgba(255,255,255,0.05)",
-
-        padding:
-          "102px 7px 18px",
-
         display: "flex",
-
-        flexDirection:
-          "column",
-
-        alignItems:
-          "stretch",
-
-        gap: "10px",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "9px",
+        padding: "102px 7px 18px",
+        background: `linear-gradient(
+          180deg,
+          rgba(18,19,38,0.98),
+          rgba(10,11,22,0.98)
+        )`,
+        borderRight: "1px solid rgba(255,255,255,0.06)",
+        boxShadow: "8px 0 30px rgba(0,0,0,0.20)",
       }}
     >
-      {navItems.map(
-        (item) => (
+      {NAVIGATION_ITEMS.map((item) => {
+        const Icon = item.icon;
+
+        return (
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.end}
             title={item.label}
-            aria-label={
-              item.label
-            }
-            onClick={
-              item.to === "/"
-                ? handleHomeClick
-                : undefined
-            }
-            style={({
-              isActive,
-            }) => ({
+            aria-label={item.label}
+            style={({ isActive }) => ({
               width: "50px",
               height: "50px",
-
-              boxSizing:
-                "border-box",
-
+              flexShrink: 0,
+              boxSizing: "border-box",
               display: "flex",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              borderRadius:
-                "16px",
-
-              textDecoration:
-                "none",
-
-              color: "#FFFFFF",
-
-              backgroundColor:
-                isActive
-                  ? Theme.Colors.primary
-                  : "transparent",
-
-              border:
-                isActive
-                  ? "1px solid rgba(255,255,255,0.08)"
-                  : "1px solid transparent",
-
-              fontSize: "23px",
-
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "16px",
+              textDecoration: "none",
+              background: isActive
+                ? item.tone === "cyan"
+                  ? "linear-gradient(145deg, rgba(0,230,255,0.19), rgba(15,18,37,0.95))"
+                  : "linear-gradient(145deg, rgba(255,61,232,0.21), rgba(15,18,37,0.95))"
+                : "transparent",
+              border: isActive
+                ? item.tone === "cyan"
+                  ? "1px solid rgba(0,230,255,0.42)"
+                  : "1px solid rgba(255,61,232,0.42)"
+                : "1px solid transparent",
+              boxShadow: isActive
+                ? item.tone === "cyan"
+                  ? NeonTheme.Shadows.cyan
+                  : NeonTheme.Shadows.magenta
+                : "none",
+              transform: isActive
+                ? "scale(1.04)"
+                : "scale(1)",
               transition:
-                "transform .18s ease, background-color .18s ease",
+                "background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease",
             })}
           >
-            <span
-              aria-hidden="true"
-              style={{
-                lineHeight: 1,
-              }}
-            >
-              {item.icon}
-            </span>
+            {({ isActive }) => (
+              <NeonIcon
+                icon={Icon}
+                tone={item.tone}
+                size={25}
+                strokeWidth={1.55}
+                active={isActive}
+              />
+            )}
           </NavLink>
-        )
-      )}
+        );
+      })}
     </aside>
   );
 }

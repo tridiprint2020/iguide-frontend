@@ -51,7 +51,7 @@ import {
   Theme,
 } from "../styles/theme";
 
-import logoIG from "../assets/placeholders/logoIG.png";
+import logoIG from "../assets/optimized/logoIG.webp";
 
 import MemoryPreviewModal from "../components/sharing/MemoryPreviewModal";
 

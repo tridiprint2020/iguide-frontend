@@ -1,10 +1,33 @@
 import {
-  Theme,
-} from "../styles/theme";
+  forwardRef,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  Download,
+  Heart,
+  MapPinned,
+  MessageCircleHeart,
+  Repeat2,
+  Share2,
+  Sparkles,
+} from "lucide-react";
+
+
+import {
+  getFavorite,
+  setFavoriteReaction,
+} from "../data/user";
 
 import MemoryMapCanvas from "./sharing/MemoryMapCanvas";
 
-import logo from "../assets/placeholders/logo-iguide.png";
+import logo from "../assets/optimized/logo-iguide.webp";
+
+import type {
+  FavoriteReaction,
+} from "../types/user/user";
 
 import type {
   MemoryCardData,
@@ -15,6 +38,21 @@ type Props = {
   onShare: () => void;
   onDownload?: () => void;
 };
+
+type ReactionOption = {
+  id: FavoriteReaction;
+  label: string;
+  compactLabel: string;
+  icon:
+    | typeof Heart
+    | typeof MessageCircleHeart
+    | typeof Repeat2;
+};
+
+const MAGENTA = "#FF00FF";
+const MAGENTA_SOFT = "#FF3DE8";
+const CYAN = "#00E6FF";
+const ORANGE = "#FF8A00";
 
 const AUTOMATIC_NOTES = [
   "guardando la esencia del momento",
@@ -30,6 +68,27 @@ const AUTOMATIC_NOTES = [
   "este punto forma parte de mi recorrido hacia",
   "llegué a",
   "un momento registrado durante mi recorrido",
+];
+
+const REACTIONS: ReactionOption[] = [
+  {
+    id: "loved",
+    label: "Me encantó",
+    compactLabel: "Me encantó",
+    icon: Heart,
+  },
+  {
+    id: "recommended",
+    label: "Lo recomiendo",
+    compactLabel: "Recomiendo",
+    icon: MessageCircleHeart,
+  },
+  {
+    id: "must_try",
+    label: "Quiero repetir",
+    compactLabel: "Repetir",
+    icon: Repeat2,
+  },
 ];
 
 function isUserNote(
@@ -54,19 +113,25 @@ function isUserNote(
 function formatDuration(
   totalSeconds: number
 ): string {
+  const safeSeconds =
+    Math.max(
+      0,
+      Math.floor(totalSeconds)
+    );
+
   const hours =
     Math.floor(
-      totalSeconds / 3600
+      safeSeconds / 3600
     );
 
   const minutes =
     Math.floor(
-      (totalSeconds % 3600) /
+      (safeSeconds % 3600) /
         60
     );
 
   const seconds =
-    totalSeconds % 60;
+    safeSeconds % 60;
 
   const pad = (
     value: number
@@ -102,19 +167,16 @@ function getJourneyStatus(
   if (hasFinish) {
     return {
       label:
-        "Completado",
-
-      icon:
-        "🏁",
+        "Misión completada",
 
       color:
-        "#41E28A",
+        MAGENTA,
 
       background:
-        "rgba(65,226,138,0.10)",
+        "rgba(255,0,255,0.11)",
 
       border:
-        "rgba(65,226,138,0.28)",
+        "rgba(255,0,255,0.36)",
     };
   }
 
@@ -123,11 +185,8 @@ function getJourneyStatus(
       label:
         "Ruta conservada",
 
-      icon:
-        "●",
-
       color:
-        "#FF8A00",
+        ORANGE,
 
       background:
         "rgba(255,138,0,0.10)",
@@ -141,33 +200,83 @@ function getJourneyStatus(
     label:
       "Ruta registrada",
 
-    icon:
-      "🧭",
-
     color:
-      "#FFFFFF",
+      CYAN,
 
     background:
-      "rgba(255,255,255,0.06)",
+      "rgba(0,230,255,0.08)",
 
     border:
-      "rgba(255,255,255,0.11)",
+      "rgba(0,230,255,0.24)",
   };
 }
 
-function MemoryCard({
-  data,
-  onShare,
-  onDownload,
-}: Props) {
+function getExperienceId(
+  data: MemoryCardData
+): string | null {
+  const source =
+    data as MemoryCardData & {
+      experienceId?: string;
+    };
+
+  return (
+    source.experienceId ??
+    null
+  );
+}
+
+const MemoryCard = forwardRef<HTMLElement, Props>(function MemoryCard(
+  {
+    data,
+    onShare,
+    onDownload,
+  },
+  ref
+) {
   const hasPhoto =
     Boolean(data.photo);
+
+  const hasMap =
+    Boolean(
+      data.mapBackground
+    );
 
   const hasUserNote =
     isUserNote(data.note);
 
   const status =
     getJourneyStatus(data);
+
+  const experienceId =
+    getExperienceId(data);
+
+  const [
+    selectedReaction,
+    setSelectedReaction,
+  ] =
+    useState<FavoriteReaction | null>(
+      null
+    );
+
+  useEffect(() => {
+    if (!experienceId) {
+      setSelectedReaction(
+        null
+      );
+
+      return;
+    }
+
+    const favorite =
+      getFavorite(
+        experienceId
+      );
+
+    setSelectedReaction(
+      favorite?.reaction ??
+        null
+    );
+  }, [experienceId]);
 
   const formattedDistance =
     `${data.stats.totalDistanceKm.toFixed(
@@ -179,11 +288,54 @@ function MemoryCard({
       data.stats.durationSeconds
     );
 
+  const memoryCount =
+    data.stats.totalMemories;
+
+  const primaryVisualLabel =
+    hasPhoto
+      ? "Tu recuerdo"
+      : "Tu recorrido";
+
+  const routeSummary =
+    useMemo(
+      () => ({
+        points:
+          data.waypoints?.length ??
+          0,
+
+        memories:
+          memoryCount,
+      }),
+      [
+        data.waypoints,
+        memoryCount,
+      ]
+    );
+
+  function handleReaction(
+    reaction: FavoriteReaction
+  ) {
+    if (!experienceId) {
+      return;
+    }
+
+    setFavoriteReaction(
+      experienceId,
+      reaction
+    );
+
+    setSelectedReaction(
+      reaction
+    );
+  }
+
   return (
     <article
+      ref={ref}
+      data-iguide-memory-card="true"
       style={{
         width:
-          "min(88vw, 350px)",
+          "min(92vw, 390px)",
 
         boxSizing:
           "border-box",
@@ -192,22 +344,41 @@ function MemoryCard({
           "hidden",
 
         borderRadius:
-          "24px",
+          "28px",
 
         background:
-          "linear-gradient(180deg, #1B1B1B 0%, #101010 100%)",
+          `
+            radial-gradient(
+              circle at 12% 0%,
+              rgba(255,0,255,0.13),
+              transparent 30%
+            ),
+            radial-gradient(
+              circle at 96% 95%,
+              rgba(0,230,255,0.08),
+              transparent 30%
+            ),
+            linear-gradient(
+              180deg,
+              #171827 0%,
+              #090A12 100%
+            )
+          `,
 
         border:
           "1px solid rgba(255,255,255,0.08)",
 
         boxShadow:
-          "0 22px 50px rgba(0,0,0,0.48)",
+          `
+            0 28px 70px rgba(0,0,0,0.56),
+            0 0 34px rgba(255,0,255,0.08)
+          `,
 
         color:
           "#FFFFFF",
       }}
     >
-      {/* MARCA Y NOMBRE */}
+      {/* MARCA */}
       <header
         style={{
           display:
@@ -220,7 +391,7 @@ function MemoryCard({
             "11px",
 
           padding:
-            "18px 18px 15px",
+            "17px 17px 14px",
 
           borderBottom:
             "1px solid rgba(255,255,255,0.06)",
@@ -231,10 +402,10 @@ function MemoryCard({
           alt="I.GUIDE"
           style={{
             width:
-              "38px",
+              "40px",
 
             height:
-              "38px",
+              "40px",
 
             flexShrink:
               0,
@@ -243,10 +414,13 @@ function MemoryCard({
               "contain",
 
             borderRadius:
-              "8px",
+              "10px",
 
             backgroundColor:
               "#FFFFFF",
+
+            boxShadow:
+              "0 0 16px rgba(255,0,255,0.16)",
           }}
         />
 
@@ -259,34 +433,57 @@ function MemoryCard({
               1,
           }}
         >
-          <span
+          <div
             style={{
               display:
-                "block",
+                "flex",
 
-              color:
-                Theme.Colors.primary,
+              alignItems:
+                "center",
 
-              fontSize:
-                "10px",
+              gap:
+                "6px",
 
-              fontWeight:
-                850,
-
-              letterSpacing:
-                "0.13em",
-
-              textTransform:
-                "uppercase",
+              marginBottom:
+                "3px",
             }}
           >
-            Feel the City
-          </span>
+            <span
+              style={{
+                color:
+                  MAGENTA_SOFT,
+
+                fontSize:
+                  "9px",
+
+                fontWeight:
+                  900,
+
+                letterSpacing:
+                  "0.14em",
+
+                textTransform:
+                  "uppercase",
+              }}
+            >
+              Live Like Local
+            </span>
+
+            <Sparkles
+              size={12}
+              strokeWidth={1.8}
+              color={CYAN}
+              style={{
+                filter:
+                  "drop-shadow(0 0 6px rgba(0,230,255,0.65))",
+              }}
+            />
+          </div>
 
           <h2
             style={{
               margin:
-                "3px 0 0",
+                0,
 
               color:
                 "#FFFFFF",
@@ -298,7 +495,10 @@ function MemoryCard({
                 1.12,
 
               fontWeight:
-                850,
+                900,
+
+              letterSpacing:
+                "-0.025em",
 
               overflowWrap:
                 "anywhere",
@@ -307,118 +507,304 @@ function MemoryCard({
             {data.title}
           </h2>
         </div>
+
+        <div
+          style={{
+            display:
+              "inline-flex",
+
+            alignItems:
+              "center",
+
+            gap:
+              "6px",
+
+            minHeight:
+              "30px",
+
+            padding:
+              "5px 9px",
+
+            borderRadius:
+              "999px",
+
+            color:
+              status.color,
+
+            background:
+              status.background,
+
+            border:
+              `1px solid ${status.border}`,
+
+            fontSize:
+              "8px",
+
+            fontWeight:
+              900,
+
+            textTransform:
+              "uppercase",
+
+            letterSpacing:
+              "0.07em",
+
+            whiteSpace:
+              "nowrap",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width:
+                "7px",
+
+              height:
+                "7px",
+
+              borderRadius:
+                "50%",
+
+              backgroundColor:
+                status.color,
+
+              boxShadow:
+                `0 0 9px ${status.color}`,
+            }}
+          />
+
+          {status.label}
+        </div>
       </header>
 
       {/* UBICACIÓN */}
       <section
         style={{
-          padding:
-            "12px 18px 0",
+          display:
+            "flex",
 
-          textAlign:
-            "center",
+          justifyContent:
+            "space-between",
+
+          alignItems:
+            "flex-start",
+
+          gap:
+            "12px",
+
+          padding:
+            "12px 17px 0",
         }}
       >
-        {data.placeLabel && (
+        <div
+          style={{
+            minWidth:
+              0,
+          }}
+        >
+          {data.placeLabel && (
+            <p
+              style={{
+                margin:
+                  "0 0 4px",
+
+                color:
+                  "rgba(255,255,255,0.78)",
+
+                fontSize:
+                  "11px",
+
+                fontWeight:
+                  700,
+
+                lineHeight:
+                  1.35,
+              }}
+            >
+              {data.placeLabel}
+            </p>
+          )}
+
           <p
             style={{
               margin:
-                "0 0 5px",
+                0,
 
               color:
-                "rgba(255,255,255,0.72)",
+                "rgba(255,255,255,0.43)",
 
               fontSize:
-                "12px",
-
-              lineHeight:
-                1.4,
+                "10px",
             }}
           >
-            📍 {data.placeLabel}
+            {data.city} · {data.date}
           </p>
-        )}
+        </div>
 
-        <p
+        <div
           style={{
-            margin:
-              0,
+            display:
+              "inline-flex",
+
+            alignItems:
+              "center",
+
+            gap:
+              "6px",
 
             color:
-              "rgba(255,255,255,0.45)",
+              CYAN,
 
             fontSize:
-              "11px",
+              "9px",
+
+            fontWeight:
+              800,
           }}
         >
-          {data.city} · {data.date}
-        </p>
+          <MapPinned
+            size={14}
+            strokeWidth={1.8}
+          />
+
+          {primaryVisualLabel}
+        </div>
       </section>
 
-      {/* MAPA O FOTOGRAFÍA PROTAGONISTA */}
+      {/* VISUAL PRINCIPAL */}
       <section
         style={{
           position:
             "relative",
 
           height:
-            "310px",
+            "390px",
 
           margin:
-            "14px 14px 0",
+            "14px 13px 0",
 
           overflow:
             "hidden",
 
           borderRadius:
-            "18px",
+            "21px",
 
           backgroundColor:
-            "#080808",
+            "#080912",
 
           border:
-            "1px solid rgba(255,255,255,0.06)",
+            "1px solid rgba(255,255,255,0.08)",
+
+          boxShadow:
+            `
+              inset 0 0 0 1px rgba(255,0,255,0.03),
+              0 16px 34px rgba(0,0,0,0.30)
+            `,
         }}
       >
         {hasPhoto ? (
-          <img
-            src={data.photo}
-            alt={`Recuerdo de ${data.title}`}
-            style={{
-              position:
-                "absolute",
+          <>
+            <img
+              src={data.photo}
+              alt={`Recuerdo de ${data.title}`}
+              style={{
+                position:
+                  "absolute",
 
-              inset:
-                0,
+                inset:
+                  0,
 
-              width:
-                "100%",
+                width:
+                  "100%",
 
-              height:
-                "100%",
+                height:
+                  "100%",
 
-              objectFit:
-                "cover",
+                objectFit:
+                  "cover",
 
-              display:
-                "block",
-            }}
+                display:
+                  "block",
+              }}
+            />
+
+            {/* MAPA FLOTANTE SOBRE FOTO */}
+            {hasMap && (
+              <div
+                style={{
+                  position:
+                    "absolute",
+
+                  right:
+                    "12px",
+
+                  bottom:
+                    hasUserNote
+                      ? "95px"
+                      : "12px",
+
+                  width:
+                    "45%",
+
+                  height:
+                    "42%",
+
+                  overflow:
+                    "hidden",
+
+                  borderRadius:
+                    "16px",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.18)",
+
+                  backgroundColor:
+                    "#0A0B14",
+
+                  boxShadow:
+                    `
+                      0 14px 30px rgba(0,0,0,0.48),
+                      0 0 18px rgba(255,0,255,0.16)
+                    `,
+
+                  zIndex:
+                    3,
+                }}
+              >
+                <MemoryMapCanvas
+                  center={
+                    data.mapBackground!.center
+                  }
+                  path={
+                    data.mapBackground!.path
+                  }
+                  memories={
+                    data.mapBackground!.memories
+                  }
+                  waypoints={
+                    data.waypoints ??
+                    []
+                  }
+                />
+              </div>
+            )}
+          </>
+        ) : hasMap ? (
+          <MemoryMapCanvas
+            center={
+              data.mapBackground!.center
+            }
+            path={
+              data.mapBackground!.path
+            }
+            memories={
+              data.mapBackground!.memories
+            }
+            waypoints={
+              data.waypoints ??
+              []
+            }
           />
-        ) : data.mapBackground ? (
-         <MemoryMapCanvas
-  center={
-    data.mapBackground.center
-  }
-  path={
-    data.mapBackground.path
-  }
-  memories={
-    data.mapBackground.memories
-  }
-  waypoints={
-    data.waypoints ?? []
-  }
-/>
         ) : (
           <div
             style={{
@@ -431,11 +817,17 @@ function MemoryCard({
               display:
                 "flex",
 
+              flexDirection:
+                "column",
+
               alignItems:
                 "center",
 
               justifyContent:
                 "center",
+
+              gap:
+                "8px",
 
               color:
                 "rgba(255,255,255,0.42)",
@@ -444,11 +836,16 @@ function MemoryCard({
                 "11px",
             }}
           >
+            <MapPinned
+              size={30}
+              strokeWidth={1.4}
+              color={MAGENTA}
+            />
+
             Preparando visualización…
           </div>
         )}
 
-        {/* Degradado mínimo */}
         <div
           aria-hidden="true"
           style={{
@@ -459,14 +856,19 @@ function MemoryCard({
               0,
 
             background:
-              "linear-gradient(to top, rgba(4,4,4,0.28), transparent 44%)",
+              hasPhoto
+                ? "linear-gradient(to top, rgba(5,5,10,0.56), transparent 54%)"
+                : "linear-gradient(to top, rgba(5,5,10,0.10), transparent 40%)",
 
             pointerEvents:
               "none",
+
+            zIndex:
+              2,
           }}
         />
 
-        {/* NOTA REAL DEL USUARIO: MÁXIMO 1/4 DEL ÁREA */}
+        {/* NOTA DEL USUARIO */}
         {hasUserNote && (
           <div
             style={{
@@ -477,34 +879,37 @@ function MemoryCard({
                 "12px",
 
               right:
-                "12px",
+                hasPhoto &&
+                hasMap
+                  ? "49%"
+                  : "12px",
 
               bottom:
                 "12px",
 
               zIndex:
-                3,
+                4,
 
               maxHeight:
-                "72px",
+                "76px",
 
               overflow:
                 "hidden",
 
               padding:
-                "9px 11px",
+                "10px 11px",
 
               borderRadius:
-                "12px",
+                "13px",
 
               background:
-                "rgba(8,8,8,0.78)",
+                "rgba(7,8,15,0.82)",
 
               border:
-                "1px solid rgba(255,255,255,0.09)",
+                "1px solid rgba(255,255,255,0.11)",
 
               backdropFilter:
-                "blur(9px)",
+                "blur(10px)",
             }}
           >
             <p
@@ -516,16 +921,16 @@ function MemoryCard({
                   "#FFFFFF",
 
                 fontSize:
-                  "11px",
+                  "10px",
 
                 lineHeight:
-                  1.4,
+                  1.45,
 
                 fontStyle:
                   "italic",
 
                 fontWeight:
-                  550,
+                  600,
 
                 textAlign:
                   "left",
@@ -547,6 +952,79 @@ function MemoryCard({
             </p>
           </div>
         )}
+
+        {/* RESUMEN SOBRE EL MAPA */}
+        <div
+          style={{
+            position:
+              "absolute",
+
+            left:
+              "12px",
+
+            top:
+              "12px",
+
+            zIndex:
+              4,
+
+            display:
+              "inline-flex",
+
+            alignItems:
+              "center",
+
+            gap:
+              "7px",
+
+            padding:
+              "7px 9px",
+
+            borderRadius:
+              "999px",
+
+            background:
+              "rgba(7,8,15,0.74)",
+
+            border:
+              "1px solid rgba(255,255,255,0.10)",
+
+            backdropFilter:
+              "blur(9px)",
+
+            color:
+              "#FFFFFF",
+
+            fontSize:
+              "8px",
+
+            fontWeight:
+              800,
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width:
+                "7px",
+
+              height:
+                "7px",
+
+              borderRadius:
+                "50%",
+
+              backgroundColor:
+                MAGENTA,
+
+              boxShadow:
+                "0 0 9px rgba(255,0,255,0.92)",
+            }}
+          />
+
+          {routeSummary.points} puntos ·{" "}
+          {routeSummary.memories} recuerdos
+        </div>
       </section>
 
       {/* MÉTRICAS */}
@@ -559,25 +1037,10 @@ function MemoryCard({
             "repeat(3, minmax(0, 1fr))",
 
           gap:
-            "7px",
+            "8px",
 
           margin:
-            "12px 14px 0",
-
-          padding:
-            "12px 8px",
-
-          borderRadius:
-            "14px",
-
-          backgroundColor:
-            "rgba(255,255,255,0.045)",
-
-          border:
-            "1px solid rgba(255,255,255,0.06)",
-
-          textAlign:
-            "center",
+            "12px 13px 0",
         }}
       >
         <Metric
@@ -596,220 +1059,320 @@ function MemoryCard({
 
         <Metric
           label="Hitos"
-          value={`${data.stats.totalMemories} 🔮`}
+          value={`${memoryCount}`}
           accent
         />
       </section>
 
-      {/* TIMELINE */}
-      {data.waypoints &&
-        data.waypoints.length > 0 && (
-          <div
+      {/* REACCIONES */}
+      {experienceId && (
+        <section
+          style={{
+            padding:
+              "13px 13px 0",
+          }}
+        >
+          <p
             style={{
               margin:
-                "10px 14px 0",
+                "0 0 8px",
+
+              color:
+                "rgba(255,255,255,0.46)",
+
+              fontSize:
+                "8px",
+
+              fontWeight:
+                850,
+
+              letterSpacing:
+                "0.09em",
+
+              textTransform:
+                "uppercase",
             }}
           >
-            
-          </div>
-        )}
+            ¿Qué te dejó esta experiencia?
+          </p>
 
-      {/* ESTADO Y ACCIONES */}
+          <div
+            style={{
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                "repeat(3, minmax(0, 1fr))",
+
+              gap:
+                "7px",
+            }}
+          >
+            {REACTIONS.map(
+              (reaction) => {
+                const Icon =
+                  reaction.icon;
+
+                const selected =
+                  selectedReaction ===
+                  reaction.id;
+
+                return (
+                  <button
+                    key={
+                      reaction.id
+                    }
+                    type="button"
+                    onClick={() =>
+                      handleReaction(
+                        reaction.id
+                      )
+                    }
+                    aria-pressed={
+                      selected
+                    }
+                    title={
+                      reaction.label
+                    }
+                    style={{
+                      minWidth:
+                        0,
+
+                      minHeight:
+                        "56px",
+
+                      padding:
+                        "8px 5px",
+
+                      display:
+                        "flex",
+
+                      flexDirection:
+                        "column",
+
+                      alignItems:
+                        "center",
+
+                      justifyContent:
+                        "center",
+
+                      gap:
+                        "5px",
+
+                      borderRadius:
+                        "14px",
+
+                      border:
+                        selected
+                          ? "1px solid rgba(255,0,255,0.62)"
+                          : "1px solid rgba(255,255,255,0.08)",
+
+                      background:
+                        selected
+                          ? "linear-gradient(145deg, rgba(255,0,255,0.22), rgba(18,19,34,0.98))"
+                          : "rgba(255,255,255,0.035)",
+
+                      color:
+                        selected
+                          ? MAGENTA_SOFT
+                          : "rgba(255,255,255,0.70)",
+
+                      boxShadow:
+                        selected
+                          ? "0 0 18px rgba(255,0,255,0.16)"
+                          : "none",
+
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    <Icon
+                      size={18}
+                      strokeWidth={
+                        selected
+                          ? 2.2
+                          : 1.7
+                      }
+                    />
+
+                    <span
+                      style={{
+                        maxWidth:
+                          "100%",
+
+                        overflow:
+                          "hidden",
+
+                        textOverflow:
+                          "ellipsis",
+
+                        color:
+                          "inherit",
+
+                        fontSize:
+                          "8px",
+
+                        fontWeight:
+                          800,
+
+                        whiteSpace:
+                          "nowrap",
+                      }}
+                    >
+                      {
+                        reaction.compactLabel
+                      }
+                    </span>
+                  </button>
+                );
+              }
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ACCIONES */}
       <footer
         style={{
           padding:
-            "14px 14px 11px",
+            "14px 13px 11px",
         }}
       >
         <div
           style={{
             display:
-              "flex",
+              "grid",
 
-            alignItems:
-              "center",
-
-            justifyContent:
-              "space-between",
+            gridTemplateColumns:
+              onDownload
+                ? "48px minmax(0, 1fr)"
+                : "1fr",
 
             gap:
-              "9px",
-
-            flexWrap:
-              "wrap",
+              "8px",
           }}
         >
-          <div
-            style={{
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                "7px",
-
-              minHeight:
-                "40px",
-
-              boxSizing:
-                "border-box",
-
-              padding:
-                "7px 11px",
-
-              borderRadius:
-                "999px",
-
-              background:
-                status.background,
-
-              border:
-                `1px solid ${status.border}`,
-
-              color:
-                status.color,
-
-              fontSize:
-                "10px",
-
-              fontWeight:
-                800,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                color:
-                  status.color,
-
-                fontSize:
-                  "15px",
-
-                lineHeight:
-                  1,
-              }}
-            >
-              {status.icon}
-            </span>
-
-            <span>
-              {status.label}
-            </span>
-          </div>
-
-          <div
-            style={{
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                "7px",
-            }}
-          >
-            {onDownload && (
-              <button
-                type="button"
-                onClick={
-                  onDownload
-                }
-                aria-label="Descargar imagen"
-                title="Descargar imagen"
-                style={{
-                  width:
-                    "42px",
-
-                  height:
-                    "40px",
-
-                  borderRadius:
-                    "12px",
-
-                  border:
-                    "1px solid rgba(255,255,255,0.11)",
-
-                  background:
-                    "rgba(255,255,255,0.06)",
-
-                  color:
-                    "#FFFFFF",
-
-                  cursor:
-                    "pointer",
-
-                  fontSize:
-                    "17px",
-
-                  fontWeight:
-                    800,
-                }}
-              >
-                ↓
-              </button>
-            )}
-
+          {onDownload && (
             <button
               type="button"
               onClick={
-                onShare
+                onDownload
               }
+              aria-label="Descargar imagen"
+              title="Descargar imagen"
               style={{
                 minHeight:
-                  "40px",
+                  "46px",
 
-                padding:
-                  "8px 18px",
+                display:
+                  "inline-flex",
 
-                border:
-                  "none",
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
 
                 borderRadius:
-                  Theme.Radius.pill,
+                  "14px",
 
-                backgroundColor:
-                  Theme.Colors.primary,
+                border:
+                  "1px solid rgba(0,230,255,0.25)",
+
+                background:
+                  "rgba(0,230,255,0.06)",
 
                 color:
-                  "#FFFFFF",
-
-                fontSize:
-                  "12px",
-
-                fontWeight:
-                  800,
+                  CYAN,
 
                 cursor:
                   "pointer",
 
                 boxShadow:
-                  "0 5px 14px rgba(255,0,122,0.30)",
+                  "0 0 15px rgba(0,230,255,0.07)",
               }}
             >
-              Compartir
+              <Download
+                size={19}
+                strokeWidth={2}
+              />
             </button>
-          </div>
+          )}
+
+          <button
+            type="button"
+            onClick={
+              onShare
+            }
+            style={{
+              minHeight:
+                "46px",
+
+              display:
+                "inline-flex",
+
+              alignItems:
+                "center",
+
+              justifyContent:
+                "center",
+
+              gap:
+                "8px",
+
+              padding:
+                "9px 18px",
+
+              border:
+                "1px solid rgba(255,255,255,0.12)",
+
+              borderRadius:
+                "14px",
+
+              background:
+                "linear-gradient(145deg, #FF3DE8, #D4008D)",
+
+              color:
+                "#FFFFFF",
+
+              fontSize:
+                "12px",
+
+              fontWeight:
+                900,
+
+              cursor:
+                "pointer",
+
+              boxShadow:
+                "0 9px 24px rgba(255,0,184,0.26)",
+            }}
+          >
+            <Share2
+              size={17}
+              strokeWidth={2.1}
+            />
+
+            Compartir momento
+          </button>
         </div>
 
         <p
           style={{
             margin:
-              "14px 0 0",
+              "13px 0 0",
 
             color:
-              "rgba(255,255,255,0.32)",
+              "rgba(255,255,255,0.28)",
 
             fontSize:
-              "8px",
+              "7px",
 
             fontWeight:
-              750,
+              850,
 
             letterSpacing:
-              "0.08em",
+              "0.11em",
 
             textAlign:
               "center",
@@ -818,12 +1381,12 @@ function MemoryCard({
               "uppercase",
           }}
         >
-          Explora la esencia oculta de la ciudad.
+          No visites. Pertenece. Vive la ciudad como un local.
         </p>
       </footer>
     </article>
   );
-}
+});
 
 type MetricProps = {
   label: string;
@@ -841,6 +1404,35 @@ function Metric({
       style={{
         minWidth:
           0,
+
+        minHeight:
+          "66px",
+
+        display:
+          "flex",
+
+        flexDirection:
+          "column",
+
+        justifyContent:
+          "center",
+
+        padding:
+          "9px 7px",
+
+        borderRadius:
+          "14px",
+
+        background:
+          "rgba(255,255,255,0.038)",
+
+        border:
+          accent
+            ? "1px solid rgba(255,0,255,0.18)"
+            : "1px solid rgba(255,255,255,0.06)",
+
+        textAlign:
+          "center",
       }}
     >
       <span
@@ -852,13 +1444,16 @@ function Metric({
             "rgba(255,255,255,0.38)",
 
           fontSize:
-            "8px",
+            "7px",
+
+          fontWeight:
+            800,
 
           textTransform:
             "uppercase",
 
           letterSpacing:
-            "0.03em",
+            "0.07em",
         }}
       >
         {label}
@@ -870,27 +1465,34 @@ function Metric({
             "block",
 
           marginTop:
-            "5px",
+            "6px",
 
           color:
             accent
-              ? Theme.Colors.primary
+              ? MAGENTA_SOFT
               : "#FFFFFF",
 
           fontSize:
-            "12px",
+            "13px",
 
           fontFamily:
             "monospace",
 
           whiteSpace:
             "nowrap",
+
+          textShadow:
+            accent
+              ? "0 0 9px rgba(255,0,255,0.32)"
+              : "none",
         }}
       >
         {value}
       </strong>
     </div>
   );
-}
+};
+
+MemoryCard.displayName = "MemoryCard";
 
 export default MemoryCard;

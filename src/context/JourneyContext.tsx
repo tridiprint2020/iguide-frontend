@@ -183,6 +183,13 @@ export function JourneyProvider({
    * Crea una expedición nueva desde una posición GPS real.
    */
   function startWalking(experience: Experience) {
+  /*
+   * Desbloquea sonido desde el clic real que inicia
+   * la expedición. Android/Chrome no permite hacerlo
+   * por primera vez desde una lectura GPS automática.
+   */
+  locationTracker.prepareFeedback();
+
   if (!navigator.geolocation) {
     alert("Tu dispositivo no soporta geolocalización.");
     return;
@@ -432,6 +439,8 @@ function resetToHome() {
 }
 
 function resumeWalking() {
+  locationTracker.prepareFeedback();
+
   setJourney((prev) => ({
     ...prev,
     state: "WALKING",

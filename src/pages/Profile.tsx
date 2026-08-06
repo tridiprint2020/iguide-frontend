@@ -28,7 +28,7 @@ import {
 
 import LocalityIndexCard from "../components/profile/LocalityIndexCard";
 
-import logoIG from "../assets/placeholders/logoIG.png";
+import logoIG from "../assets/optimized/logoIG.webp";
 
 import {
   Theme,
