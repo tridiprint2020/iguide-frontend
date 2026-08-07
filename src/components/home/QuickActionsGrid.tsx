@@ -147,34 +147,18 @@ function QuickActionCard({
           `1px solid ${toneColor}44`,
 
         background:
-          action.image
-            ? `
-              linear-gradient(
-                180deg,
-                rgba(6,7,16,0.10) 0%,
-                rgba(6,7,16,0.32) 32%,
-                rgba(6,7,16,0.94) 100%
-              ),
-              url(${action.image})
-            `
-            : `
-              radial-gradient(
-                circle at 72% 28%,
-                ${glowColor},
-                transparent 34%
-              ),
-              linear-gradient(
-                145deg,
-                #181A31,
-                #0A0B16
-              )
-            `,
-
-        backgroundSize:
-          "cover",
-
-        backgroundPosition:
-          "center",
+          `
+            radial-gradient(
+              circle at 72% 28%,
+              ${glowColor},
+              transparent 34%
+            ),
+            linear-gradient(
+              145deg,
+              #181A31,
+              #0A0B16
+            )
+          `,
 
         color:
           "#FFFFFF",
@@ -195,19 +179,62 @@ function QuickActionCard({
           "transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease",
       }}
     >
-      <NeonIcon
-        icon={
-          action.icon
-        }
-        tone={
-          action.tone
-        }
-        size={23}
-        strokeWidth={
-          1.5
-        }
-        framed
-      />
+      {action.image && (
+        <>
+          <img
+            src={action.image}
+            alt=""
+            aria-hidden="true"
+            loading="eager"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+          />
+
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 1,
+              background:
+                `linear-gradient(
+                  180deg,
+                  rgba(6,7,16,0.08) 0%,
+                  rgba(6,7,16,0.30) 38%,
+                  rgba(6,7,16,0.93) 100%
+                )`,
+            }}
+          />
+        </>
+      )}
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
+        <NeonIcon
+          icon={
+            action.icon
+          }
+          tone={
+            action.tone
+          }
+          size={23}
+          strokeWidth={
+            1.5
+          }
+          framed
+        />
+      </div>
 
       {isMap && (
         <MapDecoration />

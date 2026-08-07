@@ -111,10 +111,6 @@ function Sidebar() {
             title={item.label}
             aria-label={item.label}
             style={({ isActive }) => ({
-              marginTop:
-                item.to === "/perfil"
-                  ? "auto"
-                  : undefined,
               width: "50px",
               height: "50px",
               flexShrink: 0,
