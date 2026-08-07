@@ -42,16 +42,16 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     end: true,
   },
   {
-    to: "/perfil",
-    icon: UserRound,
-    label: "Perfil",
-    tone: "magenta",
-  },
-  {
     to: "/explorer",
     icon: Compass,
     label: "Explorar",
     tone: "cyan",
+  },
+  {
+    to: "/mapa",
+    icon: Map,
+    label: "Mapa",
+    tone: "magenta",
   },
   {
     to: "/itinerario",
@@ -66,9 +66,9 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     tone: "magenta",
   },
   {
-    to: "/mapa",
-    icon: Map,
-    label: "Mapa",
+    to: "/perfil",
+    icon: UserRound,
+    label: "Perfil",
     tone: "cyan",
   },
 ];
@@ -111,6 +111,10 @@ function Sidebar() {
             title={item.label}
             aria-label={item.label}
             style={({ isActive }) => ({
+              marginTop:
+                item.to === "/perfil"
+                  ? "auto"
+                  : undefined,
               width: "50px",
               height: "50px",
               flexShrink: 0,
