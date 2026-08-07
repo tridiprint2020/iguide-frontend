@@ -38,8 +38,11 @@ export default function ActiveJourneyBubble() {
 
   const hasActiveJourney =
     experience !== null &&
-    journey.state !== "IDLE" &&
-    journey.state !== "COMPLETED";
+    (
+      journey.state === "WALKING" ||
+      journey.state === "CAMERA_OPEN" ||
+      journey.state === "POINT_SAVED"
+    );
 
   if (
     !hasActiveJourney ||
@@ -56,8 +59,8 @@ export default function ActiveJourneyBubble() {
     experience;
 
   const isJourneyScreen =
-    location.pathname ===
-    "/journey";
+    location.pathname === "/journey" ||
+    location.pathname.startsWith("/journey/");
 
   function handleContinueJourney() {
     setExpanded(false);

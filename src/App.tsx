@@ -71,14 +71,28 @@ function JourneyUiCoordinator() {
 
   /*
    * La misión es global: la burbuja permanece visible al
-   * navegar por la app, incluso dentro de la ficha del lugar.
-   * Se oculta solamente en /journey, donde ya está abierta la
-   * interfaz completa del recorrido.
+   * navegar por la app, incluso si la última subpantalla del
+   * Journey fue la cámara o la MemoryCard.
+   *
+   * El estado de la misión es la fuente de verdad. La pantalla
+   * interna no debe apagar el indicador global cuando el usuario
+   * vuelve con el botón Atrás del navegador.
    */
+  const hasActiveJourney =
+    journey.experience !== null &&
+    (
+      journey.state === "WALKING" ||
+      journey.state === "CAMERA_OPEN" ||
+      journey.state === "POINT_SAVED"
+    );
+
+  const isJourneyRoute =
+    location.pathname === "/journey" ||
+    location.pathname.startsWith("/journey/");
+
   const showGlobalBubble =
-    journey.state === "WALKING" &&
-    journey.screen === "walking" &&
-    location.pathname !== "/journey";
+    hasActiveJourney &&
+    !isJourneyRoute;
 
   return showGlobalBubble
     ? <ActiveJourneyBubble />
