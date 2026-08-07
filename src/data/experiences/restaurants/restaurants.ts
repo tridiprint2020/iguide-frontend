@@ -13,7 +13,7 @@ export const restaurants: Experience[] = [
 
     city:"Huancayo",
 
-    image:"/images/restaurants/paris.jpg",
+    image: placeholder,
 
     description:
       "Restaurante pasteleria con platos variados.",
@@ -112,7 +112,7 @@ estimatedVisitMinutes: 60
 
     city:"Huancayo",
 
-    image:"/images/restaurants/lalo`s.jpg",
+    image: placeholder,
 
     description:
       "Restaurante pizzeria panaderia reconocido por su prestigio el Valle del Mantaro.",
@@ -157,7 +157,7 @@ estimatedVisitMinutes: 60
 
     city:"Huancayo",
 
-    image:"/images/restaurants/el-caramba.jpg",
+    image: placeholder,
 
     description:
       "Restaurante Parrillas de renombre en Huancayo desde 1985.",
@@ -202,7 +202,7 @@ estimatedVisitMinutes: 60
 
     city:"Huancayo",
 
-    image:"/images/restaurants/el-leopardo.jpg",
+    image: placeholder,
 
     description:
       "Restaurante tradicional reconocido por su mondongo y platos típicos del Valle del Mantaro.",
@@ -247,7 +247,7 @@ estimatedVisitMinutes: 60
 
     city:"Huancayo",
 
-    image:"/images/restaurants/huancahuasi.jpg",
+    image: placeholder,
 
     description:
       "Restaurante tradicional reconocido por su pachamanca y platos típicos del Valle del Mantaro.",
@@ -292,7 +292,7 @@ estimatedVisitMinutes: 60
 
     city:"Huancayo",
 
-    image:"/images/restaurants/girasoles.jpg",
+    image: placeholder,
 
     description:
       "Restaurante tradicional reconocido por su pachamanca y platos típicos del Valle del Mantaro.",
