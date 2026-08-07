@@ -8,6 +8,7 @@ import {
 import {
   CircleMarker,
   MapContainer,
+  Marker,
   Popup,
   TileLayer,
 } from "react-leaflet";
@@ -15,8 +16,8 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import type {
-  CircleMarker as LeafletCircleMarker,
   Map as LeafletMap,
+  Marker as LeafletMarker,
 } from "leaflet";
 
 import {
@@ -73,7 +74,12 @@ import logoIG from "../assets/optimized/logoig.webp";
 
 import UserLocationLayer from "../components/maps/UserLocationLayer";
 import ExperienceMapCard from "../components/maps/ExperienceMapCard";
+import IguideMapPinStyles from "../components/maps/IguideMapPinStyles";
 import MemoryPreviewModal from "../components/sharing/MemoryPreviewModal";
+
+import {
+  createIguidePin,
+} from "../components/maps/iguideMapPins";
 
 import {
   useJourney,
@@ -158,7 +164,6 @@ const DEFAULT_CENTER: [number, number] = [
 ];
 
 const MAGENTA = "#FF00FF";
-const CYAN = "#00E6FF";
 
 type HistoricalMemory = {
   experience: Experience;
@@ -264,7 +269,7 @@ function MapPage() {
   const markerRefs = useRef(
     new Map<
       string,
-      LeafletCircleMarker
+      LeafletMarker
     >()
   );
 
@@ -1262,13 +1267,8 @@ function MapPage() {
                   journey.state
                 );
 
-              const pinColor =
-                isCurrentMission
-                  ? CYAN
-                  : MAGENTA;
-
               return (
-                <CircleMarker
+                <Marker
                   key={
                     experience.experienceId
                   }
@@ -1303,21 +1303,18 @@ function MapPage() {
                       );
                     },
                   }}
-                  center={[
+                  position={[
                     experience.latitude,
                     experience.longitude,
                   ]}
-                  radius={
+                  icon={createIguidePin(
                     isCurrentMission
-                      ? 12
-                      : 9
-                  }
-                  pathOptions={{
-                    color: "#FFFFFF",
-                    weight: 2,
-                    fillColor: pinColor,
-                    fillOpacity: 0.96,
-                  }}
+                      ? "mission"
+                      : isVisited
+                        ? "visited"
+                        : "catalog",
+                    experience.title
+                  )}
                 >
                   <Popup minWidth={270}>
                     <ExperienceMapCard
@@ -1343,7 +1340,7 @@ function MapPage() {
                       }
                     />
                   </Popup>
-                </CircleMarker>
+                </Marker>
               );
             }
           )}
@@ -1370,7 +1367,7 @@ function MapPage() {
                   pathOptions={{
                     color: "#FFFFFF",
                     weight: 2,
-                    fillColor: CYAN,
+                    fillColor: MAGENTA,
                     fillOpacity: 1,
                   }}
                 >
@@ -1475,6 +1472,8 @@ function MapPage() {
           </span>
         </div>
       </section>
+
+      <IguideMapPinStyles />
 
       <MemoryPreviewModal
         isOpen={shareOpen}
