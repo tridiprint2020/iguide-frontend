@@ -68,7 +68,7 @@ import {
   Theme,
 } from "../styles/theme";
 
-import logoIG from "../assets/optimized/logoIG.webp";
+import logoIG from "../assets/optimized/logoig.webp";
 
 import UserLocationLayer from "../components/maps/UserLocationLayer";
 import MemoryPreviewModal from "../components/sharing/MemoryPreviewModal";

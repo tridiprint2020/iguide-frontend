@@ -438,13 +438,13 @@ export function getHospesMessage(
           suggestedExperience
             ? {
                 type:
-                  "open-experience",
+                  "start-journey",
 
                 target:
                   suggestedExperience.slug,
 
                 label:
-                  `Descubrir ${suggestedExperience.title}`,
+                  `Iniciar misión: ${suggestedExperience.title}`,
               }
             : {
                 type:

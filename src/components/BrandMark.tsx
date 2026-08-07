@@ -1,4 +1,4 @@
-import logoIG from "../assets/optimized/logoIG.webp";
+import logoIG from "../assets/optimized/logoig.webp";
 
 function BrandMark() {
   return (

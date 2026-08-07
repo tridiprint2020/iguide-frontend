@@ -1,4 +1,9 @@
-export type ActionType = "open-category" | "open-experience" | "open-itinerary" | "open-map";
+export type ActionType =
+  | "open-category"
+  | "open-experience"
+  | "start-journey"
+  | "open-itinerary"
+  | "open-map";
 
 export interface HospesAction {
   type: ActionType;

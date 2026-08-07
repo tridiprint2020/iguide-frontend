@@ -160,13 +160,28 @@ export function WalkingView() {
 
       if (
         experience &&
+        journey.startedAt === null
+      ) {
+        return {
+          title: "HOSPES · MISIÓN EN MARCHA",
+          message:
+            `Perfecto. Comenzamos la ruta hacia ${experience.title}. ` +
+            "Estoy ubicándote para crear el Punto 0; el timeline empezará a registrar tu recorrido en unos segundos.",
+          icon: "✦",
+          color: MAGENTA,
+          tone: "brand" as const,
+        };
+      }
+
+      if (
+        experience &&
         journey.timeline.length <= 1 &&
         estimatedWalkingMinutes !== null
       ) {
         return {
           title: "Misión iniciada",
           message:
-            `Qué bueno que comenzaste. ${experience.title} está a aproximadamente ${estimatedWalkingMinutes} min caminando. ` +
+            `Punto 0 registrado. ${experience.title} está a aproximadamente ${estimatedWalkingMinutes} min caminando. ` +
             (experience.description ??
               "Hospes te acompañará hasta la llegada."),
           icon: "✦",
@@ -186,6 +201,7 @@ export function WalkingView() {
       });
     }, [
       journey.experience,
+      journey.startedAt,
       journey.timeline,
       distanceToTargetMeters,
       estimatedWalkingMinutes,
@@ -361,6 +377,63 @@ export function WalkingView() {
               hospesBannerMessage
             }
           />
+
+          <section
+            aria-live="polite"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "13px 14px",
+              borderRadius: "16px",
+              border:
+                "1px solid rgba(255,0,255,0.20)",
+              background:
+                "rgba(255,0,255,0.055)",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: "12px",
+                height: "12px",
+                flex: "0 0 auto",
+                borderRadius: "50%",
+                backgroundColor:
+                  MAGENTA,
+                boxShadow:
+                  "0 0 15px rgba(255,0,255,0.92)",
+              }}
+            />
+
+            <div>
+              <strong
+                style={{
+                  display: "block",
+                  color: "#FFFFFF",
+                  fontSize: "12px",
+                }}
+              >
+                {journey.startedAt === null
+                  ? "Preparando Punto 0…"
+                  : "Timeline en vivo"}
+              </strong>
+
+              <span
+                style={{
+                  display: "block",
+                  marginTop: "3px",
+                  color:
+                    "rgba(255,255,255,0.58)",
+                  fontSize: "10px",
+                }}
+              >
+                {journey.startedAt === null
+                  ? "Esperando la primera ubicación GPS"
+                  : `${journey.timeline.length} eventos registrados durante la ruta`}
+              </span>
+            </div>
+          </section>
 
           <section
             style={{

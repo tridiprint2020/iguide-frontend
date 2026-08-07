@@ -36,7 +36,7 @@ import type {
   UserProfile,
 } from "../types/user/user";
 
-import logoIG from "../assets/optimized/logoIG.webp";
+import logoIG from "../assets/optimized/logoig.webp";
 import type {
   HospesMessage,
 } from "../types/hospes";

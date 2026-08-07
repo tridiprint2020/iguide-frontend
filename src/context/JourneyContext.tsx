@@ -26,7 +26,7 @@ import { locationTracker } from "../engine/locationTracker";
 
 interface JourneyContextType {
   journey: ActiveJourney;
-  startWalking: (experience: Experience) => void;
+  startWalking: (experience: Experience) => boolean;
   pauseJourney: () => void;
   abandonJourney: () => void;
   resetToHome: () => void;
@@ -232,7 +232,7 @@ export function JourneyProvider({
     alert(
       "Tu dispositivo no soporta geolocalización."
     );
-    return;
+    return false;
   }
 
   const targetExperienceId =
@@ -265,7 +265,7 @@ export function JourneyProvider({
       alert(
         "Ya tienes una misión activa. Continúala o abandónala antes de iniciar otra."
       );
-      return;
+      return false;
     }
 
     /*
@@ -308,7 +308,7 @@ export function JourneyProvider({
         existingTrack.timeline,
     });
 
-    return;
+    return true;
   }
 
   /*
@@ -437,6 +437,8 @@ export function JourneyProvider({
         15000,
     }
   );
+
+  return true;
 }
 
   function openCamera() {

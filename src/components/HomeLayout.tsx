@@ -33,6 +33,10 @@ import {
   useWeather,
 } from "../context/WeatherContext";
 
+import {
+  useJourney,
+} from "../context/JourneyContext";
+
 import Hero from "./Hero";
 import HospesBanner from "./hospes/HospesBanner";
 import QuickActionsGrid from "./home/QuickActionsGrid";
@@ -160,6 +164,10 @@ function HomeLayout() {
   const navigate =
     useNavigate();
 
+  const {
+    startWalking,
+  } = useJourney();
+
   const profile =
     loadUserProfile();
 
@@ -282,6 +290,43 @@ function HomeLayout() {
       hospesMessage.action;
 
     if (!action) {
+      return;
+    }
+
+    if (
+      action.type ===
+      "start-journey"
+    ) {
+      const experience =
+        availableExperiences.find(
+          (item) =>
+            item.slug ===
+              action.target ||
+            item.experienceId ===
+              action.target
+        ) ??
+        catalog.find(
+          (item) =>
+            item.slug ===
+              action.target ||
+            item.experienceId ===
+              action.target
+        );
+
+      if (!experience) {
+        navigate("/explorer");
+        return;
+      }
+
+      const missionStarted =
+        startWalking(
+          experience
+        );
+
+      if (missionStarted) {
+        navigate("/journey");
+      }
+
       return;
     }
 

@@ -60,7 +60,7 @@ import type {
   MemoryCardData,
 } from "../types/memoryCard";
 
-import logoIG from "../assets/optimized/logoIG.webp";
+import logoIG from "../assets/optimized/logoig.webp";
 
 const CYAN = "#39E7FF";
 const MAGENTA = "#FF00FF";
