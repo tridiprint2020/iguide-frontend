@@ -574,11 +574,14 @@ function MapPage() {
       return;
     }
 
-    startWalking(experience);
+    const missionStarted =
+      startWalking(
+        experience
+      );
 
-    navigate(
-      `/expedition/${experience.slug}`
-    );
+    if (missionStarted) {
+      navigate("/journey");
+    }
   }
 
   function openHistoricalMemory(

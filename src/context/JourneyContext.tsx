@@ -8,7 +8,10 @@ import {
 
 import type { Experience } from "../types/experience/experience";
 import type { ActiveJourney } from "../types/journeyFlow";
-import type { TimelineItem } from "../types/tracking/tracking";
+import type {
+  CompletionResult,
+  TimelineItem,
+} from "../types/tracking/tracking";
 
 import { catalog } from "../data/catalog";
 import { completeExpedition } from "../data/user";
@@ -16,6 +19,7 @@ import {
   addAbortPoint,
   addMemoryToTrack,
   canCompleteJourney,
+  certifyArrivalAtPosition,
   completeTrack,
   createStartPoint,
   deleteTrack,
@@ -33,6 +37,7 @@ interface JourneyContextType {
   openCamera: () => void;
   savePoint: (item: TimelineItem) => void;
   resumeWalking: () => void;
+  confirmArrival: () => Promise<CompletionResult>;
   completeJourney: () => void;
 }
 
@@ -453,26 +458,40 @@ export function JourneyProvider({
    * Guarda una foto o nota como recuerdo persistente.
    */
   function savePoint(item: TimelineItem) {
-    setJourney((prev) => {
-      if (!prev.experience) {
-        return prev;
+    const activeExperience =
+      journey.experience;
+
+    if (!activeExperience) {
+      return;
+    }
+
+    const experienceId =
+      activeExperience.experienceId;
+
+    addMemoryToTrack(experienceId, {
+      lat: item.lat,
+      lng: item.lng,
+      note: item.note,
+      photo: item.photo,
+    });
+
+    const updatedTrack =
+      loadTrack(experienceId);
+
+    setJourney((previous) => {
+      if (
+        previous.experience
+          ?.experienceId !==
+        experienceId
+      ) {
+        return previous;
       }
 
-      addMemoryToTrack(prev.experience.experienceId, {
-        lat: item.lat,
-        lng: item.lng,
-        note: item.note,
-        photo: item.photo,
-      });
-
-      const updatedTrack = loadTrack(
-        prev.experience.experienceId
-      );
-
       return {
-        ...prev,
+        ...previous,
         timeline:
-          updatedTrack?.timeline ?? prev.timeline,
+          updatedTrack?.timeline ??
+          previous.timeline,
         state: "POINT_SAVED",
         screen: "pointSaved",
       };
@@ -492,83 +511,103 @@ export function JourneyProvider({
 function abandonJourney() {
   locationTracker.stop();
 
-  setJourney((prev) => {
-    const activeExperience =
-      prev.experience;
+  const activeExperience =
+    journey.experience;
 
-    if (!activeExperience) {
-      localStorage.removeItem(
-        ACTIVE_JOURNEY_KEY
-      );
-
-      return defaultJourney;
-    }
-
-    const experienceId =
-      activeExperience.experienceId;
-
-    const persistedTrack =
-      loadTrack(experienceId);
-
-    const timeline =
-      persistedTrack?.timeline ??
-      prev.timeline;
-
-    const alreadyAborted =
-      timeline.some(
-        (item) =>
-          item.type === "abort"
-      );
-
-    const alreadyCompleted =
-      Boolean(
-        persistedTrack?.completedAt
-      ) ||
-      timeline.some(
-        (item) =>
-          item.type === "finish"
-      );
-
-    if (
-      !alreadyAborted &&
-      !alreadyCompleted
-    ) {
-      const lastGeoPoint =
-        [...timeline]
-          .reverse()
-          .find(
-            (item) =>
-              item.type ===
-                "start" ||
-              item.type ===
-                "walk" ||
-              item.type ===
-                "memory"
-          );
-
-      if (lastGeoPoint) {
-        addAbortPoint(
-          experienceId,
-          lastGeoPoint.lat,
-          lastGeoPoint.lng
-        );
-      }
-    }
-
-    /*
-     * El historial permanece guardado bajo:
-     * iguide_track_<id>_<sessionId>
-     *
-     * Solo eliminamos el puntero activo:
-     * iguide_track_<id>
-     */
-    deleteTrack(experienceId);
-
+  if (!activeExperience) {
     localStorage.removeItem(
       ACTIVE_JOURNEY_KEY
     );
 
-    return defaultJourney;
+    setJourney(defaultJourney);
+    return;
+  }
+
+  const experienceId =
+    activeExperience.experienceId;
+
+  const persistedTrack =
+    loadTrack(experienceId);
+
+  if (!persistedTrack) {
+    localStorage.removeItem(
+      ACTIVE_JOURNEY_KEY
+    );
+
+    setJourney(defaultJourney);
+    return;
+  }
+
+  const timeline =
+    persistedTrack.timeline;
+
+  const alreadyAborted =
+    timeline.some(
+      (item) =>
+        item.type === "abort"
+    );
+
+  const alreadyCompleted =
+    Boolean(
+      persistedTrack.completedAt
+    ) ||
+    timeline.some(
+      (item) =>
+        item.type === "finish"
+    );
+
+  let preservedTrack =
+    persistedTrack;
+
+  if (
+    !alreadyAborted &&
+    !alreadyCompleted
+  ) {
+    const lastGeoPoint =
+      [...timeline]
+        .reverse()
+        .find(
+          (item) =>
+            item.type ===
+              "start" ||
+            item.type ===
+              "walk" ||
+            item.type ===
+              "memory"
+        );
+
+    if (lastGeoPoint) {
+      preservedTrack =
+        addAbortPoint(
+          experienceId,
+          lastGeoPoint.lat,
+          lastGeoPoint.lng
+        ) ?? persistedTrack;
+    }
+  }
+
+  /*
+   * El historial permanece guardado bajo:
+   * iguide_track_<id>_<sessionId>
+   *
+   * Solo eliminamos el puntero activo:
+   * iguide_track_<id>
+   */
+  deleteTrack(experienceId);
+
+  localStorage.removeItem(
+    ACTIVE_JOURNEY_KEY
+  );
+
+  setJourney({
+    state: "ABORTED",
+    screen: "aborted",
+    experience:
+      activeExperience,
+    startedAt:
+      preservedTrack.startedAt,
+    timeline:
+      preservedTrack.timeline,
   });
 }
 
@@ -626,6 +665,72 @@ function resumeWalking() {
     state: "WALKING",
     screen: "walking",
   }));
+}
+
+function confirmArrival(): Promise<CompletionResult> {
+  const activeExperience =
+    journey.experience;
+
+  if (!activeExperience) {
+    return Promise.resolve({
+      success: false,
+      reason: "timeline",
+      message:
+        "No hay una misión activa para confirmar.",
+    });
+  }
+
+  if (!navigator.geolocation) {
+    return Promise.resolve({
+      success: false,
+      reason: "gps",
+      message:
+        "Este dispositivo no permite obtener ubicación GPS.",
+    });
+  }
+
+  return new Promise(
+    (resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const result =
+            certifyArrivalAtPosition(
+              activeExperience
+                .experienceId,
+              position.coords
+                .latitude,
+              position.coords
+                .longitude
+            );
+
+          if (result.success) {
+            syncJourneyTimeline(
+              activeExperience
+                .experienceId
+            );
+
+            completeJourney();
+          }
+
+          resolve(result);
+        },
+        () => {
+          resolve({
+            success: false,
+            reason: "gps",
+            message:
+              "No pude leer tu ubicación. Activa el GPS e inténtalo nuevamente.",
+          });
+        },
+        {
+          enableHighAccuracy:
+            true,
+          maximumAge: 3000,
+          timeout: 15000,
+        }
+      );
+    }
+  );
 }
 
   function completeJourney() {
@@ -730,6 +835,7 @@ function resumeWalking() {
     openCamera,
     savePoint,
     resumeWalking,
+    confirmArrival,
     completeJourney,
   }}
 >

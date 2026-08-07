@@ -6,6 +6,10 @@ import {
   TileLayer,
 } from "react-leaflet";
 
+import {
+  Camera,
+} from "lucide-react";
+
 import "leaflet/dist/leaflet.css";
 
 import type {
@@ -49,6 +53,7 @@ type Props = {
   onSelectShare: (
     memoryData: MemoryCardData
   ) => void;
+  onCaptureMemory?: () => void;
 };
 
 const MAGENTA = "#FF00FF";
@@ -57,6 +62,7 @@ function ExpeditionMap({
   expedition,
   track: propTrack,
   onSelectShare,
+  onCaptureMemory,
 }: Props) {
   const center: [number, number] = [
     expedition.latitude,
@@ -129,6 +135,39 @@ function ExpeditionMap({
           "0 16px 38px rgba(0,0,0,0.34), 0 0 28px rgba(255,0,255,0.08)",
       }}
     >
+      {onCaptureMemory && (
+        <button
+          type="button"
+          onClick={onCaptureMemory}
+          aria-label="Tomar una fotografía y guardarla en el timeline"
+          title="Guardar recuerdo"
+          style={{
+            position: "absolute",
+            top: "12px",
+            right: "12px",
+            zIndex: 1100,
+            width: "58px",
+            height: "58px",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: "19px",
+            border:
+              "2px solid rgba(255,255,255,0.94)",
+            background:
+              "linear-gradient(145deg, #FF3DE8, #D4008D)",
+            color: "#FFFFFF",
+            boxShadow:
+              "0 10px 28px rgba(255,0,184,0.42)",
+            cursor: "pointer",
+          }}
+        >
+          <Camera
+            size={28}
+            strokeWidth={2.1}
+          />
+        </button>
+      )}
+
       <MapContainer
         center={center}
         zoom={18}

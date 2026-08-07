@@ -34,7 +34,7 @@ import type {
 export default function JourneyCompletedView() {
   const {
     journey,
-    abandonJourney,
+    resetToHome,
   } = useJourney();
 
   const navigate =
@@ -197,7 +197,7 @@ export default function JourneyCompletedView() {
      * Limpiamos la vista activa y regresamos
      * al catálogo, conservando el historial.
      */
-    abandonJourney();
+    resetToHome();
     navigate("/explorer");
   }
 

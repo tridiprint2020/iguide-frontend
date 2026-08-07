@@ -1,5 +1,6 @@
 import {
   useMemo,
+  useState,
 } from "react";
 
 import {
@@ -15,6 +16,7 @@ import {
 } from "../../engine/trackingEngine";
 
 import JourneyCompletedView from "./JourneyCompletedView";
+import JourneyAbortedView from "./JourneyAbortedView";
 import {
   CameraView,
 } from "./CameraView";
@@ -23,6 +25,7 @@ import {
 } from "./PointSavedView";
 
 import HospesBanner from "../hospes/HospesBanner";
+import ExpeditionMap from "../ExpeditionMap";
 
 import {
   getHospesMessage,
@@ -92,7 +95,20 @@ export function WalkingView() {
     journey,
     openCamera,
     abandonJourney,
+    confirmArrival,
   } = useJourney();
+
+  const [
+    isConfirmingArrival,
+    setIsConfirmingArrival,
+  ] = useState(false);
+
+  const [
+    arrivalMessage,
+    setArrivalMessage,
+  ] = useState<string | null>(
+    null
+  );
 
   const stats =
     journey.startedAt !== null
@@ -135,8 +151,12 @@ export function WalkingView() {
       return distanceInMeters(
         lastLocation.lat,
         lastLocation.lng,
-        experience.latitude,
-        experience.longitude
+        experience
+          .arrivalLatitude ??
+          experience.latitude,
+        experience
+          .arrivalLongitude ??
+          experience.longitude
       );
     }, [
       journey.experience,
@@ -152,6 +172,22 @@ export function WalkingView() {
             distanceToTargetMeters / 70
           )
         );
+
+  const manualArrivalRadius =
+    journey.experience
+      ?.manualCertificationRadiusMeters ??
+    Math.max(
+      journey.experience
+        ?.certificationRadiusMeters ??
+        25,
+      90
+    );
+
+  const canConfirmArrival =
+    journey.startedAt !== null &&
+    distanceToTargetMeters !== null &&
+    distanceToTargetMeters <=
+      manualArrivalRadius;
 
   const hospesBannerMessage =
     useMemo(() => {
@@ -235,7 +271,23 @@ export function WalkingView() {
     }
 
     abandonJourney();
-    navigate("/explorer");
+  }
+
+  async function handleConfirmArrival() {
+    setIsConfirmingArrival(true);
+    setArrivalMessage(null);
+
+    const result =
+      await confirmArrival();
+
+    if (!result.success) {
+      setArrivalMessage(
+        result.message
+      );
+      setIsConfirmingArrival(
+        false
+      );
+    }
   }
 
   function WalkingUI() {
@@ -372,6 +424,19 @@ export function WalkingView() {
             </p>
           </section>
 
+          {journey.experience && (
+            <ExpeditionMap
+              expedition={
+                journey.experience
+              }
+              track={null}
+              onSelectShare={() => {}}
+              onCaptureMemory={
+                openCamera
+              }
+            />
+          )}
+
           <HospesBanner
             message={
               hospesBannerMessage
@@ -435,6 +500,68 @@ export function WalkingView() {
             </div>
           </section>
 
+          {canConfirmArrival && (
+            <section
+              style={{
+                display: "grid",
+                gap: "8px",
+                padding: "13px",
+                borderRadius: "16px",
+                border:
+                  "1px solid rgba(57,231,255,0.28)",
+                background:
+                  "rgba(57,231,255,0.07)",
+              }}
+            >
+              <strong
+                style={{
+                  color: CYAN,
+                  fontSize: "12px",
+                }}
+              >
+                ¿Ya estás en {journey.experience?.title}?
+              </strong>
+
+              <span
+                style={{
+                  color:
+                    "rgba(255,255,255,0.62)",
+                  fontSize: "10px",
+                  lineHeight: 1.4,
+                }}
+              >
+                Si el pin comercial está desplazado, confirma tu llegada con la ubicación GPS actual.
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  void handleConfirmArrival();
+                }}
+                disabled={
+                  isConfirmingArrival
+                }
+                style={primaryButtonStyle}
+              >
+                {isConfirmingArrival
+                  ? "Confirmando GPS…"
+                  : "📍 Estoy aquí · confirmar llegada"}
+              </button>
+
+              {arrivalMessage && (
+                <span
+                  role="alert"
+                  style={{
+                    color: "#FFB15C",
+                    fontSize: "10px",
+                  }}
+                >
+                  {arrivalMessage}
+                </span>
+              )}
+            </section>
+          )}
+
           <section
             style={{
               display: "grid",
@@ -466,33 +593,15 @@ export function WalkingView() {
             />
           </section>
 
-          <section
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(2, minmax(0, 1fr))",
-              gap: "10px",
-              paddingTop: "4px",
-            }}
+          <button
+            type="button"
+            onClick={
+              handleReturnToExperience
+            }
+            style={secondaryButtonStyle}
           >
-            <button
-              type="button"
-              onClick={openCamera}
-              style={primaryButtonStyle}
-            >
-              📸 Guardar recuerdo
-            </button>
-
-            <button
-              type="button"
-              onClick={
-                handleReturnToExperience
-              }
-              style={secondaryButtonStyle}
-            >
-              🧭 Ver destino y mapa
-            </button>
-          </section>
+            Ver información del destino
+          </button>
 
           <button
             type="button"
@@ -530,6 +639,11 @@ export function WalkingView() {
 
     case "pointSaved":
       return <PointSavedView />;
+
+    case "aborted":
+      return (
+        <JourneyAbortedView />
+      );
 
     case "completed":
       return (

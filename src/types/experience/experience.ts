@@ -36,6 +36,9 @@ export interface BaseExperience {
   tags: string[];
   rating?: number;
   certificationRadiusMeters?: number;
+  arrivalLatitude?: number;
+  arrivalLongitude?: number;
+  manualCertificationRadiusMeters?: number;
   
   // 🚀 EVOLUCIÓN ARQUITECTÓNICA: Cualquier experiencia puede responder a múltiples perfiles o intereses
   interests?: Interest[]; 

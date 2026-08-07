@@ -576,7 +576,7 @@ export function getHospesMessage(
 
       return {
         title:
-          experience.title,
+          "HOSPES · TU MISIÓN",
 
         message:
           `Puedo registrar tu ruta, tus recuerdos y tu llegada.${scheduleText}`,
@@ -665,7 +665,7 @@ export function getHospesMessage(
           message:
             memories.length > 0
               ? `Estás dentro del área de ${experience?.title ?? "llegada"}. Ya tienes un recuerdo y puedo certificar esta experiencia.`
-              : `Estás muy cerca de ${experience?.title ?? "tu destino"}. Guarda una foto o una nota para certificar la visita.`,
+              : `Estás muy cerca de ${experience?.title ?? "tu destino"}. La llegada se certificará con el GPS; una foto o nota es opcional.`,
 
           icon: "📍",
 

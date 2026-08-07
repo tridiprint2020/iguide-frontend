@@ -833,6 +833,92 @@ function isInsideCertificationArea(
   return distanceKm * 1000 <= radiusMeters;
 }
 
+/**
+ * Respaldo de campo para catálogos cuyo pin comercial aún
+ * necesita calibración. Solo se ejecuta por una acción
+ * explícita del usuario y nunca amplía la llegada automática.
+ */
+export function certifyArrivalAtPosition(
+  experienceId: string,
+  currentLat: number,
+  currentLng: number
+): CompletionResult {
+  const track =
+    loadTrack(experienceId);
+
+  if (!track) {
+    return {
+      success: false,
+      reason: "timeline",
+      message:
+        "No se encontró una misión activa en este dispositivo.",
+    };
+  }
+
+  const experience =
+    catalog.find(
+      (item) =>
+        item.experienceId ===
+        experienceId
+    );
+
+  if (!experience) {
+    return {
+      success: false,
+      reason: "destination",
+      message:
+        "No se encontró el destino oficial.",
+    };
+  }
+
+  const targetLatitude =
+    experience.arrivalLatitude ??
+    experience.latitude;
+
+  const targetLongitude =
+    experience.arrivalLongitude ??
+    experience.longitude;
+
+  const confirmationRadiusMeters =
+    experience
+      .manualCertificationRadiusMeters ??
+    Math.max(
+      experience
+        .certificationRadiusMeters ??
+        25,
+      90
+    );
+
+  if (
+    !isInsideCertificationArea(
+      currentLat,
+      currentLng,
+      targetLatitude,
+      targetLongitude,
+      confirmationRadiusMeters
+    )
+  ) {
+    return {
+      success: false,
+      reason: "distance",
+      message:
+        `El GPS todavía te ubica fuera del área de ${confirmationRadiusMeters} m del destino.`,
+    };
+  }
+
+  addFinishPoint(
+    experienceId,
+    currentLat,
+    currentLng
+  );
+
+  return {
+    success: true,
+    message:
+      "Llegada confirmada con tu ubicación actual.",
+  };
+}
+
 export function canCompleteJourney(
   experienceId: string
 ): CompletionResult {
@@ -886,18 +972,12 @@ export function canCompleteJourney(
       .certificationRadiusMeters ??
     25;
 
-  const arrivalExperience =
-    experience as typeof experience & {
-      arrivalLatitude?: number;
-      arrivalLongitude?: number;
-    };
-
   const targetLatitude =
-    arrivalExperience.arrivalLatitude ??
+    experience.arrivalLatitude ??
     experience.latitude;
 
   const targetLongitude =
-    arrivalExperience.arrivalLongitude ??
+    experience.arrivalLongitude ??
     experience.longitude;
 
   /*
@@ -907,7 +987,9 @@ export function canCompleteJourney(
    */
   const certificationRadiusMeters =
     Math.max(
-      configuredRadiusMeters,
+      experience
+        .manualCertificationRadiusMeters ??
+        configuredRadiusMeters,
       70
     );
 

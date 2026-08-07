@@ -14,6 +14,7 @@ export type JourneyState =
   | "WALKING"
   | "CAMERA_OPEN"
   | "POINT_SAVED"
+  | "ABORTED"
   | "COMPLETED";
 
 export type JourneyScreen =
@@ -21,6 +22,7 @@ export type JourneyScreen =
   | "walking"
   | "camera"
   | "pointSaved"
+  | "aborted"
   | "completed";
 
 export interface ActiveJourney {

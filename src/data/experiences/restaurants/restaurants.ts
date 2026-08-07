@@ -24,6 +24,15 @@ export const restaurants: Experience[] = [
     
     certificationRadiusMeters: 20,
 
+    /*
+     * La primera prueba de campo registró una diferencia de
+     * 86 m entre el pin comercial y el acceso usado por el
+     * visitante. La llegada automática conserva el radio
+     * estricto; este radio ampliado solo se usa cuando el
+     * usuario pulsa explícitamente "Estoy aquí".
+     */
+    manualCertificationRadiusMeters: 120,
+
     rating:7.7,
 
     tags:[

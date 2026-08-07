@@ -8,6 +8,10 @@ import {
 } from "react-router-dom";
 
 import {
+  Camera,
+} from "lucide-react";
+
+import {
   useJourney,
 } from "../../context/JourneyContext";
 
@@ -21,6 +25,7 @@ export default function ActiveJourneyBubble() {
   const {
     journey,
     abandonJourney,
+    openCamera,
   } = useJourney();
 
   const [
@@ -64,6 +69,12 @@ export default function ActiveJourneyBubble() {
     navigate("/");
   }
 
+  function handleCaptureMemory() {
+    setExpanded(false);
+    openCamera();
+    navigate("/journey");
+  }
+
   function handleAbandon() {
     const confirmed =
       window.confirm(
@@ -76,7 +87,7 @@ export default function ActiveJourneyBubble() {
 
     abandonJourney();
     setExpanded(false);
-    navigate("/explorer");
+    navigate("/journey");
   }
 
   return (
@@ -230,6 +241,31 @@ export default function ActiveJourneyBubble() {
                 🧭 Volver al recorrido
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={
+                handleCaptureMemory
+              }
+              style={{
+                minHeight:
+                  "44px",
+                border:
+                  "1px solid rgba(255,0,255,0.34)",
+                borderRadius:
+                  "12px",
+                background:
+                  "rgba(255,0,255,0.10)",
+                color:
+                  "#FF8BFF",
+                fontWeight:
+                  800,
+                cursor:
+                  "pointer",
+              }}
+            >
+              📸 Guardar recuerdo
+            </button>
 
             <button
               type="button"
@@ -394,6 +430,41 @@ export default function ActiveJourneyBubble() {
           </>
         )}
       </button>
+
+      {!expanded && (
+        <button
+          type="button"
+          onClick={
+            handleCaptureMemory
+          }
+          aria-label="Tomar fotografía durante la misión"
+          title="Guardar recuerdo"
+          style={{
+            position: "fixed",
+            right: "94px",
+            bottom: "91px",
+            zIndex: 10002,
+            width: "50px",
+            height: "50px",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: "17px",
+            border:
+              "2px solid rgba(255,255,255,0.90)",
+            background:
+              "linear-gradient(145deg, #FF3DE8, #D4008D)",
+            color: "#FFFFFF",
+            boxShadow:
+              "0 9px 24px rgba(255,0,184,0.38)",
+            cursor: "pointer",
+          }}
+        >
+          <Camera
+            size={24}
+            strokeWidth={2.1}
+          />
+        </button>
+      )}
 
       {!expanded && (
         <div

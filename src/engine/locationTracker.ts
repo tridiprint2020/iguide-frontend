@@ -363,19 +363,13 @@ export class LocationTracker {
            * arrivalLatitude/arrivalLongitude, el GPS
            * certificará usando el acceso público.
            */
-          const arrivalExperience =
-            experience as typeof experience & {
-              arrivalLatitude?: number;
-              arrivalLongitude?: number;
-            };
-
           const targetLat =
-            arrivalExperience
+            experience
               .arrivalLatitude ??
             experience.latitude;
 
           const targetLng =
-            arrivalExperience
+            experience
               .arrivalLongitude ??
             experience.longitude;
 

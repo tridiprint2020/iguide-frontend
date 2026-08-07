@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState,
 } from "react";
 
@@ -29,7 +28,6 @@ import {
 } from "../data/catalog";
 
 import ExpeditionMap from "../components/ExpeditionMap";
-import TrackingPanel from "../components/TrackingPanel";
 import MemoryPreviewModal from "../components/sharing/MemoryPreviewModal";
 
 import {
@@ -157,32 +155,6 @@ function Expedition() {
     useState<MemoryCardData | null>(
       null
     );
-
-  const [
-    startNotice,
-    setStartNotice,
-  ] = useState(false);
-
-  useEffect(() => {
-    if (!startNotice) {
-      return;
-    }
-
-    const timer =
-      window.setTimeout(
-        () => {
-          setStartNotice(
-            false
-          );
-        },
-        2200
-      );
-
-    return () =>
-      window.clearTimeout(
-        timer
-      );
-  }, [startNotice]);
 
   if (!expedition) {
     return (
@@ -454,16 +426,14 @@ function Expedition() {
   const confirmedExpedition: Experience =
     expedition;
 
-  /*
-   * El usuario YA dio la orden de comenzar.
-   * La respuesta visual debe ser inmediata,
-   * no esperar al GPS ni a localStorage.
-   */
-  setStartNotice(true);
+  const missionStarted =
+    startWalking(
+      confirmedExpedition
+    );
 
-  startWalking(
-    confirmedExpedition
-  );
+  if (missionStarted) {
+    navigate("/journey");
+  }
 }
 
   return (
@@ -481,71 +451,6 @@ function Expedition() {
           "#FFFFFF",
       }}
     >
-      {startNotice && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position:
-              "fixed",
-            top:
-              "max(18px, env(safe-area-inset-top))",
-            left: "50%",
-            transform:
-              "translateX(-50%)",
-            zIndex: 50000,
-            width:
-              "min(92vw, 390px)",
-            padding:
-              "14px 16px",
-            boxSizing:
-              "border-box",
-            borderRadius:
-              "18px",
-            border:
-              "1px solid rgba(255,0,255,0.52)",
-            background:
-              "linear-gradient(145deg, rgba(38,8,43,0.98), rgba(8,18,31,0.98))",
-            boxShadow:
-              "0 18px 60px rgba(0,0,0,0.48), 0 0 34px rgba(255,0,255,0.28)",
-            textAlign:
-              "center",
-          }}
-        >
-          <strong
-            style={{
-              display:
-                "block",
-              color:
-                MAGENTA,
-              fontSize:
-                "11px",
-              letterSpacing:
-                "0.12em",
-              textTransform:
-                "uppercase",
-              marginBottom:
-                "5px",
-            }}
-          >
-            ● Misión iniciada
-          </strong>
-
-          <span
-            style={{
-              color:
-                "rgba(255,255,255,0.88)",
-              fontSize:
-                "13px",
-              lineHeight:
-                1.45,
-            }}
-          >
-            Hospes ya está siguiendo tu recorrido hacia {expedition.title}.
-          </span>
-        </div>
-      )}
-
       <main
         style={{
           width: "100%",
@@ -879,25 +784,6 @@ function Expedition() {
             );
           }}
         />
-
-        {isTrackingActive && (
-          <div
-            style={{
-              marginTop:
-                "10px",
-            }}
-          >
-            <TrackingPanel
-              experienceId={
-                expedition.experienceId
-              }
-              track={
-                currentTrack
-              }
-              onUpdate={() => {}}
-            />
-          </div>
-        )}
 
         {/* DATOS ÚTILES COMPACTOS, DESPUÉS DEL MAPA */}
         <section
