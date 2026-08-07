@@ -882,12 +882,9 @@ export function certifyArrivalAtPosition(
   const confirmationRadiusMeters =
     experience
       .manualCertificationRadiusMeters ??
-    Math.max(
-      experience
-        .certificationRadiusMeters ??
-        25,
-      90
-    );
+    experience
+      .certificationRadiusMeters ??
+    25;
 
   if (
     !isInsideCertificationArea(
@@ -981,17 +978,14 @@ export function canCompleteJourney(
     experience.longitude;
 
   /*
-   * Debe coincidir con la tolerancia usada por
-   * locationTracker. En calles estrechas y edificios
-   * altos, el GPS móvil puede reportar 40–70 metros.
+   * La llegada manual solo amplía el radio cuando el
+   * catálogo lo declara expresamente. Así dos locales
+   * cercanos nunca comparten una tolerancia genérica.
    */
   const certificationRadiusMeters =
-    Math.max(
-      experience
-        .manualCertificationRadiusMeters ??
-        configuredRadiusMeters,
-      70
-    );
+    experience
+      .manualCertificationRadiusMeters ??
+    configuredRadiusMeters;
 
   const inside =
     isInsideCertificationArea(

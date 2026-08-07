@@ -35,8 +35,10 @@ import type {
 
 type Props = {
   data: MemoryCardData;
-  onShare: () => void;
-  onDownload?: () => void;
+  onShare: () =>
+    void | Promise<void>;
+  onDownload?: () =>
+    void | Promise<void>;
 };
 
 type ReactionOption = {
@@ -258,6 +260,11 @@ const MemoryCard = forwardRef<HTMLElement, Props>(function MemoryCard(
       null
     );
 
+  const [
+    isDownloading,
+    setIsDownloading,
+  ] = useState(false);
+
   useEffect(() => {
     if (!experienceId) {
       setSelectedReaction(
@@ -327,6 +334,23 @@ const MemoryCard = forwardRef<HTMLElement, Props>(function MemoryCard(
     setSelectedReaction(
       reaction
     );
+  }
+
+  async function handleDownloadClick() {
+    if (
+      !onDownload ||
+      isDownloading
+    ) {
+      return;
+    }
+
+    setIsDownloading(true);
+
+    try {
+      await onDownload();
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   return (
@@ -1255,9 +1279,11 @@ const MemoryCard = forwardRef<HTMLElement, Props>(function MemoryCard(
           {onDownload && (
             <button
               type="button"
-              onClick={
-                onDownload
-              }
+              onClick={() => {
+                void handleDownloadClick();
+              }}
+              disabled={isDownloading}
+              aria-busy={isDownloading}
               aria-label="Descargar imagen"
               title="Descargar imagen"
               style={{
@@ -1286,7 +1312,14 @@ const MemoryCard = forwardRef<HTMLElement, Props>(function MemoryCard(
                   CYAN,
 
                 cursor:
-                  "pointer",
+                  isDownloading
+                    ? "wait"
+                    : "pointer",
+
+                opacity:
+                  isDownloading
+                    ? 0.62
+                    : 1,
 
                 boxShadow:
                   "0 0 15px rgba(0,230,255,0.07)",

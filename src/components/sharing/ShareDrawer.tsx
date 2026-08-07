@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useState,
 } from "react";
 
 type Props = {
@@ -49,6 +50,14 @@ function ShareDrawer({
   onThreads,
   onTwitter,
 }: Props) {
+  const [busyAction, setBusyAction] =
+    useState<
+      | "share"
+      | "download"
+      | "copy"
+      | null
+    >(null);
+
   useEffect(() => {
     if (!open) {
       document.body.style.overflow =
@@ -84,19 +93,48 @@ function ShareDrawer({
     legacyShareAction;
 
   async function handleShare() {
-    if (!effectiveShareAction) {
+    if (
+      !effectiveShareAction ||
+      busyAction
+    ) {
       return;
     }
 
-    await effectiveShareAction();
+    setBusyAction("share");
+
+    try {
+      await effectiveShareAction();
+    } finally {
+      setBusyAction(null);
+    }
   }
 
   async function handleDownload() {
-    await onDownload();
+    if (busyAction) {
+      return;
+    }
+
+    setBusyAction("download");
+
+    try {
+      await onDownload();
+    } finally {
+      setBusyAction(null);
+    }
   }
 
   async function handleCopyLink() {
-    await onCopyLink();
+    if (busyAction) {
+      return;
+    }
+
+    setBusyAction("copy");
+
+    try {
+      await onCopyLink();
+    } finally {
+      setBusyAction(null);
+    }
   }
 
   return (
@@ -331,6 +369,10 @@ function ShareDrawer({
           {effectiveShareAction && (
             <button
               type="button"
+              disabled={busyAction !== null}
+              aria-busy={
+                busyAction === "share"
+              }
               onClick={() => {
                 void handleShare();
               }}
@@ -357,15 +399,29 @@ function ShareDrawer({
                   800,
 
                 cursor:
-                  "pointer",
+                  busyAction
+                    ? "wait"
+                    : "pointer",
+
+                opacity:
+                  busyAction &&
+                  busyAction !== "share"
+                    ? 0.55
+                    : 1,
               }}
             >
-              ↗ Compartir
+              {busyAction === "share"
+                ? "Preparando…"
+                : "↗ Compartir"}
             </button>
           )}
 
           <button
             type="button"
+            disabled={busyAction !== null}
+            aria-busy={
+              busyAction === "download"
+            }
             onClick={() => {
               void handleDownload();
             }}
@@ -392,14 +448,28 @@ function ShareDrawer({
                 750,
 
               cursor:
-                "pointer",
+                busyAction
+                  ? "wait"
+                  : "pointer",
+
+              opacity:
+                busyAction &&
+                busyAction !== "download"
+                  ? 0.55
+                  : 1,
             }}
           >
-            ↓ Descargar imagen
+            {busyAction === "download"
+              ? "Preparando imagen…"
+              : "↓ Descargar imagen"}
           </button>
 
           <button
             type="button"
+            disabled={busyAction !== null}
+            aria-busy={
+              busyAction === "copy"
+            }
             onClick={() => {
               void handleCopyLink();
             }}
@@ -423,10 +493,14 @@ function ShareDrawer({
                 650,
 
               cursor:
-                "pointer",
+                busyAction
+                  ? "wait"
+                  : "pointer",
             }}
           >
-            🔗 Copiar enlace
+            {busyAction === "copy"
+              ? "Copiando…"
+              : "🔗 Copiar enlace"}
           </button>
         </div>
 

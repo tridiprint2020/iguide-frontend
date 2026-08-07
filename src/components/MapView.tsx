@@ -44,6 +44,10 @@ import {
 } from "../engine/shareEngine";
 
 import {
+  useJourney,
+} from "../context/JourneyContext";
+
+import {
   Theme,
 } from "../styles/theme";
 
@@ -254,6 +258,10 @@ function findLastTimelineItem(
 
 function MapView({ track }: Props) {
   const navigate = useNavigate();
+  const {
+    journey,
+    startWalking,
+  } = useJourney();
   const [selectedCard, setSelectedCard] =
     useState<MemoryCardData | null>(null);
   const [showQhapaqNan, setShowQhapaqNan] =
@@ -287,6 +295,38 @@ function MapView({ track }: Props) {
       () => loadSavedMapView(),
       []
     );
+
+  function handleStartMission(
+    experience: Experience
+  ) {
+    const activeExperience =
+      journey.experience;
+
+    const hasActiveJourney =
+      journey.state !== "IDLE" &&
+      journey.state !== "COMPLETED" &&
+      journey.state !== "ABORTED";
+
+    if (
+      activeExperience &&
+      hasActiveJourney &&
+      activeExperience.experienceId !==
+        experience.experienceId
+    ) {
+      alert(
+        `Ya tienes una misión activa: ${activeExperience.title}. Continúala o abandónala antes de iniciar otra.`
+      );
+
+      return;
+    }
+
+    const missionStarted =
+      startWalking(experience);
+
+    if (missionStarted) {
+      navigate("/journey");
+    }
+  }
 
   const trackBundles =
     useMemo<TrackBundle[]>(() => {
@@ -524,6 +564,14 @@ function MapView({ track }: Props) {
                   experience.experienceId
                 ) ?? false;
 
+              const isCurrentMission =
+                journey.experience
+                  ?.experienceId ===
+                  experience.experienceId &&
+                journey.state !== "IDLE" &&
+                journey.state !== "COMPLETED" &&
+                journey.state !== "ABORTED";
+
               return (
                 <Marker
                   key={experience.experienceId}
@@ -549,8 +597,20 @@ function MapView({ track }: Props) {
                     <ExperienceMapCard
                       experience={experience}
                       isVisited={isVisited}
-                      primaryActionLabel="Ver misión →"
+                      isCurrentMission={
+                        isCurrentMission
+                      }
+                      primaryActionLabel={
+                        isCurrentMission
+                          ? "Continuar misión →"
+                          : "Iniciar misión →"
+                      }
                       onPrimaryAction={() =>
+                        handleStartMission(
+                          experience
+                        )
+                      }
+                      onViewDetails={() =>
                         navigate(
                           `/expedition/${experience.slug}`
                         )

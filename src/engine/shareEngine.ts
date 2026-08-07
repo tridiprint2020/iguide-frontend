@@ -1,6 +1,5 @@
 import {
   toBlob,
-  toPng,
 } from "html-to-image";
 
 import type {
@@ -10,6 +9,23 @@ import type {
 export interface SharePayload {
   title: string;
   text: string;
+}
+
+function getExportPixelRatio(): number {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia(
+      "(max-width: 520px)"
+    ).matches
+  ) {
+    /*
+     * Evita picos de memoria en Chrome Android al
+     * rasterizar una tarjeta que contiene un mapa.
+     */
+    return 1.35;
+  }
+
+  return 2;
 }
 
 function sanitizeFileName(
@@ -70,7 +86,8 @@ async function renderCardBlob(
       nodeRef,
       {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio:
+          getExportPixelRatio(),
         backgroundColor:
           "#090A12",
         filter: (node) => {
@@ -164,27 +181,14 @@ export const shareEngine = {
     }
 
     try {
-      const dataUrl =
-        await toPng(
-          nodeRef,
-          {
-            cacheBust: true,
-            pixelRatio: 2,
-            backgroundColor:
-              "#090A12",
-            filter: (node) => {
-              if (
-                node instanceof HTMLElement &&
-                node.dataset
-                  .exportIgnore ===
-                  "true"
-              ) {
-                return false;
-              }
+      const blob =
+        await renderCardBlob(
+          nodeRef
+        );
 
-              return true;
-            },
-          }
+      const objectUrl =
+        URL.createObjectURL(
+          blob
         );
 
       const anchor =
@@ -193,7 +197,7 @@ export const shareEngine = {
         );
 
       anchor.href =
-        dataUrl;
+        objectUrl;
 
       anchor.download =
         `iguide-${sanitizeFileName(
@@ -208,6 +212,14 @@ export const shareEngine = {
 
       anchor.click();
       anchor.remove();
+
+      window.setTimeout(
+        () =>
+          URL.revokeObjectURL(
+            objectUrl
+          ),
+        1500
+      );
 
       return true;
     } catch (error) {

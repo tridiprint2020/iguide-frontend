@@ -176,12 +176,9 @@ export function WalkingView() {
   const manualArrivalRadius =
     journey.experience
       ?.manualCertificationRadiusMeters ??
-    Math.max(
-      journey.experience
-        ?.certificationRadiusMeters ??
-        25,
-      90
-    );
+    journey.experience
+      ?.certificationRadiusMeters ??
+    25;
 
   const canConfirmArrival =
     journey.startedAt !== null &&

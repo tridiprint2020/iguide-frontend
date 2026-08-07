@@ -11,6 +11,8 @@ import {
 const MIN_DISTANCE_METERS = 8;
 const MAX_ACCEPTABLE_ACCURACY_METERS = 45;
 const MIN_TIME_BETWEEN_POINTS_MS = 4000;
+const REQUIRED_ARRIVAL_READINGS = 2;
+const MAX_ARRIVAL_READING_GAP_MS = 20000;
 
 const HIGH_ACCURACY_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
@@ -90,6 +92,12 @@ export class LocationTracker {
 
   private arrivalCompleted =
     false;
+
+  private arrivalCandidateCount =
+    0;
+
+  private lastArrivalCandidateAt =
+    0;
 
   private audioContext:
     | AudioContext
@@ -332,6 +340,12 @@ export class LocationTracker {
     this.arrivalCompleted =
       false;
 
+    this.arrivalCandidateCount =
+      0;
+
+    this.lastArrivalCandidateAt =
+      0;
+
     this.watchId =
       navigator.geolocation.watchPosition(
         (position) => {
@@ -387,20 +401,22 @@ export class LocationTracker {
               : 35;
 
           /*
-           * En calles estrechas y edificios altos,
-           * una precisión de 40–60 m es normal.
-           * La tolerancia nunca será menor al radio
-           * configurado ni mayor a 70 m.
+           * El error informado por el GPS no puede ampliar
+           * el área del destino: en una calle con locales
+           * cercanos certificaría el negocio equivocado.
+           * La lectura debe entrar en el radio publicado y
+           * además tener una precisión razonable para ese
+           * tipo de experiencia.
            */
           const effectiveRadius =
+            configuredRadius;
+
+          const maximumArrivalAccuracy =
             Math.max(
-              configuredRadius,
+              25,
               Math.min(
-                Math.max(
-                  safeAccuracy,
-                  35
-                ),
-                70
+                configuredRadius * 1.5,
+                100
               )
             );
 
@@ -411,6 +427,42 @@ export class LocationTracker {
               targetLat,
               targetLng
             );
+
+          const now =
+            Date.now();
+
+          const isReliableArrivalReading =
+            safeAccuracy <=
+              maximumArrivalAccuracy;
+
+          const isInsideArrivalArea =
+            distanceToDestination <=
+              effectiveRadius;
+
+          if (
+            isInsideArrivalArea &&
+            isReliableArrivalReading
+          ) {
+            const followsPreviousReading =
+              this.lastArrivalCandidateAt > 0 &&
+              now -
+                this.lastArrivalCandidateAt <=
+                MAX_ARRIVAL_READING_GAP_MS;
+
+            this.arrivalCandidateCount =
+              followsPreviousReading
+                ? this.arrivalCandidateCount + 1
+                : 1;
+
+            this.lastArrivalCandidateAt =
+              now;
+          } else {
+            this.arrivalCandidateCount =
+              0;
+
+            this.lastArrivalCandidateAt =
+              0;
+          }
 
           console.info(
             "Proximidad I.GUIDE",
@@ -429,6 +481,12 @@ export class LocationTracker {
                 Math.round(
                   safeAccuracy
                 ),
+              requiredAccuracyMeters:
+                Math.round(
+                  maximumArrivalAccuracy
+                ),
+              arrivalReadings:
+                this.arrivalCandidateCount,
               targetPosition: {
                 lat: targetLat,
                 lng: targetLng,
@@ -438,8 +496,8 @@ export class LocationTracker {
 
           if (
             !this.arrivalCompleted &&
-            distanceToDestination <=
-              effectiveRadius
+            this.arrivalCandidateCount >=
+              REQUIRED_ARRIVAL_READINGS
           ) {
             const currentTrack =
               loadTrack(
@@ -487,9 +545,6 @@ export class LocationTracker {
               return;
             }
           }
-
-          const now =
-            Date.now();
 
           if (
             this.lastLat ===
@@ -604,6 +659,12 @@ export class LocationTracker {
       null;
 
     this.lastAcceptedTimestamp =
+      0;
+
+    this.arrivalCandidateCount =
+      0;
+
+    this.lastArrivalCandidateAt =
       0;
   }
 }
