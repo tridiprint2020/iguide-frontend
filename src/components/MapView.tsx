@@ -1,5 +1,7 @@
 import {
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -13,6 +15,7 @@ import {
   Polyline,
   Popup,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 
@@ -46,6 +49,7 @@ import {
 
 import MemoryCardModal from "./sharing/MemoryCardModal";
 import QhapaqNanLayer from "./maps/QhapaqNanLayer";
+import UserLocationLayer from "./maps/UserLocationLayer";
 
 import type {
   Experience,
@@ -210,6 +214,26 @@ function MapViewPersistence() {
       );
     },
   });
+
+  return null;
+}
+
+/**
+ * Captura la instancia real de Leaflet en un ref mutable
+ * para que los handlers de click de los markers (definidos
+ * en MapView, fuera del árbol de contexto de MapContainer)
+ * puedan llamar flyTo/fitBounds sin necesidad de prop drilling.
+ */
+function MapInstanceBinder({
+  mapRef,
+}: {
+  mapRef: React.MutableRefObject<L.Map | null>;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    mapRef.current = map;
+  }, [map]);
 
   return null;
 }
@@ -476,6 +500,9 @@ function MapView({ track }: Props) {
     useState(false);
   const user = loadUserProfile();
 
+  const mapInstanceRef =
+    useRef<L.Map | null>(null);
+
   const savedMapView =
     useMemo(
       () => loadSavedMapView(),
@@ -570,6 +597,56 @@ function MapView({ track }: Props) {
       : savedMapView?.zoom ??
         DEFAULT_ZOOM;
 
+  /*
+   * 3) RECORRIDO ACTIVO: ZOOM MÁXIMO ~150 m
+   *
+   * mapCenter/initialZoom solo controlan la vista INICIAL
+   * de MapContainer (es de solo lectura tras el montaje).
+   * Para que el mapa siga el recorrido mientras llegan nuevos
+   * puntos GPS, ajustamos la vista en vivo a través del ref.
+   */
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+
+    if (!map || activePath.length === 0) {
+      return;
+    }
+
+    if (activePath.length === 1) {
+      map.setView(
+        [
+          activePath[0].lat,
+          activePath[0].lng,
+        ],
+        18,
+        { animate: true }
+      );
+      return;
+    }
+
+    const bounds = L.latLngBounds(
+      activePath.map(
+        (point) =>
+          [point.lat, point.lng] as [
+            number,
+            number,
+          ]
+      )
+    );
+
+    map.fitBounds(bounds, {
+      padding: [18, 18],
+      maxZoom: 18,
+      animate: true,
+    });
+    // Solo recalculamos cuando cambia la cantidad de nodos
+    // o la sesión activa, no en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activePath.length,
+    track?.sessionId,
+  ]);
+
   function openTimelineCard(
     experience: Experience,
     expeditionTrack: ExpeditionTrack,
@@ -581,6 +658,22 @@ function MapView({ track }: Props) {
         expeditionTrack,
         item
       )
+    );
+  }
+
+  function flyToExperience(
+    experience: Experience
+  ) {
+    mapInstanceRef.current?.flyTo(
+      [
+        experience.latitude,
+        experience.longitude,
+      ],
+      17,
+      {
+        animate: true,
+        duration: 0.8,
+      }
     );
   }
 
@@ -614,29 +707,37 @@ function MapView({ track }: Props) {
           }}
         >
           <MapContainer
-            center={mapCenter}
-            zoom={initialZoom}
-            scrollWheelZoom
-            zoomControl
-            doubleClickZoom
-            touchZoom
-            preferCanvas
-            style={{
-              height: "100%",
-              width: "100%",
-            }}
-          >
-            <MapViewPersistence />
+  center={mapCenter}
+  zoom={initialZoom}
+  scrollWheelZoom
+  zoomControl
+  doubleClickZoom
+  touchZoom
+  preferCanvas
+  style={{
+    height: "100%",
+    width: "100%",
+  }}
+>
+  <MapViewPersistence />
 
-            <TileLayer
-              attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              maxZoom={20}
-            />
+  <MapInstanceBinder
+    mapRef={mapInstanceRef}
+  />
 
-            <QhapaqNanLayer
-              visible={showQhapaqNan}
-            />
+  <TileLayer
+    attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+    maxZoom={20}
+  />
+
+  <UserLocationLayer
+    initialZoom={15}
+  />
+
+  <QhapaqNanLayer
+    visible={showQhapaqNan}
+  />
 
             {catalog.map((experience) => {
               const isVisited =
@@ -659,6 +760,12 @@ function MapView({ track }: Props) {
                     isVisited ? "visited" : "catalog",
                     experience.title
                   )}
+                  eventHandlers={{
+                    click: () =>
+                      flyToExperience(
+                        experience
+                      ),
+                  }}
                 >
                   <Popup
                     minWidth={270}
@@ -1425,4 +1532,4 @@ function TimelinePopup({
   );
 }
 
-export default MapView;
+export default MapView; 

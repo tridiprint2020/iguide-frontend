@@ -26,14 +26,11 @@ import {
   useJourney,
 } from "../context/JourneyContext";
 
-import PassportCard from "../components/PassportCard";
 import MapView from "../components/MapView";
 
 import {
   NameCaptureModal,
 } from "../components/NameCaptureModal";
-
-import HospesBanner from "../components/hospes/HospesBanner";
 
 import type {
   UserProfile,
@@ -47,6 +44,8 @@ import type {
 import {
   Theme,
 } from "../styles/theme";
+
+const CYAN_ACCENT = "#39E7FF";
 
 function Explorer() {
   const [
@@ -71,6 +70,7 @@ function Explorer() {
 
   const {
     resetToHome,
+    startWalking,
   } = useJourney();
 
   const recommendations =
@@ -91,6 +91,15 @@ function Explorer() {
       (experience) =>
         experience.isActive !== false
     ).length;
+
+  const progressPercent =
+    totalActiveExperiences > 0
+      ? Math.round(
+          (visitedCount /
+            totalActiveExperiences) *
+            100
+        )
+      : 0;
 
   const baseHospesBannerMessage =
   getHospesMessage({
@@ -115,7 +124,7 @@ const hospesBannerMessage:
 
   message:
     visitedCount === 0
-      ? "Huancayo tiene algo especial preparado para ti. Déjame elegir tu primera misión según el momento."
+      ? "Tengo algo local preparado para ti. Déjame elegir una primera misión sencilla según el momento."
       : `Ya descubriste ${visitedCount} de ${totalActiveExperiences} experiencias. Déjame elegir algo diferente para continuar tu historia.`,
 
   action:
@@ -140,28 +149,26 @@ const hospesBannerMessage:
         : undefined,
 };
 
-  function handleHospesAction() {
-  const action =
-    hospesBannerMessage.action;
+  function handlePrimaryAction() {
+    if (suggestedExperience) {
+      startWalking(
+        suggestedExperience
+      );
 
-  if (!action) {
-    navigate("/hospes");
-    return;
+      navigate("/journey");
+      return;
+    }
+
+    const action =
+      hospesBannerMessage.action;
+
+    if (!action) {
+      navigate("/hospes");
+      return;
+    }
+
+    navigate(action.target);
   }
-
-  if (
-    action.type ===
-    "open-experience"
-  ) {
-    navigate(
-      `/expedition/${action.target}`
-    );
-
-    return;
-  }
-
-  navigate(action.target);
-}
 
   function handleGoHome() {
     /*
@@ -259,70 +266,234 @@ const hospesBannerMessage:
           />
         </header>
 
+        {/* B) NOTA DE HOSPES */}
         <div
           style={{
-            marginBottom: "14px",
+            borderRadius: "24px",
+            padding: "18px",
+            background:
+              "linear-gradient(135deg, rgba(255,0,200,0.16), rgba(0,20,40,0.78))",
+            border: "1px solid rgba(255,0,200,0.28)",
+            boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            marginBottom: "18px",
           }}
         >
-          <span
+          <div
             style={{
-              display: "block",
-
-              marginBottom: "3px",
-
-              color:
-                Theme.Colors.primary,
-
-              fontSize: "10px",
-
-              fontWeight: 850,
-
-              letterSpacing:
-                "0.12em",
-
-              textTransform:
-                "uppercase",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
             }}
           >
-            Feel the City
-          </span>
+            <div
+              style={{
+                width: "54px",
+                height: "54px",
+                borderRadius: "18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background:
+                  "linear-gradient(180deg, rgba(255,0,200,0.22), rgba(255,0,200,0.08))",
+                border: "1px solid rgba(255,0,200,0.35)",
+                boxShadow: "0 0 24px rgba(255,0,200,0.35)",
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: "24px" }}>✦</span>
+            </div>
 
-          <h1
-            style={{
-              margin: 0,
+            <div style={{ minWidth: 0 }}>
+              <p
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#FF00C8",
+                }}
+              >
+                HOSPES · EXPLORA CERCA DE TI
+              </p>
 
-              color:
-                Theme.Colors.text,
-
-              fontFamily:
-                Theme.Typography.title,
-
-              fontSize:
-                "clamp(1.7rem, 6vw, 2.3rem)",
-
-              lineHeight: 1.08,
-            }}
-          >
-            Explora Huancayo
-          </h1>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "14px",
+                  lineHeight: 1.45,
+                  color: "#FFFFFF",
+                }}
+              >
+                {hospesBannerMessage.message}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <HospesBanner
-          message={
-            hospesBannerMessage
-          }
-          onAction={
-            handleHospesAction
-          }
-        />
+        {/* C) PASAPORTE COMPACTO */}
+        <section
+          aria-label="Pasaporte del explorador"
+          style={{
+            minHeight: "108px",
+            boxSizing: "border-box",
+            marginBottom: "14px",
+            padding: "13px 15px",
+            borderRadius: "19px",
+            background:
+              "linear-gradient(145deg, rgba(22,22,39,0.98), rgba(13,14,28,0.98))",
+            border:
+              "1px solid rgba(57,231,255,0.16)",
+            boxShadow:
+              "0 14px 32px rgba(0,0,0,0.24)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+            }}
+          >
+            <strong
+              style={{
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                color: "#FFFFFF",
+                fontSize: "19px",
+              }}
+            >
+              {user.name}
+            </strong>
 
-        <PassportCard
-          user={user}
-        />
+            <span
+              style={{
+                flexShrink: 0,
+                padding: "6px 10px",
+                borderRadius: "999px",
+                background:
+                  "linear-gradient(135deg, #FF00C8, #B500FF)",
+                color: "#FFFFFF",
+                fontSize: "11px",
+                fontWeight: 850,
+                boxShadow:
+                  "0 0 18px rgba(255,0,200,0.24)",
+              }}
+            >
+              NIVEL {user.level}
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(3, minmax(0, 1fr))",
+              gap: "8px",
+              marginTop: "10px",
+              color: "rgba(255,255,255,0.58)",
+              fontSize: "9px",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            <span>
+              XP{" "}
+              <strong
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: "13px",
+                }}
+              >
+                {user.experience}
+              </strong>
+            </span>
+
+            <span style={{ textAlign: "center" }}>
+              Local{" "}
+              <strong
+                style={{
+                  color: CYAN_ACCENT,
+                  fontSize: "13px",
+                }}
+              >
+                {progressPercent}%
+              </strong>
+            </span>
+
+            <span style={{ textAlign: "right" }}>
+              Lugares{" "}
+              <strong
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: "13px",
+                }}
+              >
+                {visitedCount}/{totalActiveExperiences}
+              </strong>
+            </span>
+          </div>
+
+          <div
+            style={{
+              height: "5px",
+              marginTop: "10px",
+              overflow: "hidden",
+              borderRadius: "999px",
+              background:
+                "rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                width: `${Math.max(3, progressPercent)}%`,
+                height: "100%",
+                borderRadius: "999px",
+                background: `linear-gradient(90deg, ${CYAN_ACCENT}, #00BFFF)`,
+                boxShadow:
+                  `0 0 14px ${CYAN_ACCENT}`,
+              }}
+            />
+          </div>
+        </section>
 
         <MapView
           track={null}
         />
+
+        {/* D) BOTÓN SORPRÉNDEME DEBAJO DEL MAPA */}
+        <div
+          style={{
+            marginTop: "14px",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handlePrimaryAction}
+            style={{
+              width: "100%",
+              minHeight: "54px",
+              border: "none",
+              borderRadius: "18px",
+              background: "linear-gradient(135deg, #FF00C8, #D100FF)",
+              color: "#FFFFFF",
+              fontSize: "16px",
+              fontWeight: 800,
+              cursor: "pointer",
+              boxShadow: "0 12px 32px rgba(255,0,200,0.30)",
+            }}
+          >
+            Sorpréndeme →
+          </button>
+        </div>
 
         <section
           style={{

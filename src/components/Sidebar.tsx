@@ -3,6 +3,7 @@ import {
   Heart,
   House,
   Map,
+  Route as RouteIcon,
   UserRound,
 } from "lucide-react";
 
@@ -50,6 +51,12 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     to: "/explorer",
     icon: Compass,
     label: "Explorar",
+    tone: "cyan",
+  },
+  {
+    to: "/itinerario",
+    icon: RouteIcon,
+    label: "Itinerario",
     tone: "cyan",
   },
   {

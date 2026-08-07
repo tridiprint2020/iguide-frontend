@@ -126,44 +126,76 @@ export function JourneyProvider({
    * - restaurar la pestaña.
    */
   useEffect(() => {
-  const activeExperience = journey.experience;
+  const activeExperience =
+    journey.experience;
 
+  /*
+   * Todavía estamos mostrando la
+   * activación optimista.
+   *
+   * startedAt === null significa:
+   * aún esperamos el primer GPS.
+   *
+   * NO arrancamos locationTracker todavía.
+   */
   if (
     !activeExperience ||
-    journey.state === "IDLE" ||
-    journey.state === "COMPLETED"
+    journey.state !==
+      "WALKING" ||
+    journey.startedAt ===
+      null
   ) {
     return;
   }
 
-  const confirmedExperience: Experience = activeExperience;
+  const confirmedExperience:
+    Experience =
+      activeExperience;
 
-  // El Contexto enciende el GPS una sola vez por experiencia.
-  activateLiveTracking(confirmedExperience);
+  /*
+   * En este punto:
+   *
+   * ✓ existe experiencia
+   * ✓ existe start GPS
+   * ✓ existe track
+   *
+   * Ahora sí watchPosition puede empezar.
+   */
+  activateLiveTracking(
+    confirmedExperience
+  );
 
-  const handleVisibilityChange = () => {
-    if (document.visibilityState !== "visible") {
-      return;
-    }
+  const handleVisibilityChange =
+    () => {
+      if (
+        document.visibilityState !==
+        "visible"
+      ) {
+        return;
+      }
 
-    const activeExperienceId = localStorage.getItem(
-      ACTIVE_JOURNEY_KEY
-    );
+      const activeExperienceId =
+        localStorage.getItem(
+          ACTIVE_JOURNEY_KEY
+        );
 
-    if (
-      activeExperienceId !== confirmedExperience.experienceId
-    ) {
-      return;
-    }
+      if (
+        activeExperienceId !==
+        confirmedExperience
+          .experienceId
+      ) {
+        return;
+      }
 
-    // Recupera los puntos escritos mientras la pestaña estuvo fuera.
-    syncJourneyTimeline(
-      confirmedExperience.experienceId
-    );
+      syncJourneyTimeline(
+        confirmedExperience
+          .experienceId
+      );
 
-    // Reactiva el GPS al regresar desde cámara, WhatsApp u otra app.
-    activateLiveTracking(confirmedExperience);
-  };
+      activateLiveTracking(
+        confirmedExperience
+      );
+    };
 
   document.addEventListener(
     "visibilitychange",
@@ -178,109 +210,201 @@ export function JourneyProvider({
 
     locationTracker.stop();
   };
-}, [journey.experience?.experienceId]);
+}, [
+  journey.experience
+    ?.experienceId,
+  journey.startedAt,
+  journey.state,
+]);
   /**
    * Crea una expedición nueva desde una posición GPS real.
    */
-  function startWalking(experience: Experience) {
+  function startWalking(
+  experience: Experience
+) {
   /*
-   * Desbloquea sonido desde el clic real que inicia
-   * la expedición. Android/Chrome no permite hacerlo
-   * por primera vez desde una lectura GPS automática.
+   * El sonido se desbloquea dentro
+   * del gesto real del usuario.
    */
   locationTracker.prepareFeedback();
 
   if (!navigator.geolocation) {
-    alert("Tu dispositivo no soporta geolocalización.");
+    alert(
+      "Tu dispositivo no soporta geolocalización."
+    );
     return;
   }
 
-  const activeExperienceId = localStorage.getItem(
-    ACTIVE_JOURNEY_KEY
-  );
+  const targetExperienceId =
+    experience.experienceId;
 
-  /*
-   * Si ya existe esta misma expedición activa,
-   * no la borra ni crea otra: simplemente la recupera.
-   */
-  if (activeExperienceId === experience.experienceId) {
-    const existingTrack = loadTrack(
-      experience.experienceId
+  let activeExperienceId =
+    localStorage.getItem(
+      ACTIVE_JOURNEY_KEY
     );
 
-    if (existingTrack && !existingTrack.completedAt) {
-      setJourney({
-        state: "WALKING",
-        screen: "walking",
-        experience,
-        startedAt: existingTrack.startedAt,
-        timeline: existingTrack.timeline,
-      });
-
-      return;
-    }
-  }
-
   /*
-   * Impide iniciar una segunda experiencia mientras otra
-   * continúa abierta.
+   * =====================================================
+   * 1. EVITAR DOS MISIONES SIMULTÁNEAS
+   * =====================================================
    */
   if (
     activeExperienceId &&
-    activeExperienceId !== experience.experienceId
+    activeExperienceId !==
+      targetExperienceId
   ) {
-    alert(
-      "Ya tienes una expedición activa. Continúala o abandónala antes de iniciar otra."
+    const activeTrack =
+      loadTrack(
+        activeExperienceId
+      );
+
+    if (
+      activeTrack &&
+      !activeTrack.completedAt
+    ) {
+      alert(
+        "Ya tienes una misión activa. Continúala o abandónala antes de iniciar otra."
+      );
+      return;
+    }
+
+    /*
+     * Puntero viejo o misión ya terminada.
+     */
+    localStorage.removeItem(
+      ACTIVE_JOURNEY_KEY
     );
+
+    activeExperienceId =
+      null;
+  }
+
+  /*
+   * =====================================================
+   * 2. RECUPERAR ESTA MISMA MISIÓN
+   * =====================================================
+   */
+  const existingTrack =
+    loadTrack(
+      targetExperienceId
+    );
+
+  if (
+    existingTrack &&
+    !existingTrack.completedAt
+  ) {
+    localStorage.setItem(
+      ACTIVE_JOURNEY_KEY,
+      targetExperienceId
+    );
+
+    setJourney({
+      state: "WALKING",
+      screen: "walking",
+      experience,
+      startedAt:
+        existingTrack.startedAt,
+      timeline:
+        existingTrack.timeline,
+    });
+
     return;
   }
 
+  /*
+   * =====================================================
+   * 3. ACTIVACIÓN VISUAL INMEDIATA
+   * =====================================================
+   *
+   * ESTE ES EL CAMBIO IMPORTANTE.
+   *
+   * React ya sabe que existe una misión
+   * ANTES de esperar al GPS.
+   *
+   * Por tanto:
+   * - aparece burbuja;
+   * - Hospes puede reaccionar;
+   * - botón cambia a misión activa;
+   * - popup puede aparecer.
+   */
   locationTracker.stop();
-
-const existingTrack = loadTrack(experience.experienceId);
-
-if (existingTrack && !existingTrack.completedAt) {
-  localStorage.setItem(
-    ACTIVE_JOURNEY_KEY,
-    experience.experienceId
-  );
 
   setJourney({
     state: "WALKING",
     screen: "walking",
     experience,
-    startedAt: existingTrack.startedAt,
-    timeline: existingTrack.timeline,
+    startedAt: null,
+    timeline: [],
   });
 
-  return;
-}
-
+  /*
+   * =====================================================
+   * 4. GPS EN SEGUNDO PLANO
+   * =====================================================
+   */
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      const { latitude, longitude } = position.coords;
-
-      const initialTrack = createStartPoint(
-        experience.experienceId,
+      const {
         latitude,
-        longitude
-      );
+        longitude,
+      } = position.coords;
 
+      /*
+       * Aquí recién existe el track
+       * certificado con posición real.
+       */
+      const initialTrack =
+        createStartPoint(
+          targetExperienceId,
+          latitude,
+          longitude
+        );
+
+      /*
+       * Ahora sí hacemos persistente
+       * la misión activa.
+       */
       localStorage.setItem(
         ACTIVE_JOURNEY_KEY,
-        experience.experienceId
+        targetExperienceId
       );
 
-      setJourney({
-        state: "WALKING",
-        screen: "walking",
-        experience,
-        startedAt: initialTrack.startedAt,
-        timeline: initialTrack.timeline,
-      });
+      /*
+       * Conservamos WALKING pero
+       * incorporamos el Timeline real.
+       */
+      setJourney(
+        (previous) => {
+          /*
+           * Protección básica:
+           * si entretanto cambió la misión,
+           * no sobrescribimos otra experiencia.
+           */
+          if (
+            previous.experience
+              ?.experienceId !==
+            targetExperienceId
+          ) {
+            return previous;
+          }
 
-      // No llamamos activateLiveTracking aquí.
-      // El useEffect lo iniciará una sola vez.
+          return {
+            ...previous,
+
+            state:
+              "WALKING",
+
+            screen:
+              "walking",
+
+            startedAt:
+              initialTrack.startedAt,
+
+            timeline:
+              initialTrack.timeline,
+          };
+        }
+      );
     },
 
     (error) => {
@@ -289,15 +413,28 @@ if (existingTrack && !existingTrack.completedAt) {
         error
       );
 
+      localStorage.removeItem(
+        ACTIVE_JOURNEY_KEY
+      );
+
+      setJourney(
+        defaultJourney
+      );
+
       alert(
-        "No se pudo iniciar la expedición. Activa el GPS y concede permiso de ubicación."
+        "No se pudo iniciar la misión. Activa el GPS y concede permiso de ubicación."
       );
     },
 
     {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 15000,
+      enableHighAccuracy:
+        true,
+
+      maximumAge:
+        5000,
+
+      timeout:
+        15000,
     }
   );
 }
@@ -434,8 +571,49 @@ function abandonJourney() {
 }
 
 function resetToHome() {
+  /*
+   * Ir a Home NO cancela una misión.
+   * Abandonar es la única acción que debe destruir el estado activo.
+   */
+  const activeExperienceId =
+    localStorage.getItem(
+      ACTIVE_JOURNEY_KEY
+    );
+
+  if (activeExperienceId) {
+    const experience = catalog.find(
+      (item) =>
+        item.experienceId ===
+        activeExperienceId
+    );
+
+    const track = loadTrack(
+      activeExperienceId
+    );
+
+    if (
+      experience &&
+      track &&
+      !track.completedAt
+    ) {
+      setJourney({
+        state: "WALKING",
+        screen: "walking",
+        experience,
+        startedAt:
+          track.startedAt,
+        timeline:
+          track.timeline,
+      });
+
+      return;
+    }
+  }
+
   locationTracker.stop();
-  setJourney(defaultJourney);
+  setJourney(
+    defaultJourney
+  );
 }
 
 function resumeWalking() {

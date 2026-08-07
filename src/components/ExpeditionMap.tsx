@@ -1,214 +1,415 @@
-import { MapContainer, TileLayer, Marker, Polyline, CircleMarker, Popup } from "react-leaflet";
+import {
+  CircleMarker,
+  MapContainer,
+  Polyline,
+  Popup,
+  TileLayer,
+} from "react-leaflet";
+
 import "leaflet/dist/leaflet.css";
-import type { Experience } from "../types/experience";
-import { Theme } from "../styles/theme";
-import type { ExpeditionTrack, TimelineItem } from "../types/tracking/tracking";
-import { getGeoLabel } from "../engine/geoLabelEngine";
-import { currentCity } from "../data/currentCity";
-import type { MemoryCardData } from "../types/memoryCard";
-import { getJourneyStats } from "../engine/trackingEngine"; 
-import  { useJourney } from "../context/JourneyContext";
+
+import type {
+  Experience,
+} from "../types/experience";
+
+import {
+  Theme,
+} from "../styles/theme";
+
+import type {
+  ExpeditionTrack,
+  TimelineItem,
+} from "../types/tracking/tracking";
+
+import {
+  getGeoLabel,
+} from "../engine/geoLabelEngine";
+
+import {
+  currentCity,
+} from "../data/currentCity";
+
+import type {
+  MemoryCardData,
+} from "../types/memoryCard";
+
+import {
+  getJourneyStats,
+} from "../engine/trackingEngine";
+
+import {
+  useJourney,
+} from "../context/JourneyContext";
+
+import UserLocationLayer from "./maps/UserLocationLayer";
 
 type Props = {
   expedition: Experience;
   track: ExpeditionTrack | null;
-  onSelectShare: (memoryData: MemoryCardData) => void;
+  onSelectShare: (
+    memoryData: MemoryCardData
+  ) => void;
 };
 
-function ExpeditionMap({ expedition, track: propTrack, onSelectShare }: Props) {
-  const center: [number, number] = [expedition.latitude, expedition.longitude];
-  
-  // 🚨 EXTRAEMOS EL TIMELINE EN MEMORIA: Escucha activa de las coordenadas del GPS
-  const { journey } = useJourney();
+const MAGENTA = "#FF00FF";
 
-  // 🔄 EVALUACIÓN: Si es historial usamos propTrack, si estamos caminando usamos el contexto vivo
-  const activeTimeline: TimelineItem[] = propTrack 
-    ? (propTrack.timeline || []) 
-    : (journey.timeline || []);
+function ExpeditionMap({
+  expedition,
+  track: propTrack,
+  onSelectShare,
+}: Props) {
+  const center: [number, number] = [
+    expedition.latitude,
+    expedition.longitude,
+  ];
 
-  const activeStartedAt = propTrack ? propTrack.startedAt : journey.startedAt;
+  const {
+    journey,
+  } = useJourney();
 
-  // ✅ UI Derivada pura leyendo del Timeline dinámico unificado
-  const path: [number, number][] = activeTimeline
-    .filter(
-      (p) =>
-        p.type === "start" ||
-        p.type === "walk" ||
-        p.type === "finish"
-    )
-    .map((p) => [p.lat, p.lng] as [number, number]);
+  const activeTimeline: TimelineItem[] =
+    propTrack
+      ? propTrack.timeline ?? []
+      : journey.timeline ?? [];
 
-  // 📊 Estadísticas calculadas en caliente para las tarjetas de recuerdos
-  const stats = activeTimeline.length > 0
-    ? getJourneyStats(activeTimeline, activeStartedAt || Date.now())
-    : {
-        totalPhotos: 0,
-        totalNotes: 0,
-        totalMemories: 0,
-        totalDistanceKm: 0,
-        durationSeconds: 0,
-      };
+  const activeStartedAt =
+    propTrack
+      ? propTrack.startedAt
+      : journey.startedAt;
 
-  const { durationSeconds, totalDistanceKm, totalMemories, totalPhotos, totalNotes } = stats;
+  const path: [number, number][] =
+    activeTimeline
+      .filter(
+        (point) =>
+          point.type === "start" ||
+          point.type === "walk" ||
+          point.type === "finish"
+      )
+      .map(
+        (point) => [
+          point.lat,
+          point.lng,
+        ] as [number, number]
+      );
+
+  const stats =
+    activeTimeline.length > 0
+      ? getJourneyStats(
+          activeTimeline,
+          activeStartedAt ?? Date.now()
+        )
+      : {
+          totalPhotos: 0,
+          totalNotes: 0,
+          totalMemories: 0,
+          totalDistanceKm: 0,
+          durationSeconds: 0,
+        };
+
+  const {
+    durationSeconds,
+    totalDistanceKm,
+    totalMemories,
+    totalPhotos,
+    totalNotes,
+  } = stats;
 
   return (
-    <div style={{ marginTop: Theme.Space.md, height: "380px", width: "100%", borderRadius: "16px", overflow: "hidden" }}>
-      <MapContainer center={center} zoom={14} style={{ height: "100%", width: "100%" }}>
+    <div
+      style={{
+        position: "relative",
+        marginTop: Theme.Space.md,
+        height: "380px",
+        width: "100%",
+        borderRadius: "18px",
+        overflow: "hidden",
+        border:
+          "1px solid rgba(255,0,255,0.22)",
+        boxShadow:
+          "0 16px 38px rgba(0,0,0,0.34), 0 0 28px rgba(255,0,255,0.08)",
+      }}
+    >
+      <MapContainer
+        center={center}
+        zoom={18}
+        preferCanvas
+        zoomControl
+        scrollWheelZoom
+        doubleClickZoom
+        touchZoom
+        style={{
+          height: "100%",
+          width: "100%",
+        }}
+      >
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          maxZoom={20}
         />
 
-        <Marker position={center} />
+        <UserLocationLayer
+          initialZoom={18}
+          radiusMeters={200}
+        />
 
-        {/* ✅ Renderizado de todos los hitos geográficos interactivos desde activeTimeline */}
-        {activeTimeline.map((p, index) => {          
-          
-          // 🔵 Si es un punto ordinario de caminata (Puntitos sobre la línea)
-          if (p.type === "walk") {
-            return (
-              <CircleMarker
-                key={`walk-node-${p.id || index}`}
-                center={[p.lat, p.lng]}
-                radius={4}
-                pathOptions={{
-                  color: "#FF00FF ",
-                  fillColor: "#FF00FF ",
-                  fillOpacity: 1,
-                  weight: 1
-                }}
-              />
-            );
-          }
+        <CircleMarker
+          center={center}
+          radius={15}
+          pathOptions={{
+            color: MAGENTA,
+            weight: 4,
+            fillColor: MAGENTA,
+            fillOpacity: 0.20,
+          }}
+        >
+          <Popup>
+            <div
+              style={{
+                minWidth: "180px",
+                textAlign: "center",
+                color: "#161616",
+              }}
+            >
+              <strong>
+                Destino · {expedition.title}
+              </strong>
 
-          // 📸 Si es un hito de memoria multimedia (PUNTOS MAGENTA EN EL INSTANTE)
-          if (p.type === "memory") {
-            return (
-              <CircleMarker
-                key={`memory-node-${p.id || index}`}
-                center={[p.lat, p.lng]}
-                radius={12}
-                pathOptions={{ 
-                  color: Theme.Colors.primary, 
-                  weight: 4, 
-                  fillColor: "#0A0A0A", 
-                  fillOpacity: 0.8 
+              <p
+                style={{
+                  margin: "6px 0 0",
+                  fontSize: "11px",
+                  color: "#666666",
                 }}
               >
-                <Popup className="clean-popup">
-                  <div style={{ padding: "8px", textAlign: "center" }}>
-                    <p style={{ margin: "0 0 8px 0", fontSize: "12px", fontWeight: 600, color: "#161616" }}>
-                      📍 Hito registrado
-                    </p>
+                Sigue el recorrido hasta este punto.
+              </p>
+            </div>
+          </Popup>
+        </CircleMarker>
+
+        {activeTimeline.map(
+          (point, index) => {
+            if (point.type === "walk") {
+              return (
+                <CircleMarker
+                  key={`walk-node-${point.id ?? index}`}
+                  center={[
+                    point.lat,
+                    point.lng,
+                  ]}
+                  radius={3.5}
+                  pathOptions={{
+                    color: MAGENTA,
+                    fillColor: MAGENTA,
+                    fillOpacity: 1,
+                    weight: 1,
+                  }}
+                />
+              );
+            }
+
+            if (point.type === "memory") {
+              return (
+                <CircleMarker
+                  key={`memory-node-${point.id ?? index}`}
+                  center={[
+                    point.lat,
+                    point.lng,
+                  ]}
+                  radius={11}
+                  pathOptions={{
+                    color: MAGENTA,
+                    weight: 4,
+                    fillColor: "#0A0A0A",
+                    fillOpacity: 0.88,
+                  }}
+                >
+                  <Popup className="clean-popup">
+                    <div
+                      style={{
+                        padding: "8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <p
+                        style={{
+                          margin: "0 0 8px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#161616",
+                        }}
+                      >
+                        Recuerdo registrado
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const computedData:
+                            MemoryCardData = {
+                            photo: point.photo,
+                            placeLabel:
+                              getGeoLabel(
+                                point.lat,
+                                point.lng
+                              ).text,
+                            city: currentCity,
+                            date: new Date(
+                              point.timestamp
+                            ).toLocaleDateString(
+                              "es-PE"
+                            ),
+                            note:
+                              point.note ?? "",
+                            title:
+                              expedition.title,
+                            stats: {
+                              durationSeconds,
+                              totalDistanceKm,
+                              totalMemories,
+                              totalPhotos,
+                              totalNotes,
+                            },
+                            center: [
+                              point.lat,
+                              point.lng,
+                            ],
+                            path,
+                          };
+
+                          onSelectShare(
+                            computedData
+                          );
+                        }}
+                        style={{
+                          minHeight: "36px",
+                          padding: "7px 12px",
+                          border: "none",
+                          borderRadius: "9px",
+                          backgroundColor:
+                            MAGENTA,
+                          color: "#FFFFFF",
+                          fontSize: "11px",
+                          fontWeight: 750,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ver MemoryCard
+                      </button>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            }
+
+            const isStart =
+              point.type === "start";
+
+            const isFinish =
+              point.type === "finish";
+
+            if (!isStart && !isFinish) {
+              return null;
+            }
+
+            return (
+              <CircleMarker
+                key={`edge-node-${point.id ?? index}`}
+                center={[
+                  point.lat,
+                  point.lng,
+                ]}
+                radius={
+                  isFinish ? 15 : 9
+                }
+                pathOptions={{
+                  color: "#FFFFFF",
+                  fillColor: MAGENTA,
+                  fillOpacity: 1,
+                  weight:
+                    isFinish ? 4 : 2,
+                }}
+              >
+                <Popup>
+                  <div
+                    style={{
+                      width: 190,
+                      textAlign: "center",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "4px 0 10px",
+                        fontSize: "14px",
+                        fontWeight: 800,
+                        color: "#161616",
+                      }}
+                    >
+                      {isStart
+                        ? "Inicio de misión"
+                        : "Llegada certificada"}
+                    </h4>
+
                     <button
+                      type="button"
+                      style={{
+                        width: "100%",
+                        minHeight: 36,
+                        border: "none",
+                        borderRadius: 10,
+                        background: MAGENTA,
+                        color: "#FFFFFF",
+                        fontWeight: 750,
+                        fontSize: "12px",
+                        cursor: "pointer",
+                      }}
                       onClick={() => {
-                        const computedData: MemoryCardData = {
-                          photo: p.photo,
-                          placeLabel: getGeoLabel(p.lat, p.lng).text,
-                          city: currentCity,
-                          date: new Date(p.timestamp).toLocaleDateString("es-PE"),
-                          note: p.note || "",
-                          title: expedition.title,
+                        onSelectShare({
+                          photo: undefined,
+                          placeLabel:
+                            expedition.title,
+                          city:
+                            expedition.city,
+                          date: new Date(
+                            point.timestamp
+                          ).toLocaleDateString(
+                            "es-PE"
+                          ),
+                          note: isStart
+                            ? "Comencé esta misión con I.GUIDE."
+                            : "Completé esta misión con I.GUIDE.",
+                          title:
+                            expedition.title,
                           stats: {
                             durationSeconds,
                             totalDistanceKm,
                             totalMemories,
-                            totalPhotos, 
-                            totalNotes   
+                            totalPhotos,
+                            totalNotes,
                           },
-                          center: [p.lat, p.lng],
-                          path: path,
-                        };
-                        onSelectShare(computedData);
-                      }}
-                      style={{
-                        backgroundColor: "#FF00FF",
-                        color: "#fff",
-                        border: "none",
-                        padding: "6px 12px",
-                        borderRadius: "8px",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        cursor: "pointer"
+                          center: [
+                            point.lat,
+                            point.lng,
+                          ],
+                          path,
+                        });
                       }}
                     >
-                      Ver tarjeta de recuerdo ↗
+                      Compartir
                     </button>
                   </div>
                 </Popup>
               </CircleMarker>
             );
           }
+        )}
 
-          // 🟣 Si es un nodo de Inicio (start) o Fin (finish)
-          const isStart = p.type === "start";
-          const color = isStart ? "#FF00FF" : "#41E28A";
-
-          return (
-            <CircleMarker
-              key={`edge-node-${p.id || index}`}
-              center={[p.lat, p.lng]}
-              radius={8}
-              pathOptions={{
-                color,
-                fillColor: color,
-                fillOpacity: 1,
-                weight: 2
-              }}
-            >
-              <Popup>
-                <div style={{ width: 180, textAlign: "center" }}>
-                  <h4 style={{ margin: "4px 0 10px 0", fontSize: "14px", fontWeight: 700, color: "#161616" }}>
-                    {isStart ? "🚀 Inicio" : "🏁 Final"}
-                  </h4>
-                  <button
-                    style={{
-                      width: "100%",
-                      height: 34,
-                      background: "#FF00FF",
-                      color: "white",
-                      border: "none",
-                      borderRadius: 10,
-                      fontWeight: 600,
-                      fontSize: "12px",
-                      cursor: "pointer"
-                    }}
-                    onClick={() => {
-                      onSelectShare({
-                        photo: undefined,
-                        placeLabel: expedition.title,
-                        city: expedition.city,
-                        date: new Date(p.timestamp).toLocaleDateString("es-PE"),
-                        note: isStart
-                          ? "Comienza mi aventura con I.GUIDE 🚀"
-                          : "Finalicé esta aventura con I.GUIDE 🏁",
-                        title: "",
-                        stats: {
-                          durationSeconds,
-                          totalDistanceKm,
-                          totalMemories,
-                          totalPhotos,
-                          totalNotes
-                        },
-                        center: [p.lat, p.lng],
-                        path: []
-                      });
-                    }}
-                  >
-                    Compartir
-                  </button>
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
-
-        {/* 🗺️ LINEA REACTIVA: Sin 'key' para que redibuje nativamente sin destruir el nodo en el DOM */}
         {path.length >= 2 && (
           <Polyline
             positions={path}
             pathOptions={{
-              color: Theme.Colors.primary,
+              color: MAGENTA,
               weight: 5,
               lineCap: "round",
               lineJoin: "round",
