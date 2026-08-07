@@ -23,6 +23,10 @@ type Props = {
   compact?:
     boolean;
 
+  surface?:
+    | "dark"
+    | "light";
+
   onChange?: (
     isNowFavorite: boolean
   ) => void;
@@ -31,6 +35,7 @@ type Props = {
 function FavoriteButton({
   experienceId,
   compact = false,
+  surface = "dark",
   onChange,
 }: Props) {
   const [
@@ -134,17 +139,23 @@ function FavoriteButton({
         border:
           selected
             ? `1px solid ${Theme.Colors.primary}`
-            : "1px solid rgba(255,255,255,0.12)",
+            : surface === "light"
+              ? "1px solid rgba(19,19,26,0.13)"
+              : "1px solid rgba(255,255,255,0.12)",
 
         backgroundColor:
           selected
             ? "rgba(255,0,122,0.16)"
-            : "rgba(255,255,255,0.05)",
+            : surface === "light"
+              ? "rgba(19,19,26,0.04)"
+              : "rgba(255,255,255,0.05)",
 
         color:
           selected
             ? Theme.Colors.primary
-            : "#FFFFFF",
+            : surface === "light"
+              ? "#565766"
+              : "#FFFFFF",
 
         display:
           "inline-flex",

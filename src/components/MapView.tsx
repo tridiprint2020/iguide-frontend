@@ -48,6 +48,7 @@ import {
 } from "../styles/theme";
 
 import MemoryCardModal from "./sharing/MemoryCardModal";
+import ExperienceMapCard from "./maps/ExperienceMapCard";
 import QhapaqNanLayer from "./maps/QhapaqNanLayer";
 import UserLocationLayer from "./maps/UserLocationLayer";
 
@@ -498,7 +499,26 @@ function MapView({ track }: Props) {
     useState<MemoryCardData | null>(null);
   const [showQhapaqNan, setShowQhapaqNan] =
     useState(false);
-  const user = loadUserProfile();
+  const [user, setUser] =
+    useState(() => loadUserProfile());
+
+  useEffect(() => {
+    function syncUser() {
+      setUser(loadUserProfile());
+    }
+
+    window.addEventListener(
+      "iguide-user-updated",
+      syncUser
+    );
+
+    return () => {
+      window.removeEventListener(
+        "iguide-user-updated",
+        syncUser
+      );
+    };
+  }, []);
 
   const mapInstanceRef =
     useRef<L.Map | null>(null);
@@ -745,10 +765,6 @@ function MapView({ track }: Props) {
                   experience.experienceId
                 ) ?? false;
 
-              const experienceImage =
-                experience.image ||
-                experience.coverImage;
-
               return (
                 <Marker
                   key={experience.experienceId}
@@ -771,134 +787,16 @@ function MapView({ track }: Props) {
                     minWidth={270}
                     className="iguide-premium-popup"
                   >
-                    <article
-                      style={{
-                        width: "240px",
-                        color: "#F8FAFC",
-                      }}
-                    >
-                      {experienceImage && (
-                        <img
-                          src={experienceImage}
-                          alt={experience.title}
-                          loading="lazy"
-                          style={{
-                            width: "100%",
-                            height: "112px",
-                            objectFit: "cover",
-                            borderRadius: "13px",
-                            marginBottom: "10px",
-                            backgroundColor: "#171827",
-                          }}
-                        />
-                      )}
-
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                          gap: "8px",
-                        }}
-                      >
-                        <div>
-                          <p
-                            style={{
-                              margin: "0 0 3px",
-                              color: isVisited ? MAGENTA : CYAN,
-                              fontSize: "9px",
-                              fontWeight: 850,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.09em",
-                            }}
-                          >
-                            {experience.type}
-                          </p>
-                          <h3
-                            style={{
-                              margin: 0,
-                              color: "#FFFFFF",
-                              fontSize: "17px",
-                              lineHeight: 1.12,
-                            }}
-                          >
-                            {experience.title}
-                          </h3>
-                        </div>
-
-                        {isVisited && (
-                          <span
-                            title="Lugar visitado"
-                            style={{
-                              minWidth: "27px",
-                              height: "27px",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              borderRadius: "50%",
-                              color: "#FFFFFF",
-                              backgroundColor: MAGENTA,
-                              boxShadow:
-                                "0 0 12px rgba(255,0,255,0.55)",
-                              fontSize: "13px",
-                              fontWeight: 900,
-                            }}
-                          >
-                            ✓
-                          </span>
-                        )}
-                      </div>
-
-                      <p
-                        style={{
-                          margin: "9px 0 11px",
-                          color: "rgba(255,255,255,0.68)",
-                          fontSize: "11px",
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {experience.description}
-                      </p>
-
-                      {"openingHours" in experience &&
-                        experience.openingHours && (
-                          <p
-                            style={{
-                              margin: "0 0 11px",
-                              color: "rgba(255,255,255,0.74)",
-                              fontSize: "10px",
-                              fontWeight: 650,
-                            }}
-                          >
-                            Horario: {experience.openingHours}
-                          </p>
-                        )}
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            `/expedition/${experience.slug}`
-                          )
-                        }
-                        style={{
-                          width: "100%",
-                          minHeight: "42px",
-                          border:
-                            "1px solid rgba(255,255,255,0.12)",
-                          borderRadius: "12px",
-                          background:
-                            "linear-gradient(145deg, #FF3DE8, #D4008D)",
-                          color: "#FFFFFF",
-                          boxShadow:
-                            "0 8px 22px rgba(255,0,184,0.25)",
-                          fontWeight: 850,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Ver misión
-                      </button>
-                    </article>
+                    <ExperienceMapCard
+                      experience={experience}
+                      isVisited={isVisited}
+                      primaryActionLabel="Ver misión →"
+                      onPrimaryAction={() =>
+                        navigate(
+                          `/expedition/${experience.slug}`
+                        )
+                      }
+                    />
                   </Popup>
                 </Marker>
               );
@@ -1532,4 +1430,4 @@ function TimelinePopup({
   );
 }
 
-export default MapView; 
+export default MapView;

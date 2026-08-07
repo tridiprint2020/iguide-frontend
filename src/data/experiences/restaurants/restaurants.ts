@@ -67,7 +67,7 @@ estimatedVisitMinutes: 60
 
     city:"Huancayo",
 
-    image:"/images/restaurants/detras-de-la-catedral.jpg",
+    image: placeholder,
 
     description:
       "Restaurante tradicional reconocido por su tacutacu especial y platos variados del Valle del Mantaro.",
@@ -335,7 +335,7 @@ estimatedVisitMinutes: 60
 
     city:"Huancayo",
 
-    image:"/images/restaurants/el-olimpico.jpg",
+    image: placeholder,
 
     description:
       "Restaurante antiguo muy reconocido con platos variados del Valle del Mantaro.",

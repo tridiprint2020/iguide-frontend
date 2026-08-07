@@ -134,12 +134,20 @@ export function loadUserProfile():
       );
 
     /*
-     * Guarda inmediatamente la versión migrada
-     * para que favorites exista desde ahora.
+     * Persiste la migración sin emitir el evento de
+     * actualización. loadUserProfile es una lectura y
+     * disparar el evento aquí provocaría un ciclo cuando
+     * los botones de favoritos vuelven a sincronizarse.
      */
-    saveUserProfile(
-      normalized
-    );
+    const normalizedData =
+      JSON.stringify(normalized);
+
+    if (normalizedData !== storedData) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        normalizedData
+      );
+    }
 
     return normalized;
   } catch (error) {
