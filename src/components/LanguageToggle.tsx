@@ -1,8 +1,4 @@
 import {
-  Languages,
-} from "lucide-react";
-
-import {
   useTranslation,
 } from "react-i18next";
 
@@ -50,72 +46,98 @@ function LanguageToggle() {
       title={accessibleLabel}
       style={{
         position: "fixed",
-        top: "max(10px, env(safe-area-inset-top))",
+        top: "max(12px, env(safe-area-inset-top))",
         right: "12px",
-        zIndex: 12000,
-        minWidth: "78px",
-        minHeight: "38px",
+        zIndex: 110000,
+        minWidth: "148px",
+        minHeight: "48px",
         boxSizing: "border-box",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: "7px",
-        padding: "7px 10px",
+        gap: "5px",
+        padding: "5px",
         borderRadius: "999px",
         border:
-          "1px solid rgba(255,255,255,0.20)",
+          "2px solid rgba(255,255,255,0.78)",
         background:
-          "linear-gradient(145deg, rgba(20,22,37,0.94), rgba(7,8,14,0.96))",
+          "linear-gradient(145deg, rgba(20,22,37,0.98), rgba(7,8,14,0.99))",
         color: "#FFFFFF",
         boxShadow:
-          "0 8px 24px rgba(0,0,0,0.32), 0 0 16px rgba(66,232,245,0.08)",
-        backdropFilter: "blur(12px)",
+          "0 10px 28px rgba(0,0,0,0.48), 0 0 22px rgba(66,232,245,0.20)",
+        backdropFilter: "blur(16px)",
         cursor: "pointer",
       }}
     >
-      <Languages
-        size={15}
-        color="#42E8F5"
-        strokeWidth={2}
-      />
-
       <span
         aria-hidden="true"
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: "4px",
-          fontSize: "9px",
+          gap: "5px",
+          width: "100%",
+          fontSize: "11px",
           fontWeight: 900,
-          letterSpacing: "0.06em",
+          letterSpacing: "0.04em",
         }}
       >
-        <b
+        <span
           style={{
+            flex: 1,
+            minHeight: "34px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            borderRadius: "999px",
             color: isEnglish
-              ? "rgba(255,255,255,0.42)"
-              : "#FF65DF",
+              ? "rgba(255,255,255,0.55)"
+              : "#FFFFFF",
+            background: isEnglish
+              ? "transparent"
+              : "linear-gradient(145deg, #FF3DE8, #D4008D)",
+            boxShadow: isEnglish
+              ? "none"
+              : "0 5px 15px rgba(255,0,184,0.34)",
           }}
         >
-          ES
-        </b>
+          <span style={{ fontSize: "18px" }}>🇪🇸</span>
+          <b>ES</b>
+        </span>
+
         <span
           style={{
             color:
-              "rgba(255,255,255,0.28)",
+              "rgba(255,255,255,0.50)",
+            fontSize: "13px",
           }}
         >
-          |
+          ⇄
         </span>
-        <b
+
+        <span
           style={{
+            flex: 1,
+            minHeight: "34px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            borderRadius: "999px",
             color: isEnglish
-              ? "#42E8F5"
-              : "rgba(255,255,255,0.42)",
+              ? "#061014"
+              : "rgba(255,255,255,0.55)",
+            background: isEnglish
+              ? "linear-gradient(145deg, #42E8F5, #00BFD1)"
+              : "transparent",
+            boxShadow: isEnglish
+              ? "0 5px 15px rgba(66,232,245,0.30)"
+              : "none",
           }}
         >
-          EN
-        </b>
+          <span style={{ fontSize: "18px" }}>🇬🇧</span>
+          <b>EN</b>
+        </span>
       </span>
     </button>
   );
