@@ -46,25 +46,24 @@ function LanguageToggle() {
       title={accessibleLabel}
       style={{
         position: "fixed",
-        top: "max(12px, env(safe-area-inset-top))",
-        right: "12px",
+        left: "7px",
+        bottom: "max(18px, env(safe-area-inset-bottom))",
         zIndex: 110000,
-        minWidth: "148px",
-        minHeight: "48px",
+        width: "50px",
+        minHeight: "84px",
         boxSizing: "border-box",
-        display: "inline-flex",
+        display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: "5px",
-        padding: "5px",
-        borderRadius: "999px",
+        padding: "4px",
+        borderRadius: "17px",
         border:
-          "2px solid rgba(255,255,255,0.78)",
+          "1px solid rgba(255,255,255,0.18)",
         background:
-          "linear-gradient(145deg, rgba(20,22,37,0.98), rgba(7,8,14,0.99))",
+          "linear-gradient(180deg, rgba(22,23,42,0.98), rgba(8,9,18,0.99))",
         color: "#FFFFFF",
         boxShadow:
-          "0 10px 28px rgba(0,0,0,0.48), 0 0 22px rgba(66,232,245,0.20)",
+          "0 10px 24px rgba(0,0,0,0.44), 0 0 18px rgba(66,232,245,0.12)",
         backdropFilter: "blur(16px)",
         cursor: "pointer",
       }}
@@ -73,23 +72,24 @@ function LanguageToggle() {
         aria-hidden="true"
         style={{
           display: "inline-flex",
+          flexDirection: "column",
           alignItems: "center",
-          gap: "5px",
+          gap: "3px",
           width: "100%",
-          fontSize: "11px",
+          fontSize: "9px",
           fontWeight: 900,
           letterSpacing: "0.04em",
         }}
       >
         <span
           style={{
-            flex: 1,
+            width: "40px",
             minHeight: "34px",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "5px",
-            borderRadius: "999px",
+            gap: "2px",
+            borderRadius: "12px",
             color: isEnglish
               ? "rgba(255,255,255,0.55)"
               : "#FFFFFF",
@@ -101,7 +101,7 @@ function LanguageToggle() {
               : "0 5px 15px rgba(255,0,184,0.34)",
           }}
         >
-          <span style={{ fontSize: "18px" }}>🇪🇸</span>
+          <span style={{ fontSize: "17px", lineHeight: 1 }}>🇪🇸</span>
           <b>ES</b>
         </span>
 
@@ -109,7 +109,11 @@ function LanguageToggle() {
           style={{
             color:
               "rgba(255,255,255,0.50)",
-            fontSize: "13px",
+            width: "24px",
+            height: "1px",
+            overflow: "hidden",
+            background:
+              "rgba(255,255,255,0.16)",
           }}
         >
           ⇄
@@ -117,13 +121,13 @@ function LanguageToggle() {
 
         <span
           style={{
-            flex: 1,
+            width: "40px",
             minHeight: "34px",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "5px",
-            borderRadius: "999px",
+            gap: "2px",
+            borderRadius: "12px",
             color: isEnglish
               ? "#061014"
               : "rgba(255,255,255,0.55)",
@@ -135,7 +139,7 @@ function LanguageToggle() {
               : "none",
           }}
         >
-          <span style={{ fontSize: "18px" }}>🇬🇧</span>
+          <span style={{ fontSize: "17px", lineHeight: 1 }}>🇬🇧</span>
           <b>EN</b>
         </span>
       </span>
