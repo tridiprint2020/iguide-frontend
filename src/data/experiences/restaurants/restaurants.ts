@@ -18,10 +18,9 @@ export const restaurants: Experience[] = [
     description:
       "Restaurante pasteleria con platos variados.",
 
-    latitude:-12.066771826256371, 
+    latitude:-12.066962820751636, 
+    longitude:-75.20918072188105,
 
-    longitude:-75.20925001862946,
-    
     certificationRadiusMeters: 20,
 
     /*
