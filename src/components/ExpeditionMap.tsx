@@ -59,6 +59,7 @@ type Props = {
 };
 
 const MAGENTA = "#FF00FF";
+const CYAN = "#42E8F5";
 
 function ExpeditionMap({
   expedition,
@@ -240,7 +241,7 @@ function ExpeditionMap({
                   pathOptions={{
                     color: "#FFFFFF",
                     weight: 2,
-                    fillColor: MAGENTA,
+                    fillColor: CYAN,
                     fillOpacity: 1,
                   }}
                 >

@@ -104,7 +104,9 @@ function MemoryRouteGraphic({
         inset: 0,
         overflow: "hidden",
         background:
-          "linear-gradient(145deg, #F8FBFC 0%, #E7F1F3 52%, #F6F2F8 100%)",
+          compact
+            ? "rgba(255,255,255,0.04)"
+            : "linear-gradient(145deg, #F8FBFC 0%, #E7F1F3 52%, #F6F2F8 100%)",
       }}
     >
       <svg
@@ -146,22 +148,24 @@ function MemoryRouteGraphic({
           </filter>
         </defs>
 
-        <rect width={WIDTH} height={HEIGHT} fill="url(#iguide-route-grid)" />
+        <g opacity={compact ? 0.24 : 1}>
+          <rect width={WIDTH} height={HEIGHT} fill="url(#iguide-route-grid)" />
 
-        <path
-          d="M -15 315 C 58 285 94 333 171 292 S 280 234 346 259"
-          fill="none"
-          stroke="#CBE6EC"
-          strokeWidth="20"
-          opacity="0.9"
-        />
-        <path
-          d="M 12 72 C 94 118 119 83 185 116 S 268 169 338 133"
-          fill="none"
-          stroke="#FFFFFF"
-          strokeWidth="12"
-          opacity="0.88"
-        />
+          <path
+            d="M -15 315 C 58 285 94 333 171 292 S 280 234 346 259"
+            fill="none"
+            stroke="#CBE6EC"
+            strokeWidth="20"
+            opacity="0.9"
+          />
+          <path
+            d="M 12 72 C 94 118 119 83 185 116 S 268 169 338 133"
+            fill="none"
+            stroke="#FFFFFF"
+            strokeWidth="12"
+            opacity="0.88"
+          />
+        </g>
 
         {model.segments.map((segment, index) => {
           const points = segment
@@ -220,7 +224,7 @@ function MemoryRouteGraphic({
             cx={memory.x}
             cy={memory.y}
             r={compact ? 4 : 6}
-            fill="#FF20CE"
+            fill="#42E8F5"
             stroke="#FFFFFF"
             strokeWidth="2"
           />

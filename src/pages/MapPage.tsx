@@ -171,6 +171,7 @@ const DEFAULT_CENTER: [number, number] = [
 ];
 
 const MAGENTA = "#FF00FF";
+const CYAN = "#42E8F5";
 
 type HistoricalMemory = {
   experience: Experience;
@@ -1659,7 +1660,7 @@ function MapPage() {
                   pathOptions={{
                     color: "#FFFFFF",
                     weight: 2,
-                    fillColor: MAGENTA,
+                    fillColor: CYAN,
                     fillOpacity: 1,
                   }}
                 >

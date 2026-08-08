@@ -979,7 +979,10 @@ function TimelinePopup({
 
       <button
         type="button"
-        onClick={onOpen}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpen();
+        }}
         style={{
           width: "100%",
           minHeight: "39px",
