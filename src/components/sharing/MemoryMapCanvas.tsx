@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
 } from "react";
 
@@ -23,6 +24,9 @@ import {
 import type {
   TimelineItem,
 } from "../../types/tracking/tracking";
+import {
+  getTimelineRouteSegments,
+} from "../../engine/trackingEngine";
 import { tx } from "../../i18n";
 
 type Props = {
@@ -128,7 +132,17 @@ function MemoryMapCanvas({
     variant === "glass";
 
   const isDark =
-    variant !== "default";
+    variant === "glass";
+
+  const routeSegments =
+    waypoints.length > 0
+      ? getTimelineRouteSegments(
+          waypoints
+        )
+      : [path];
+
+  const fitPath =
+    routeSegments.flat();
 
   const startNode =
     waypoints.find(
@@ -202,10 +216,8 @@ function MemoryMapCanvas({
 
         backgroundColor:
           isGlass
-            ? "rgba(5,7,13,0.42)"
-            : isDark
-              ? "#080A10"
-              : "#F4F3F0",
+            ? "rgba(5,7,13,0.24)"
+            : "#F4F3F0",
       }}
     >
       <MapContainer
@@ -240,26 +252,30 @@ function MemoryMapCanvas({
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
+          crossOrigin="anonymous"
           opacity={
             isGlass
-              ? 0.52
-              : isDark
-                ? 0.72
+              ? 0.72
+              : variant === "full"
+                ? 0.96
                 : 1
           }
         />
 
         <FitRoute
           center={center}
-          path={path}
+          path={fitPath}
           compact={isGlass}
         />
 
-        {path.length >= 2 && (
-          <>
+        {routeSegments.map(
+          (segment, index) =>
+            segment.length >= 2
+              ? (
+            <Fragment key={`route-segment-${index}`}>
             {/* Contorno blanco para separar la ruta de las calles */}
             <Polyline
-              positions={path}
+              positions={segment}
               pathOptions={{
                 color:
                   isDark
@@ -286,7 +302,7 @@ function MemoryMapCanvas({
 
             {/* Línea oficial I.GUIDE */}
             <Polyline
-              positions={path}
+              positions={segment}
               pathOptions={{
                 color:
                   Theme.Colors.primary,
@@ -305,7 +321,9 @@ function MemoryMapCanvas({
                   "round",
               }}
             />
-          </>
+            </Fragment>
+              )
+              : null
         )}
 
         {/* INICIO: MAGENTA GRANDE */}
@@ -407,7 +425,7 @@ function MemoryMapCanvas({
       </MapContainer>
 
       {/* Leyenda: solo se usa cuando el mapa es el visual principal. */}
-      {!isDark && (
+      {variant === "default" && (
         <div
         style={{
           position: "absolute",

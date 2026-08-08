@@ -10,6 +10,7 @@
 export type TimelineItemType =
   | "start"
   | "walk"
+  | "resume"
   | "memory"
   | "abort"
   | "finish";

@@ -20,6 +20,7 @@ import {
 } from "../data/user";
 
 import MemoryMapCanvas from "./sharing/MemoryMapCanvas";
+import MemoryRouteGraphic from "./sharing/MemoryRouteGraphic";
 
 import logo from "../assets/optimized/logoig.webp";
 
@@ -30,6 +31,9 @@ import type {
 import type {
   MemoryCardData,
 } from "../types/memoryCard";
+import {
+  useMediaUrl,
+} from "../hooks/useMediaUrl";
 import { tx } from "../i18n";
 
 type Props = {
@@ -179,7 +183,13 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
     },
     ref
   ) {
-    const hasPhoto = Boolean(data.photo);
+    const requestedPhoto = Boolean(data.photo);
+    const {
+      url: photoUrl,
+      loading: photoLoading,
+      error: photoError,
+    } = useMediaUrl(data.photo);
+    const hasPhoto = Boolean(photoUrl);
     const hasMap = Boolean(data.mapBackground);
     const hasUserNote = isUserNote(data.note);
     const status = getJourneyStatus(data);
@@ -244,8 +254,6 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
 
     return (
       <article
-        ref={ref}
-        data-iguide-memory-card="true"
         style={{
           width: "min(92vw, 410px)",
           boxSizing: "border-box",
@@ -262,6 +270,13 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
       >
         {/* La pieza exportable: formato social 4:5. */}
         <section
+          ref={ref}
+          data-iguide-memory-card="true"
+          data-iguide-media-ready={
+            requestedPhoto && photoLoading
+              ? "false"
+              : "true"
+          }
           style={{
             position: "relative",
             aspectRatio: "4 / 5",
@@ -272,7 +287,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
         >
           {hasPhoto ? (
             <img
-              src={data.photo}
+              src={photoUrl}
               alt={tx("Recuerdo de {{title}}", { title: data.title })}
               style={{
                 position: "absolute",
@@ -283,14 +298,51 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 objectFit: "cover",
               }}
             />
+          ) : requestedPhoto && photoLoading ? (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "grid",
+                placeItems: "center",
+                background:
+                  "linear-gradient(145deg, #F7F9FC, #EAF2F5)",
+                color: "#52616B",
+                fontSize: "12px",
+                fontWeight: 750,
+              }}
+            >
+              {tx("Preparando tu fotografía…")}
+            </div>
           ) : hasMap ? (
-            <MemoryMapCanvas
-              center={data.mapBackground!.center}
-              path={data.mapBackground!.path}
-              memories={data.mapBackground!.memories}
-              waypoints={data.waypoints ?? []}
-              variant="full"
-            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+              }}
+            >
+              <MemoryRouteGraphic
+                path={data.mapBackground!.path}
+                memories={data.mapBackground!.memories}
+                waypoints={data.waypoints ?? []}
+              />
+
+              <div
+                data-export-ignore="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                }}
+              >
+                <MemoryMapCanvas
+                  center={data.mapBackground!.center}
+                  path={data.mapBackground!.path}
+                  memories={data.mapBackground!.memories}
+                  waypoints={data.waypoints ?? []}
+                  variant="full"
+                />
+              </div>
+            </div>
           ) : (
             <div
               style={{
@@ -302,7 +354,9 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 fontSize: "12px",
               }}
             >
-              {tx("Preparando tu recuerdo…")}
+              {photoError
+                ? tx("No pudimos abrir esta fotografía.")
+                : tx("Preparando tu recuerdo…")}
             </div>
           )}
 
@@ -322,7 +376,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                       rgba(4,5,10,0.90) 100%
                     )
                   `
-                : "linear-gradient(180deg, rgba(4,5,10,0.28), rgba(4,5,10,0.78))",
+                : "linear-gradient(180deg, rgba(4,5,10,0.02), rgba(4,5,10,0.18))",
               pointerEvents: "none",
             }}
           />
@@ -531,7 +585,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
 
           {/*
            * El mapa queda pegado a la esquina inferior derecha.
-           * Sus teselas usan 52% de opacidad: la fotografía sigue
+           * Sus teselas conservan transparencia: la fotografía sigue
            * siendo visible y la ruta magenta conserva contraste.
            */}
           {hasPhoto && hasMap && (
@@ -547,7 +601,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 borderRadius: "15px",
                 border:
                   "1px solid rgba(255,255,255,0.26)",
-                background: "rgba(5,7,13,0.48)",
+                background: "rgba(5,7,13,0.28)",
                 boxShadow:
                   "0 12px 28px rgba(0,0,0,0.34), 0 0 18px rgba(255,32,206,0.10)",
                 backdropFilter: "blur(2px)",
@@ -559,13 +613,28 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                   inset: "0 0 42px",
                 }}
               >
-                <MemoryMapCanvas
-                  center={data.mapBackground!.center}
+                <MemoryRouteGraphic
                   path={data.mapBackground!.path}
                   memories={data.mapBackground!.memories}
                   waypoints={data.waypoints ?? []}
-                  variant="glass"
+                  compact
                 />
+
+                <div
+                  data-export-ignore="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                  }}
+                >
+                  <MemoryMapCanvas
+                    center={data.mapBackground!.center}
+                    path={data.mapBackground!.path}
+                    memories={data.mapBackground!.memories}
+                    waypoints={data.waypoints ?? []}
+                    variant="glass"
+                  />
+                </div>
               </div>
 
               <div

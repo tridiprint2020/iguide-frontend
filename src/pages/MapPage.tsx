@@ -32,6 +32,7 @@ import {
   Landmark,
   MapPinned,
   Music2,
+  Navigation,
   Palette,
   PartyPopper,
   RotateCcw,
@@ -47,6 +48,7 @@ import type {
 
 import {
   useNavigate,
+  useSearchParams,
 } from "react-router-dom";
 
 import {
@@ -65,6 +67,10 @@ import {
 import {
   MemoryCardEngine,
 } from "../engine/memoryCardEngine";
+import {
+  loadReturnPoint,
+  saveReturnPoint,
+} from "../engine/returnPointEngine";
 
 import {
   Theme,
@@ -232,13 +238,20 @@ function buildExperienceSearchText(
 
 function MapPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const foodNearbyMode =
+    searchParams.get("nearby") === "food";
   const {
     journey,
     startWalking,
   } = useJourney();
 
   const [activeFilters, setActiveFilters] =
-    useState<ExperienceType[]>([]);
+    useState<ExperienceType[]>(() =>
+      foodNearbyMode
+        ? ["restaurant", "cafe"]
+        : []
+    );
 
   const [onlyFavorites, setOnlyFavorites] =
     useState(false);
@@ -265,6 +278,15 @@ function MapPage() {
 
   const [searchQuery, setSearchQuery] =
     useState("");
+
+  const [returnPoint, setReturnPoint] =
+    useState(() => loadReturnPoint());
+
+  const [savingReturnPoint, setSavingReturnPoint] =
+    useState(false);
+
+  const [returnPointFeedback, setReturnPointFeedback] =
+    useState<string | null>(null);
 
   const mapRef =
     useRef<LeafletMap | null>(null);
@@ -613,6 +635,80 @@ function MapPage() {
     }
   }
 
+  function handleSaveReturnPoint() {
+    if (!navigator.geolocation || savingReturnPoint) {
+      setReturnPointFeedback(
+        tx("Este dispositivo no permite obtener tu ubicación.")
+      );
+      return;
+    }
+
+    setSavingReturnPoint(true);
+    setReturnPointFeedback(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const point = saveReturnPoint(
+          position.coords.latitude,
+          position.coords.longitude
+        );
+
+        setReturnPoint(point);
+        setSavingReturnPoint(false);
+        setReturnPointFeedback(
+          tx("Punto de regreso guardado. La casita permanecerá en tu mapa.")
+        );
+
+        mapRef.current?.flyTo(
+          [point.lat, point.lng],
+          18,
+          {
+            animate: true,
+            duration: 0.55,
+          }
+        );
+      },
+      () => {
+        setSavingReturnPoint(false);
+        setReturnPointFeedback(
+          tx("No pude leer tu ubicación. Activa el GPS y vuelve a intentarlo.")
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      }
+    );
+  }
+
+  function focusReturnPoint() {
+    if (!returnPoint) {
+      return;
+    }
+
+    mapRef.current?.flyTo(
+      [returnPoint.lat, returnPoint.lng],
+      18,
+      {
+        animate: true,
+        duration: 0.55,
+      }
+    );
+  }
+
+  function openReturnDirections() {
+    if (!returnPoint) {
+      return;
+    }
+
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${returnPoint.lat},${returnPoint.lng}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
   function openHistoricalMemory(
     historicalMemory:
       HistoricalMemory
@@ -739,7 +835,9 @@ function MapPage() {
             lineHeight: 1.05,
           }}
         >
-          {tx("Explora cerca de ti")}
+          {foodNearbyMode
+            ? tx("¿Dónde comer algo rico cerca?")
+            : tx("Explora cerca de ti")}
         </h1>
 
         <p
@@ -750,9 +848,165 @@ function MapPage() {
             fontSize: "13px",
           }}
         >
-          {tx("Busca por nombre, filtra e inicia una misión.")}
+          {foodNearbyMode
+            ? tx("Mostramos restaurantes y cafés para elegir desde tu ubicación.")
+            : tx("Busca por nombre, filtra e inicia una misión.")}
         </p>
       </header>
+
+      <section
+        style={{
+          width: "100%",
+          maxWidth: "760px",
+          boxSizing: "border-box",
+          margin: "0 auto 12px",
+          padding: "12px",
+          borderRadius: "17px",
+          border: "1px solid rgba(66,232,245,0.18)",
+          background:
+            "linear-gradient(145deg, rgba(66,232,245,0.08), rgba(255,32,206,0.05))",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "9px",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: "38px",
+              height: "38px",
+              flex: "0 0 auto",
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "13px",
+              color: "#42E8F5",
+              background: "rgba(66,232,245,0.10)",
+              border: "1px solid rgba(66,232,245,0.24)",
+            }}
+          >
+            <House size={20} />
+          </span>
+
+          <div style={{ minWidth: 0 }}>
+            <strong
+              style={{
+                display: "block",
+                fontSize: "12px",
+              }}
+            >
+              {returnPoint
+                ? tx("Tu punto de regreso está guardado")
+                : tx("Guarda tu hotel o punto de partida")}
+            </strong>
+            <span
+              style={{
+                display: "block",
+                marginTop: "2px",
+                color: "rgba(255,255,255,0.58)",
+                fontSize: "9px",
+                lineHeight: 1.35,
+              }}
+            >
+              {tx("Si olvidas el nombre o te pierdes, la casita te ayudará a volver.")}
+            </span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: returnPoint
+              ? "repeat(3, minmax(0, 1fr))"
+              : "1fr",
+            gap: "7px",
+            marginTop: "10px",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleSaveReturnPoint}
+            disabled={savingReturnPoint}
+            style={{
+              minHeight: "40px",
+              border: "none",
+              borderRadius: "11px",
+              background: returnPoint
+                ? "rgba(255,255,255,0.08)"
+                : "#42E8F5",
+              color: returnPoint ? "#FFFFFF" : "#061013",
+              fontSize: "10px",
+              fontWeight: 850,
+              cursor: savingReturnPoint ? "wait" : "pointer",
+            }}
+          >
+            {savingReturnPoint
+              ? tx("Guardando…")
+              : returnPoint
+                ? tx("Actualizar")
+                : tx("Guardar mi ubicación actual")}
+          </button>
+
+          {returnPoint && (
+            <>
+              <button
+                type="button"
+                onClick={focusReturnPoint}
+                style={{
+                  minHeight: "40px",
+                  borderRadius: "11px",
+                  border: "1px solid rgba(66,232,245,0.22)",
+                  background: "rgba(66,232,245,0.06)",
+                  color: "#42E8F5",
+                  fontSize: "10px",
+                  fontWeight: 850,
+                  cursor: "pointer",
+                }}
+              >
+                {tx("Ver casita")}
+              </button>
+
+              <button
+                type="button"
+                onClick={openReturnDirections}
+                style={{
+                  minHeight: "40px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "5px",
+                  border: "none",
+                  borderRadius: "11px",
+                  background: "#FF20CE",
+                  color: "#FFFFFF",
+                  fontSize: "10px",
+                  fontWeight: 850,
+                  cursor: "pointer",
+                }}
+              >
+                <Navigation size={13} />
+                {tx("Cómo volver")}
+              </button>
+            </>
+          )}
+        </div>
+
+        {returnPointFeedback && (
+          <p
+            role="status"
+            style={{
+              margin: "8px 0 0",
+              color: "rgba(255,255,255,0.68)",
+              fontSize: "9px",
+            }}
+          >
+            {returnPointFeedback}
+          </p>
+        )}
+      </section>
 
       <section
         aria-label={tx("Buscar en el mapa")}
@@ -1255,6 +1509,40 @@ function MapPage() {
             initialZoom={18}
             radiusMeters={200}
           />
+
+          {returnPoint && (
+            <Marker
+              position={[
+                returnPoint.lat,
+                returnPoint.lng,
+              ]}
+              icon={createIguidePin(
+                "home",
+                tx("Mi hotel / punto de regreso")
+              )}
+            >
+              <Popup minWidth={210}>
+                <div
+                  style={{
+                    padding: "5px",
+                    color: "#161616",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong>{tx("Mi punto de regreso")}</strong>
+                  <p
+                    style={{
+                      margin: "5px 0 0",
+                      color: "#666666",
+                      fontSize: "11px",
+                    }}
+                  >
+                    {tx("Esta casita queda guardada en este celular.")}
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
 
           {visibleExperiences.map(
             (experience) => {

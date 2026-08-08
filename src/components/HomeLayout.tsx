@@ -71,20 +71,6 @@ function getSearchableText(
     .toLowerCase();
 }
 
-function findFoodExperience(
-  experiences: Experience[]
-): Experience | null {
-  return (
-    experiences.find(
-      (experience) =>
-        experience.type ===
-          "restaurant" ||
-        experience.type ===
-          "cafe"
-    ) ?? null
-  );
-}
-
 function findCornerExperience(
   experiences: Experience[]
 ): Experience | null {
@@ -211,14 +197,6 @@ function HomeLayout() {
 
       suggestedExperience,
     });
-
-  const foodExperience =
-    findFoodExperience(
-      availableExperiences
-    ) ??
-    findFoodExperience(
-      catalog
-    );
 
   const cornerExperience =
     findCornerExperience(
@@ -355,10 +333,10 @@ function HomeLayout() {
       id: "food",
 
       title:
-        tx("Comer increíble"),
+        tx("¿Dónde puedo comer algo rico cerca?"),
 
       subtitle:
-        tx("Sabores que los locales recomiendan"),
+        tx("Restaurantes y cafés recomendados alrededor de ti"),
 
       icon:
         Utensils,
@@ -370,8 +348,8 @@ function HomeLayout() {
         pachamancaImage,
 
       onClick: () =>
-        openExperience(
-          foodExperience
+        navigate(
+          "/mapa?nearby=food"
         ),
     },
 

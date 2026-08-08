@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -90,6 +91,17 @@ export function JourneyProvider({
   const [journey, setJourney] =
     useState<ActiveJourney>(() => restoreActiveJourney());
 
+  /*
+   * Si la aplicación abrió con una misión que ya existía,
+   * el primer GPS pertenece a una reanudación. En una misión
+   * recién iniciada permanece en false.
+   */
+  const resumedFromStorageRef =
+    useRef(
+      journey.state === "WALKING" &&
+      journey.startedAt !== null
+    );
+
   /**
    * Sincroniza React con el Timeline persistido.
    */
@@ -110,7 +122,10 @@ export function JourneyProvider({
   /**
    * Enciende el seguimiento continuo para una experiencia ya creada.
    */
-  function activateLiveTracking(experience: Experience) {
+  function activateLiveTracking(
+    experience: Experience,
+    startsNewSegment = false
+  ) {
     locationTracker.stop();
 
     locationTracker.start(
@@ -120,7 +135,10 @@ export function JourneyProvider({
         syncJourneyTimeline(experience.experienceId);
       },
 
-      completeJourney
+      completeJourney,
+      {
+        startsNewSegment,
+      }
     );
   }
 
@@ -168,8 +186,12 @@ export function JourneyProvider({
    * Ahora sí watchPosition puede empezar.
    */
   activateLiveTracking(
-    confirmedExperience
+    confirmedExperience,
+    resumedFromStorageRef.current
   );
+
+  resumedFromStorageRef.current =
+    false;
 
   const handleVisibilityChange =
     () => {
@@ -199,7 +221,8 @@ export function JourneyProvider({
       );
 
       activateLiveTracking(
-        confirmedExperience
+        confirmedExperience,
+        true
       );
     };
 

@@ -93,6 +93,21 @@ function ShareDrawer({
     onShare ??
     legacyShareAction;
 
+  async function closeBeforeExternalAction() {
+    onClose();
+
+    /*
+     * Deja que Chrome retire la capa oscura y restablezca
+     * el scroll antes de abrir el diálogo nativo o generar
+     * una imagen pesada. Evita volver a una pantalla negra.
+     */
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => resolve());
+      });
+    });
+  }
+
   async function handleShare() {
     if (
       !effectiveShareAction ||
@@ -104,6 +119,7 @@ function ShareDrawer({
     setBusyAction("share");
 
     try {
+      await closeBeforeExternalAction();
       await effectiveShareAction();
     } finally {
       setBusyAction(null);
@@ -118,6 +134,7 @@ function ShareDrawer({
     setBusyAction("download");
 
     try {
+      await closeBeforeExternalAction();
       await onDownload();
     } finally {
       setBusyAction(null);
@@ -132,6 +149,7 @@ function ShareDrawer({
     setBusyAction("copy");
 
     try {
+      await closeBeforeExternalAction();
       await onCopyLink();
     } finally {
       setBusyAction(null);
@@ -149,7 +167,7 @@ function ShareDrawer({
           inset: 0,
 
           zIndex:
-            10040,
+            120000,
 
           backgroundColor:
             "rgba(0,0,0,0.68)",
@@ -180,7 +198,7 @@ function ShareDrawer({
           bottom: 0,
 
           zIndex:
-            10050,
+            120010,
 
           boxSizing:
             "border-box",

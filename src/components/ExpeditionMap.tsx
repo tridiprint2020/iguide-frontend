@@ -39,6 +39,7 @@ import type {
 
 import {
   getJourneyStats,
+  getTimelineRouteSegments,
 } from "../engine/trackingEngine";
 
 import {
@@ -84,20 +85,13 @@ function ExpeditionMap({
       ? propTrack.startedAt
       : journey.startedAt;
 
+  const pathSegments =
+    getTimelineRouteSegments(
+      activeTimeline
+    );
+
   const path: [number, number][] =
-    activeTimeline
-      .filter(
-        (point) =>
-          point.type === "start" ||
-          point.type === "walk" ||
-          point.type === "finish"
-      )
-      .map(
-        (point) => [
-          point.lat,
-          point.lng,
-        ] as [number, number]
-      );
+    pathSegments.flat();
 
   const stats =
     activeTimeline.length > 0
@@ -231,22 +225,7 @@ function ExpeditionMap({
         {activeTimeline.map(
           (point, index) => {
             if (point.type === "walk") {
-              return (
-                <CircleMarker
-                  key={`walk-node-${point.id ?? index}`}
-                  center={[
-                    point.lat,
-                    point.lng,
-                  ]}
-                  radius={3.5}
-                  pathOptions={{
-                    color: MAGENTA,
-                    fillColor: MAGENTA,
-                    fillOpacity: 1,
-                    weight: 1,
-                  }}
-                />
-              );
+              return null;
             }
 
             if (point.type === "memory") {
@@ -257,12 +236,12 @@ function ExpeditionMap({
                     point.lat,
                     point.lng,
                   ]}
-                  radius={11}
+                  radius={5}
                   pathOptions={{
-                    color: MAGENTA,
-                    weight: 4,
-                    fillColor: "#0A0A0A",
-                    fillOpacity: 0.88,
+                    color: "#FFFFFF",
+                    weight: 2,
+                    fillColor: MAGENTA,
+                    fillOpacity: 1,
                   }}
                 >
                   <Popup className="clean-popup">
@@ -316,6 +295,8 @@ function ExpeditionMap({
                               point.lng,
                             ],
                             path,
+                            waypoints:
+                              activeTimeline,
                           };
 
                           onSelectShare(
@@ -361,7 +342,7 @@ function ExpeditionMap({
                   point.lng,
                 ]}
                 radius={
-                  isFinish ? 15 : 9
+                  isFinish ? 13 : 12
                 }
                 pathOptions={{
                   color: "#FFFFFF",
@@ -445,16 +426,20 @@ function ExpeditionMap({
           }
         )}
 
-        {path.length >= 2 && (
-          <Polyline
-            positions={path}
-            pathOptions={{
-              color: MAGENTA,
-              weight: 5,
-              lineCap: "round",
-              lineJoin: "round",
-            }}
-          />
+        {pathSegments.map(
+          (segment, index) =>
+            segment.length >= 2 ? (
+              <Polyline
+                key={`active-route-${index}`}
+                positions={segment}
+                pathOptions={{
+                  color: MAGENTA,
+                  weight: 5,
+                  lineCap: "round",
+                  lineJoin: "round",
+                }}
+              />
+            ) : null
         )}
       </MapContainer>
     </div>

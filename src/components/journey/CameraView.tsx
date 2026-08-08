@@ -19,10 +19,14 @@ import {
 import type {
   TimelineItem,
 } from "../../types/tracking/tracking";
+import {
+  deletePhoto,
+  storePhotoBlob,
+} from "../../engine/mediaStorage";
+import {
+  compressPhotoFile,
+} from "../../engine/photoProcessing";
 import { tx } from "../../i18n";
-
-const MAX_IMAGE_EDGE = 1280;
-const JPEG_QUALITY = 0.74;
 
 export function CameraView() {
   const {
@@ -34,6 +38,14 @@ export function CameraView() {
     useRef<HTMLInputElement | null>(
       null
     );
+
+  const previewObjectUrlRef =
+    useRef<string | null>(
+      null
+    );
+
+  const hasAutoOpenedRef =
+    useRef(false);
 
   const [
     isSaving,
@@ -64,199 +76,30 @@ export function CameraView() {
       null
     );
 
-  const hasAutoOpenedRef =
-    useRef(false);
-
   function openNativeCamera() {
     setErrorMessage(null);
     fileInputRef.current?.click();
   }
 
   useEffect(() => {
-    if (hasAutoOpenedRef.current) {
-      return;
-    }
+    if (!hasAutoOpenedRef.current) {
+      hasAutoOpenedRef.current = true;
 
-    hasAutoOpenedRef.current = true;
-
-    // Dispara la cámara nativa apenas se entra a esta pantalla,
-    // para que sea un solo toque desde fuera (en vez de dos).
-    window.setTimeout(
-      openNativeCamera,
-      150
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function decodeImage(
-    file: File
-  ): Promise<
-    ImageBitmap | HTMLImageElement
-  > {
-    if (
-      "createImageBitmap" in
-      window
-    ) {
-      return createImageBitmap(
-        file
+      window.setTimeout(
+        openNativeCamera,
+        120
       );
     }
 
-    const dataUrl =
-      await readFileAsDataUrl(
-        file
-      );
-
-    return new Promise(
-      (resolve, reject) => {
-        const image =
-          new Image();
-
-        image.onload = () =>
-          resolve(image);
-
-        image.onerror = () =>
-          reject(
-            new Error(
-              tx("No se pudo preparar la fotografía.")
-            )
-          );
-
-        image.src =
-          dataUrl;
-      }
-    );
-  }
-
-  async function compressImage(
-    file: File
-  ): Promise<string> {
-    const image =
-      await decodeImage(file);
-
-    const sourceWidth =
-      image.width;
-
-    const sourceHeight =
-      image.height;
-
-    const scale =
-      Math.min(
-        1,
-        MAX_IMAGE_EDGE /
-          Math.max(
-            sourceWidth,
-            sourceHeight
-          )
-      );
-
-    const canvas =
-      document.createElement(
-        "canvas"
-      );
-
-    canvas.width =
-      Math.max(
-        1,
-        Math.round(
-          sourceWidth *
-            scale
-        )
-      );
-
-    canvas.height =
-      Math.max(
-        1,
-        Math.round(
-          sourceHeight *
-            scale
-        )
-      );
-
-    const context =
-      canvas.getContext(
-        "2d"
-      );
-
-    if (!context) {
-      throw new Error(
-        tx("No se pudo procesar la fotografía.")
-      );
-    }
-
-    context.imageSmoothingEnabled =
-      true;
-
-    context.imageSmoothingQuality =
-      "high";
-
-    context.drawImage(
-      image,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-    if (
-      "close" in image &&
-      typeof image.close ===
-        "function"
-    ) {
-      image.close();
-    }
-
-    return canvas.toDataURL(
-      "image/jpeg",
-      JPEG_QUALITY
-    );
-  }
-
-  function readFileAsDataUrl(
-    file: File
-  ): Promise<string> {
-    return new Promise(
-      (
-        resolve,
-        reject
-      ) => {
-        const reader =
-          new FileReader();
-
-        reader.onload =
-          () => {
-            if (
-              typeof reader.result ===
-              "string"
-            ) {
-              resolve(
-                reader.result
-              );
-
-              return;
-            }
-
-            reject(
-              new Error(
-                tx("No se pudo convertir la fotografía.")
-              )
-            );
-          };
-
-        reader.onerror =
-          () =>
-            reject(
-              new Error(
-                tx("No se pudo leer la fotografía.")
-              )
-            );
-
-        reader.readAsDataURL(
-          file
+    return () => {
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(
+          previewObjectUrlRef.current
         );
+        previewObjectUrlRef.current = null;
       }
-    );
-  }
+    };
+  }, []);
 
   function getCurrentCoordinates(): Promise<{
     lat: number;
@@ -315,6 +158,19 @@ export function CameraView() {
     );
   }
 
+  function releasePreviewObjectUrl() {
+    if (!previewObjectUrlRef.current) {
+      return;
+    }
+
+    URL.revokeObjectURL(
+      previewObjectUrlRef.current
+    );
+
+    previewObjectUrlRef.current =
+      null;
+  }
+
   async function handlePhotoSelected(
     event:
       React.ChangeEvent<HTMLInputElement>
@@ -334,10 +190,20 @@ export function CameraView() {
     );
 
     try {
+      /*
+       * La vista previa usa un blob liviano. Convertir aquí la
+       * foto original completa a base64 duplicaba decenas de MB
+       * en Chrome Android y podía dejar la pestaña negra.
+       */
       const photo =
-        await readFileAsDataUrl(
+        URL.createObjectURL(
           file
         );
+
+      releasePreviewObjectUrl();
+
+      previewObjectUrlRef.current =
+        photo;
 
       setPreview(
         photo
@@ -368,18 +234,30 @@ export function CameraView() {
       null
     );
 
+    let storedPhotoReference: string | null = null;
+
     try {
       const [
-        compressedPhoto,
+        compressedPhotoBlob,
         coordinates,
       ] =
         await Promise.all([
-          compressImage(
+          compressPhotoFile(
             photoFile
           ),
 
           getCurrentCoordinates(),
         ]);
+
+      /*
+       * El archivo vive en IndexedDB. El timeline recibe solo una
+       * referencia breve: así nunca llenamos localStorage ni dejamos
+       * la pestaña negra al volver de WhatsApp o de la galería.
+       */
+      storedPhotoReference =
+        await storePhotoBlob(
+          compressedPhotoBlob
+        );
 
       const memoryPoint:
         TimelineItem = {
@@ -399,13 +277,17 @@ export function CameraView() {
           Date.now(),
 
         photo:
-          compressedPhoto,
+          storedPhotoReference,
       };
 
       savePoint(
         memoryPoint
       );
     } catch (error) {
+      if (storedPhotoReference) {
+        await deletePhoto(storedPhotoReference).catch(() => undefined);
+      }
+
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -419,6 +301,8 @@ export function CameraView() {
   }
 
   function handleRepeatPhoto() {
+    releasePreviewObjectUrl();
+
     setPreview(
       null
     );
@@ -435,6 +319,11 @@ export function CameraView() {
       openNativeCamera,
       50
     );
+  }
+
+  function handleReturnToRoute() {
+    releasePreviewObjectUrl();
+    resumeWalking();
   }
 
   return (
@@ -495,7 +384,7 @@ export function CameraView() {
         <button
           type="button"
           onClick={
-            resumeWalking
+            handleReturnToRoute
           }
           disabled={
             isSaving

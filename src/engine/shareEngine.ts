@@ -23,7 +23,7 @@ function getExportPixelRatio(): number {
      * Evita picos de memoria en Chrome Android al
      * rasterizar una tarjeta que contiene un mapa.
      */
-    return 1.35;
+    return 1;
   }
 
   return 2;
@@ -79,14 +79,75 @@ function buildShareText(
     .join("\n\n");
 }
 
+function waitForImage(
+  image: HTMLImageElement
+): Promise<void> {
+  if (image.complete && image.naturalWidth > 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(
+      () => reject(new Error(tx("La fotografía todavía se está preparando."))),
+      6000
+    );
+
+    image.addEventListener(
+      "load",
+      () => {
+        window.clearTimeout(timeout);
+        resolve();
+      },
+      { once: true }
+    );
+
+    image.addEventListener(
+      "error",
+      () => {
+        window.clearTimeout(timeout);
+        reject(new Error(tx("No se pudo cargar una imagen de la tarjeta.")));
+      },
+      { once: true }
+    );
+  });
+}
+
+async function waitForCardMedia(
+  nodeRef: HTMLElement
+): Promise<void> {
+  const startedAt = Date.now();
+
+  while (
+    nodeRef.dataset.iguideMediaReady === "false" &&
+    Date.now() - startedAt < 6000
+  ) {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 80);
+    });
+  }
+
+  if (nodeRef.dataset.iguideMediaReady === "false") {
+    throw new Error(
+      tx("La fotografía todavía se está preparando. Inténtalo nuevamente en un momento.")
+    );
+  }
+
+  await Promise.all(
+    Array.from(nodeRef.querySelectorAll("img")).map(waitForImage)
+  );
+}
+
 async function renderCardBlob(
   nodeRef: HTMLElement
 ): Promise<Blob> {
+  await waitForCardMedia(nodeRef);
+
   const blob =
     await toBlob(
       nodeRef,
       {
-        cacheBust: true,
+        /* Los recuerdos de IndexedDB se muestran con blob URLs. */
+        cacheBust: false,
         pixelRatio:
           getExportPixelRatio(),
         backgroundColor:

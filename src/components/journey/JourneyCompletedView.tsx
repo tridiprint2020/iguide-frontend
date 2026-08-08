@@ -5,6 +5,11 @@ import {
 } from "react";
 
 import {
+  ImagePlus,
+  PencilLine,
+} from "lucide-react";
+
+import {
   useNavigate,
 } from "react-router-dom";
 
@@ -13,8 +18,18 @@ import {
 } from "../../context/JourneyContext";
 
 import {
+  addMemoryToTrack,
   getJourneyStats,
+  loadTrack,
+  updateMemoryNote,
+  updateMemoryPhoto,
 } from "../../engine/trackingEngine";
+import {
+  storePhotoBlob,
+} from "../../engine/mediaStorage";
+import {
+  compressPhotoFile,
+} from "../../engine/photoProcessing";
 
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
@@ -51,6 +66,29 @@ export default function JourneyCompletedView() {
       null
     );
 
+  const photoInputRef =
+    useRef<HTMLInputElement | null>(null);
+
+  const [
+    cardTimeline,
+    setCardTimeline,
+  ] = useState(() => journey.timeline ?? []);
+
+  const [
+    isEditingCard,
+    setIsEditingCard,
+  ] = useState(false);
+
+  const [
+    isSavingPhoto,
+    setIsSavingPhoto,
+  ] = useState(false);
+
+  const [
+    cardFeedback,
+    setCardFeedback,
+  ] = useState<string | null>(null);
+
   const activeExperience =
     journey.experience as
       | Experience
@@ -59,18 +97,18 @@ export default function JourneyCompletedView() {
   const stats = useMemo(() => {
     if (
       !journey.startedAt ||
-      !journey.timeline
+      !cardTimeline
     ) {
       return null;
     }
 
     return getJourneyStats(
-      journey.timeline,
+      cardTimeline,
       journey.startedAt
     );
   }, [
     journey.startedAt,
-    journey.timeline,
+    cardTimeline,
   ]);
 
   const lastPhoto =
@@ -79,13 +117,18 @@ export default function JourneyCompletedView() {
   const lastNote =
     stats?.lastNote ?? "";
 
+  const [
+    editableNote,
+    setEditableNote,
+  ] = useState(() => lastNote);
+
   const hospesBannerMessage =
     getHospesMessage({
       screen: "completed",
       experience:
         journey.experience,
       timeline:
-        journey.timeline,
+        cardTimeline,
       rewardXp: 150,
     });
 
@@ -119,7 +162,7 @@ export default function JourneyCompletedView() {
      * una nota escrita realmente por el usuario.
      * No inyectamos frases automáticas largas.
      */
-    note: lastNote,
+    note: editableNote,
 
     primaryInterest:
       activeExperience?.interests?.[0],
@@ -131,7 +174,7 @@ export default function JourneyCompletedView() {
       activeExperience?.longitude,
 
     waypoints:
-      journey.timeline ?? [],
+      cardTimeline,
 
     stats:
       stats ?? {
@@ -151,7 +194,7 @@ export default function JourneyCompletedView() {
       ] as [number, number],
 
       path: (
-        journey.timeline ?? []
+        cardTimeline
       )
         .filter(
           (item) =>
@@ -166,13 +209,125 @@ export default function JourneyCompletedView() {
         ),
 
       memories: (
-        journey.timeline ?? []
+        cardTimeline
       ).filter(
         (item) =>
           item.type === "memory"
       ),
     },
   };
+
+  function getMemoryCoordinates(): {
+    lat: number;
+    lng: number;
+  } {
+    const lastPosition = [...cardTimeline]
+      .reverse()
+      .find((item) => item.type !== "resume");
+
+    return {
+      lat:
+        lastPosition?.lat ??
+        activeExperience?.latitude ??
+        0,
+      lng:
+        lastPosition?.lng ??
+        activeExperience?.longitude ??
+        0,
+    };
+  }
+
+  function refreshCardTimeline() {
+    if (!activeExperience) {
+      return;
+    }
+
+    const updatedTrack = loadTrack(
+      activeExperience.experienceId
+    );
+
+    if (updatedTrack) {
+      setCardTimeline(updatedTrack.timeline);
+    }
+  }
+
+  async function handleCardPhotoSelected(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file || !activeExperience) {
+      return;
+    }
+
+    setIsSavingPhoto(true);
+    setCardFeedback(null);
+
+    try {
+      const compressed = await compressPhotoFile(file);
+      const photoReference = await storePhotoBlob(compressed);
+      const lastMemory = [...cardTimeline]
+        .reverse()
+        .find((item) => item.type === "memory");
+
+      if (lastMemory) {
+        updateMemoryPhoto(
+          activeExperience.experienceId,
+          lastMemory.id,
+          photoReference
+        );
+      } else {
+        const coordinates = getMemoryCoordinates();
+
+        addMemoryToTrack(activeExperience.experienceId, {
+          ...coordinates,
+          photo: photoReference,
+          note: editableNote.trim() || undefined,
+        });
+      }
+
+      refreshCardTimeline();
+      setCardFeedback(
+        tx("Foto agregada. Tu MemoryCard ya está lista para compartir.")
+      );
+    } catch (error) {
+      setCardFeedback(
+        error instanceof Error
+          ? error.message
+          : tx("No se pudo agregar la fotografía.")
+      );
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  }
+
+  function handleSaveCardNote() {
+    if (!activeExperience) {
+      return;
+    }
+
+    const lastMemory = [...cardTimeline]
+      .reverse()
+      .find((item) => item.type === "memory");
+
+    if (lastMemory) {
+      updateMemoryNote(
+        activeExperience.experienceId,
+        lastMemory.id,
+        editableNote
+      );
+    } else if (editableNote.trim()) {
+      addMemoryToTrack(activeExperience.experienceId, {
+        ...getMemoryCoordinates(),
+        note: editableNote.trim(),
+      });
+    }
+
+    refreshCardTimeline();
+    setIsEditingCard(false);
+    setCardFeedback(tx("Cambios guardados en tu MemoryCard."));
+  }
 
   async function handleDownload() {
     await shareEngine.downloadImage(
@@ -298,6 +453,164 @@ export default function JourneyCompletedView() {
               0
             } 🔮`}
           />
+        </section>
+
+        <section
+          style={{
+            marginBottom: "18px",
+            padding: "15px",
+            borderRadius: "18px",
+            background:
+              "linear-gradient(145deg, rgba(255,32,206,0.10), rgba(66,232,245,0.06))",
+            border:
+              "1px solid rgba(255,255,255,0.10)",
+          }}
+        >
+          <strong
+            style={{
+              display: "block",
+              fontSize: "14px",
+              lineHeight: 1.35,
+            }}
+          >
+            {lastPhoto
+              ? tx("¿Quieres cambiar la foto de tu MemoryCard?")
+              : tx("¿Quieres agregar una foto a tu MemoryCard?")}
+          </strong>
+
+          <p
+            style={{
+              margin: "5px 0 12px",
+              color: "rgba(255,255,255,0.62)",
+              fontSize: "11px",
+              lineHeight: 1.45,
+            }}
+          >
+            {tx("Puedes elegir una foto, tomar otra o editar el texto antes de compartir.")}
+          </p>
+
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleCardPhotoSelected}
+            style={{ display: "none" }}
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: "8px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={isSavingPhoto}
+              style={{
+                minHeight: "44px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "7px",
+                border: "none",
+                borderRadius: "13px",
+                background: "#FF20CE",
+                color: "#FFFFFF",
+                fontWeight: 850,
+                fontSize: "11px",
+                cursor: isSavingPhoto ? "wait" : "pointer",
+                opacity: isSavingPhoto ? 0.65 : 1,
+              }}
+            >
+              <ImagePlus size={17} />
+              {isSavingPhoto
+                ? tx("Guardando…")
+                : lastPhoto
+                  ? tx("Cambiar foto")
+                  : tx("Agregar foto")}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsEditingCard((value) => !value)}
+              style={{
+                minHeight: "44px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "7px",
+                borderRadius: "13px",
+                border: "1px solid rgba(66,232,245,0.26)",
+                background: "rgba(66,232,245,0.06)",
+                color: "#42E8F5",
+                fontWeight: 850,
+                fontSize: "11px",
+                cursor: "pointer",
+              }}
+            >
+              <PencilLine size={16} />
+              {tx("Editar texto")}
+            </button>
+          </div>
+
+          {isEditingCard && (
+            <div style={{ marginTop: "10px" }}>
+              <textarea
+                value={editableNote}
+                onChange={(event) => setEditableNote(event.target.value)}
+                maxLength={180}
+                placeholder={tx("Escribe algo que quieras recordar…")}
+                style={{
+                  width: "100%",
+                  minHeight: "82px",
+                  boxSizing: "border-box",
+                  padding: "11px",
+                  resize: "vertical",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  outline: "none",
+                  background: "rgba(3,4,9,0.68)",
+                  color: "#FFFFFF",
+                  font: "inherit",
+                  fontSize: "12px",
+                }}
+              />
+
+              <button
+                type="button"
+                onClick={handleSaveCardNote}
+                style={{
+                  width: "100%",
+                  minHeight: "40px",
+                  marginTop: "8px",
+                  border: "none",
+                  borderRadius: "11px",
+                  background: "#42E8F5",
+                  color: "#061013",
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                {tx("Guardar cambios")}
+              </button>
+            </div>
+          )}
+
+          {cardFeedback && (
+            <p
+              role="status"
+              style={{
+                margin: "10px 0 0",
+                color: "rgba(255,255,255,0.76)",
+                fontSize: "10px",
+                lineHeight: 1.4,
+              }}
+            >
+              {cardFeedback}
+            </p>
+          )}
         </section>
 
         <div

@@ -457,6 +457,7 @@ function createTimelineItem(
 type:
   | "start"
   | "walk"
+  | "resume"
   | "memory"
   | "abort"
   | "finish",
@@ -550,7 +551,10 @@ export function getJourneyStats(
     }
 
     // Acumular distancia geofísica entre nodos adyacentes del trayecto real
-    if (i > 0) {
+    if (
+      i > 0 &&
+      current.type !== "resume"
+    ) {
       const prev = timeline[i - 1];
       totalDistanceKm += calculateHaversineDistance(prev.lat, prev.lng, current.lat, current.lng);
     }
@@ -641,6 +645,7 @@ point: {
   type:
     | "start"
     | "walk"
+    | "resume"
     | "memory"
     | "abort"
     | "finish";
@@ -654,6 +659,46 @@ point: {
   return track;
 }
 
+/**
+ * Divide el recorrido cada vez que el navegador regresa del
+ * segundo plano. Así nunca dibujamos una línea falsa a través
+ * de edificios durante el intervalo que Chrome no pudo medir.
+ */
+export function getTimelineRouteSegments(
+  timeline: TimelineItem[]
+): [number, number][][] {
+  const segments: [number, number][][] = [];
+  let currentSegment: [number, number][] = [];
+
+  for (const item of timeline) {
+    if (item.type === "memory") {
+      continue;
+    }
+
+    const coordinate: [number, number] = [
+      item.lat,
+      item.lng,
+    ];
+
+    if (item.type === "resume") {
+      if (currentSegment.length > 0) {
+        segments.push(currentSegment);
+      }
+
+      currentSegment = [coordinate];
+      continue;
+    }
+
+    currentSegment.push(coordinate);
+  }
+
+  if (currentSegment.length > 0) {
+    segments.push(currentSegment);
+  }
+
+  return segments;
+}
+
 export function addMemoryToTrack(
   experienceId: string,
   memory: { lat: number; lng: number; note?: string; photo?: string }
@@ -664,13 +709,18 @@ export function addMemoryToTrack(
   const id = crypto.randomUUID();
   const now = Date.now();
 
-  track.timeline.push(
-    createTimelineItem(id, "memory", memory.lat, memory.lng, now, {
-      note: memory.note,
-      photo: memory.photo,
-    })
-  );
-  saveTrack(track);
+  const updatedTrack: ExpeditionTrack = {
+    ...track,
+    timeline: [
+      ...track.timeline,
+      createTimelineItem(id, "memory", memory.lat, memory.lng, now, {
+        note: memory.note,
+        photo: memory.photo,
+      }),
+    ],
+  };
+
+  saveTrack(updatedTrack);
 }
 export function updateMemoryNote(
   experienceId: string,
@@ -690,14 +740,13 @@ export function updateMemoryNote(
     return null;
   }
 
-  const memoryItem =
-    track.timeline.find(
-      (item) =>
-        item.id === memoryId &&
-        item.type === "memory"
-    );
+  const memoryIndex = track.timeline.findIndex(
+    (item) =>
+      item.id === memoryId &&
+      item.type === "memory"
+  );
 
-  if (!memoryItem) {
+  if (memoryIndex < 0) {
     console.warn(
       "No se encontró la memoria dentro del recorrido:",
       memoryId
@@ -709,16 +758,69 @@ export function updateMemoryNote(
   const cleanNote =
     note.trim();
 
+  const updatedMemory: TimelineItem = {
+    ...track.timeline[memoryIndex],
+  };
+
   if (cleanNote) {
-    memoryItem.note =
-      cleanNote;
+    updatedMemory.note = cleanNote;
   } else {
-    delete memoryItem.note;
+    delete updatedMemory.note;
   }
 
-  saveTrack(track);
+  const updatedTrack: ExpeditionTrack = {
+    ...track,
+    timeline: track.timeline.map((item, index) =>
+      index === memoryIndex ? updatedMemory : item
+    ),
+  };
 
-  return track;
+  saveTrack(updatedTrack);
+
+  return updatedTrack;
+}
+
+export function updateMemoryPhoto(
+  experienceId: string,
+  memoryId: string,
+  photo?: string
+): ExpeditionTrack | null {
+  const track = loadTrack(experienceId);
+
+  if (!track) {
+    return null;
+  }
+
+  const memoryIndex = track.timeline.findIndex(
+    (item) =>
+      item.id === memoryId &&
+      item.type === "memory"
+  );
+
+  if (memoryIndex < 0) {
+    return null;
+  }
+
+  const updatedMemory: TimelineItem = {
+    ...track.timeline[memoryIndex],
+  };
+
+  if (photo) {
+    updatedMemory.photo = photo;
+  } else {
+    delete updatedMemory.photo;
+  }
+
+  const updatedTrack: ExpeditionTrack = {
+    ...track,
+    timeline: track.timeline.map((item, index) =>
+      index === memoryIndex ? updatedMemory : item
+    ),
+  };
+
+  saveTrack(updatedTrack);
+
+  return updatedTrack;
 }
 /**
  * Registra el punto donde el usuario decidió abandonar

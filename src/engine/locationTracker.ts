@@ -11,7 +11,12 @@ import {
 const MIN_DISTANCE_METERS = 8;
 const MAX_ACCEPTABLE_ACCURACY_METERS = 45;
 const MIN_TIME_BETWEEN_POINTS_MS = 4000;
-const REQUIRED_ARRIVAL_READINGS = 2;
+/*
+ * Una lectura de alta precisión dentro de 20 m es suficiente.
+ * Exigir dos dejaba la llegada congelada cuando el usuario ya
+ * estaba quieto y el GPS no emitía una segunda posición.
+ */
+const REQUIRED_ARRIVAL_READINGS = 1;
 const MAX_ARRIVAL_READING_GAP_MS = 20000;
 
 const HIGH_ACCURACY_OPTIONS: PositionOptions = {
@@ -319,7 +324,10 @@ export class LocationTracker {
   start(
     experienceId: string,
     onUpdate: LocationCallback,
-    completeJourneyContext: () => void
+    completeJourneyContext: () => void,
+    options?: {
+      startsNewSegment?: boolean;
+    }
   ): void {
     if (
       !navigator.geolocation
@@ -430,6 +438,37 @@ export class LocationTracker {
 
           const now =
             Date.now();
+
+          const isFirstReading =
+            this.lastLat === null ||
+            this.lastLng === null;
+
+          const isAccurateEnoughForRoute =
+            !Number.isFinite(accuracy) ||
+            accuracy <=
+              MAX_ACCEPTABLE_ACCURACY_METERS;
+
+          /*
+           * Chrome/Android suspende el GPS cuando el navegador
+           * queda detrás de Bluetooth, YouTube u otra aplicación.
+           * Al volver guardamos un comienzo de segmento, no un
+           * tramo inventado entre la posición antigua y la actual.
+           */
+          if (
+            isFirstReading &&
+            options?.startsNewSegment &&
+            isAccurateEnoughForRoute
+          ) {
+            addPointToTrack(
+              experienceId,
+              {
+                lat: latitude,
+                lng: longitude,
+                timestamp: now,
+                type: "resume",
+              }
+            );
+          }
 
           const isReliableArrivalReading =
             safeAccuracy <=
@@ -552,6 +591,10 @@ export class LocationTracker {
             this.lastLng ===
               null
           ) {
+            if (!isAccurateEnoughForRoute) {
+              return;
+            }
+
             this.lastLat =
               latitude;
 

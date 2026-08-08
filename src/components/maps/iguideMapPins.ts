@@ -7,6 +7,7 @@ export type IguidePinKind =
   | "start"
   | "memory"
   | "finish"
+  | "home"
   | "abort";
 
 const MAGENTA = "#FF00FF";
@@ -43,8 +44,6 @@ export function createIguidePin(
 
   const isAbort =
     kind === "abort";
-  const isCatalog =
-    kind === "catalog";
   const isMemory =
     kind === "memory";
   const isMission =
@@ -55,13 +54,17 @@ export function createIguidePin(
     kind === "start";
   const isFinish =
     kind === "finish";
+  const isHome =
+    kind === "home";
 
   const size =
     isStart || isFinish
       ? 52
       : isMission
         ? 46
-        : isAbort || isVisited
+        : isHome
+          ? 44
+        : isAbort
           ? 44
           : isMemory
             ? 32
@@ -70,83 +73,78 @@ export function createIguidePin(
   const color =
     isAbort
       ? ORANGE
-      : isCatalog
-        ? MAGENTA
-        : CYAN;
+      : isHome
+        ? CYAN
+      : MAGENTA;
+
+  const symbolColor =
+    isVisited
+      ? CYAN
+      : color;
 
   const safeTitle =
     escapeHtml(title);
 
-  const symbol = isStart
+  const isTimelinePoint =
+    isStart || isMemory || isFinish;
+
+  const symbol = isTimelinePoint
     ? `
       <svg viewBox="0 0 32 32" aria-hidden="true">
-        <path
-          d="M11 25V7l14 9-14 9Z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linejoin="round"
+        <circle
+          cx="16"
+          cy="16"
+          r="10"
+          fill="currentColor"
+          stroke="#FFFFFF"
+          stroke-width="2.4"
         />
       </svg>
     `
-    : isFinish || isVisited
+    : isHome
       ? `
         <svg viewBox="0 0 32 32" aria-hidden="true">
+          <circle
+            cx="16"
+            cy="16"
+            r="13"
+            fill="currentColor"
+            stroke="#FFFFFF"
+            stroke-width="2"
+          />
           <path
-            d="m9 16 4.5 4.5L23 11"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.6"
-            stroke-linecap="round"
+            d="M9 15.5 16 9l7 6.5V24h-5v-6h-4v6H9v-8.5Z"
+            fill="#071014"
+            stroke="#FFFFFF"
+            stroke-width="1.2"
             stroke-linejoin="round"
           />
         </svg>
       `
-      : isAbort
+    : isAbort
         ? `
           <svg viewBox="0 0 32 32" aria-hidden="true">
+            <circle
+              cx="16"
+              cy="16"
+              r="10"
+              fill="currentColor"
+              stroke="#FFFFFF"
+              stroke-width="2.2"
+            />
             <path
               d="M10 10 22 22M22 10 10 22"
               fill="none"
-              stroke="currentColor"
+              stroke="#FFFFFF"
               stroke-width="2.5"
               stroke-linecap="round"
             />
           </svg>
         `
-        : isMemory
-          ? `
-            <svg viewBox="0 0 32 32" aria-hidden="true">
-              <rect
-                x="7"
-                y="10"
-                width="18"
-                height="14"
-                rx="3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              />
-              <path
-                d="m12 10 1.5-3h5L20 10"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
-              <circle
-                cx="16"
-                cy="17"
-                r="4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              />
-            </svg>
-          `
-          : `
+        : `
             <svg viewBox="0 0 32 32" aria-hidden="true">
               <path
+                class="iguide-neon-pin__star"
                 d="
                   M16 29
                   C16 29 25 21.2 25 12.5
@@ -181,7 +179,7 @@ export function createIguidePin(
                   L14.8 11
                   Z
                 "
-                fill="currentColor"
+                fill="var(--pin-symbol-color)"
               />
             </svg>
           `;
@@ -190,7 +188,7 @@ export function createIguidePin(
     <div
       class="iguide-neon-pin iguide-neon-pin--${kind}"
       title="${safeTitle}"
-      style="--pin-color: ${color}; --pin-size: ${size}px;"
+      style="--pin-color: ${color}; --pin-symbol-color: ${symbolColor}; --pin-size: ${size}px;"
     >
       <span class="iguide-neon-pin__halo"></span>
       <span class="iguide-neon-pin__icon">

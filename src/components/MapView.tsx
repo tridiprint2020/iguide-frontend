@@ -32,6 +32,7 @@ import {
 } from "../data/user";
 
 import {
+  getTimelineRouteSegments,
   loadAllTrackSessions,
 } from "../engine/trackingEngine";
 
@@ -82,7 +83,7 @@ interface Props {
 type TrackBundle = {
   experience: Experience;
   track: ExpeditionTrack;
-  routePath: [number, number][];
+  routeSegments: [number, number][][];
   startPoint: TimelineItem | null;
   abortPoint: TimelineItem | null;
   finishPoint: TimelineItem | null;
@@ -340,30 +341,25 @@ function MapView({ track }: Props) {
           );
 
         for (const persistedTrack of storedSessions) {
-          const routeNodes =
-            persistedTrack.timeline.filter(
-              (item) =>
-                item.type === "start" ||
-                item.type === "walk" ||
-                item.type === "abort" ||
-                item.type === "finish"
-            );
-
-          const routePath =
-            simplifyRoutePath(
-              routeNodes.map(
-                (point) =>
-                  [
-                    point.lat,
-                    point.lng,
-                  ] as [number, number]
+          const routeSegments =
+            getTimelineRouteSegments(
+              persistedTrack.timeline
+            )
+              .map(
+                (segment) =>
+                  simplifyRoutePath(
+                    segment
+                  )
               )
-            );
+              .filter(
+                (segment) =>
+                  segment.length >= 2
+              );
 
           bundles.push({
             experience,
             track: persistedTrack,
-            routePath,
+            routeSegments,
             startPoint:
               persistedTrack.timeline.find(
                 (item) => item.type === "start"
@@ -626,25 +622,29 @@ function MapView({ track }: Props) {
               ({
                 experience,
                 track: expeditionTrack,
-                routePath,
+                routeSegments,
               }) => {
-                if (routePath.length < 2) {
+                if (routeSegments.length === 0) {
                   return null;
                 }
 
                 return (
-                  <Polyline
-                    key={`track-${experience.experienceId}-${expeditionTrack.sessionId}`}
-                    positions={routePath}
-                    className="iguide-route-line"
-                    pathOptions={{
-                      color: MAGENTA,
-                      weight: 6,
-                      lineCap: "round",
-                      lineJoin: "round",
-                      opacity: 1,
-                    }}
-                  />
+                  routeSegments.map(
+                    (segment, index) => (
+                      <Polyline
+                        key={`track-${experience.experienceId}-${expeditionTrack.sessionId}-${index}`}
+                        positions={segment}
+                        className="iguide-route-line"
+                        pathOptions={{
+                          color: MAGENTA,
+                          weight: 6,
+                          lineCap: "round",
+                          lineJoin: "round",
+                          opacity: 1,
+                        }}
+                      />
+                    )
+                  )
                 );
               }
             )}
