@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -62,10 +63,29 @@ export function CameraView() {
       null
     );
 
+  const hasAutoOpenedRef =
+    useRef(false);
+
   function openNativeCamera() {
     setErrorMessage(null);
     fileInputRef.current?.click();
   }
+
+  useEffect(() => {
+    if (hasAutoOpenedRef.current) {
+      return;
+    }
+
+    hasAutoOpenedRef.current = true;
+
+    // Dispara la cámara nativa apenas se entra a esta pantalla,
+    // para que sea un solo toque desde fuera (en vez de dos).
+    window.setTimeout(
+      openNativeCamera,
+      150
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function decodeImage(
     file: File
