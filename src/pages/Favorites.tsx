@@ -44,6 +44,7 @@ import logoIG from "../assets/optimized/logo-iguide.webp";
 import {
   Theme,
 } from "../styles/theme";
+import { tx } from "../i18n";
 
 type FilterId =
   | "all"
@@ -307,7 +308,7 @@ function Favorites() {
                 size={16}
                 strokeWidth={2.2}
               />
-              Inicio
+            {tx("Inicio")}
             </button>
 
             <img
@@ -402,7 +403,7 @@ function Favorites() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Tu mapa emocional
+                  {tx("Tu mapa emocional")}
                 </span>
 
                 <h1
@@ -416,7 +417,7 @@ function Favorites() {
                     lineHeight: 1.05,
                   }}
                 >
-                  Mis lugares
+                  {tx("Mis lugares")}
                 </h1>
 
                 <p
@@ -428,8 +429,7 @@ function Favorites() {
                     lineHeight: 1.45,
                   }}
                 >
-                  Lugares que quieres vivir,
-                  recomendar o repetir.
+                  {tx("Lugares que quieres vivir, recomendar o repetir.")}
                 </p>
               </div>
             </div>
@@ -448,19 +448,19 @@ function Favorites() {
             <CollectionStat
               icon={<Bookmark size={17} />}
               value={`${profile.favorites.length}`}
-              label="Guardados"
+              label={tx("Guardados")}
             />
 
             <CollectionStat
               icon={<Heart size={17} />}
               value={`${reactionCounts.loved}`}
-              label="Amados"
+              label={tx("Amados")}
             />
 
             <CollectionStat
               icon={<Flame size={17} />}
               value={`${reactionCounts.must_try}`}
-              label="Imperdibles"
+              label={tx("Imperdibles")}
             />
           </section>
 
@@ -517,7 +517,7 @@ function Favorites() {
                     cursor: "pointer",
                   }}
                 >
-                  {filter.label}
+                  {tx(filter.label)}
 
                   <span
                     style={{
@@ -542,18 +542,18 @@ function Favorites() {
 
           {!hasFavorites ? (
             <EmptyCollection
-              title="Tu colección empieza en la calle"
-              description="Explora Huancayo y guarda ese lugar que un local sí recomendaría."
-              actionLabel="Descubrir lugares locales"
+              title={tx("Tu colección empieza en la calle")}
+              description={tx("Explora Huancayo y guarda ese lugar que un local sí recomendaría.")}
+              actionLabel={tx("Descubrir lugares locales")}
               onAction={() =>
                 navigate("/explorer")
               }
             />
           ) : isFilteredEmpty ? (
             <EmptyCollection
-              title="Aún no hay lugares aquí"
-              description="Prueba otra colección o sigue explorando para sumar nuevos descubrimientos."
-              actionLabel="Ver todos"
+              title={tx("Aún no hay lugares aquí")}
+              description={tx("Prueba otra colección o sigue explorando para sumar nuevos descubrimientos.")}
+              actionLabel={tx("Ver todos")}
               onAction={() =>
                 setActiveFilter("all")
               }
@@ -640,7 +640,7 @@ function Favorites() {
                                 Theme.Colors.primary
                               }
                             />
-                            Tu vínculo local
+                            {tx("Tu vínculo local")}
                           </div>
 
                           <span
@@ -651,7 +651,7 @@ function Favorites() {
                               fontWeight: 850,
                             }}
                           >
-                            {meta.icon} {meta.label}
+                            {meta.icon} {tx(meta.label)}
                           </span>
                         </div>
 
@@ -713,7 +713,7 @@ function Favorites() {
                                     {option.icon}
                                   </span>
 
-                                  {option.label}
+                                  {tx(option.label)}
                                 </button>
                               );
                             }
@@ -754,7 +754,7 @@ function Favorites() {
                                 "0 8px 22px rgba(255,0,122,0.22)",
                             }}
                           >
-                            Vivir esta misión
+                            {tx("Vivir esta misión")}
                             <ArrowRight
                               size={16}
                             />
@@ -768,8 +768,8 @@ function Favorites() {
                                 experience.experienceId
                               );
                             }}
-                            aria-label={`Quitar ${experience.title} de favoritos`}
-                            title="Quitar de favoritos"
+                            aria-label={tx("Quitar {{title}} de favoritos", { title: experience.title })}
+                            title={tx("Quitar de favoritos")}
                             style={{
                               minHeight: "44px",
                               display: "inline-flex",
@@ -824,7 +824,7 @@ function Favorites() {
                   fontSize: "16px",
                 }}
               >
-                Tu ciudad todavía tiene secretos
+                {tx("Tu ciudad todavía tiene secretos")}
               </h2>
 
               <p
@@ -836,8 +836,7 @@ function Favorites() {
                   lineHeight: 1.5,
                 }}
               >
-                Sigue guardando lugares que te
-                hagan sentir más local.
+                {tx("Sigue guardando lugares que te hagan sentir más local.")}
               </p>
 
               <button
@@ -858,7 +857,7 @@ function Favorites() {
                   cursor: "pointer",
                 }}
               >
-                Encontrar otro lugar →
+                {tx("Encontrar otro lugar")} →
               </button>
             </section>
           )}

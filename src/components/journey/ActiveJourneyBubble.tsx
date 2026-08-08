@@ -14,6 +14,7 @@ import {
 import {
   useJourney,
 } from "../../context/JourneyContext";
+import { tx } from "../../i18n";
 
 export default function ActiveJourneyBubble() {
   const navigate =
@@ -81,7 +82,10 @@ export default function ActiveJourneyBubble() {
   function handleAbandon() {
     const confirmed =
       window.confirm(
-        `¿Abandonar definitivamente la ruta hacia ${activeExperience.title}?\n\nEl recorrido registrado permanecerá en tu historial.`
+        tx(
+          "¿Abandonar definitivamente la ruta hacia {{title}}?\n\nEl recorrido registrado permanecerá en tu historial.",
+          { title: activeExperience.title }
+        )
       );
 
     if (!confirmed) {
@@ -98,7 +102,7 @@ export default function ActiveJourneyBubble() {
       {expanded && (
         <div
           role="dialog"
-          aria-label="Controles de misión activa"
+          aria-label={tx("Controles de misión activa")}
           style={{
             position: "fixed",
             right: "16px",
@@ -156,7 +160,7 @@ export default function ActiveJourneyBubble() {
                   "uppercase",
               }}
             >
-              Misión activa
+              {tx("Misión activa")}
             </span>
 
             <strong
@@ -198,7 +202,7 @@ export default function ActiveJourneyBubble() {
                 journey.timeline
                   .length
               }{" "}
-              eventos registrados
+              {tx("eventos registrados")}
             </span>
           </div>
 
@@ -241,7 +245,7 @@ export default function ActiveJourneyBubble() {
                     "pointer",
                 }}
               >
-                🧭 Volver al recorrido
+                🧭 {tx("Volver al recorrido")}
               </button>
             )}
 
@@ -267,7 +271,7 @@ export default function ActiveJourneyBubble() {
                   "pointer",
               }}
             >
-              📸 Guardar recuerdo
+              📸 {tx("Guardar recuerdo")}
             </button>
 
             <button
@@ -298,7 +302,7 @@ export default function ActiveJourneyBubble() {
                   "pointer",
               }}
             >
-              🏠 Ir al inicio
+              🏠 {tx("Ir al inicio")}
             </button>
 
             <button
@@ -329,7 +333,7 @@ export default function ActiveJourneyBubble() {
                   "pointer",
               }}
             >
-              ⛔ Abandonar definitivamente
+              ⛔ {tx("Abandonar definitivamente")}
             </button>
           </div>
         </div>
@@ -343,8 +347,8 @@ export default function ActiveJourneyBubble() {
               !current
           )
         }
-        aria-label={`Controles de la misión hacia ${activeExperience.title}`}
-        title={`Misión activa: ${activeExperience.title}`}
+        aria-label={tx("Controles de la misión hacia {{title}}", { title: activeExperience.title })}
+        title={tx("Misión activa: {{title}}", { title: activeExperience.title })}
         style={{
           position: "fixed",
           right: "18px",
@@ -440,8 +444,8 @@ export default function ActiveJourneyBubble() {
           onClick={
             handleCaptureMemory
           }
-          aria-label="Tomar fotografía durante la misión"
-          title="Guardar recuerdo"
+          aria-label={tx("Tomar fotografía durante la misión")}
+          title={tx("Guardar recuerdo")}
           style={{
             position: "fixed",
             right: "94px",
@@ -521,7 +525,7 @@ export default function ActiveJourneyBubble() {
               "ellipsis",
           }}
         >
-          Misión activa ·{" "}
+          {tx("Misión activa")} ·{" "}
           {
             activeExperience.title
           }

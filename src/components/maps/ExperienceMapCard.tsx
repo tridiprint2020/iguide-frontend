@@ -14,6 +14,7 @@ import type {
 } from "../../types/experience";
 
 import FavoriteButton from "../FavoriteButton";
+import { tx } from "../../i18n";
 
 type Props = {
   experience: Experience;
@@ -103,7 +104,7 @@ function ExperienceMapCard({
         >
           <img
             src={imageSource}
-            alt={`Imagen de ${experience.title}`}
+            alt={tx("Imagen de {{title}}", { title: experience.title })}
             loading="lazy"
             onError={() =>
               setImageUnavailable(true)
@@ -140,7 +141,7 @@ function ExperienceMapCard({
               letterSpacing: "0.09em",
             }}
           >
-            {TYPE_LABELS[experience.type]}
+            {tx(TYPE_LABELS[experience.type])}
           </p>
 
           <h3
@@ -290,7 +291,7 @@ function ExperienceMapCard({
                 fontWeight: 850,
               }}
             >
-              ✓ Visitado
+              ✓ {tx("Visitado")}
             </span>
           )}
         </div>
@@ -340,7 +341,7 @@ function ExperienceMapCard({
             cursor: "pointer",
           }}
         >
-          Ver detalles
+          {tx("Ver detalles")}
         </button>
       )}
     </article>

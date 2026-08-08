@@ -21,6 +21,7 @@ import {
 } from "../data/user";
 
 import logoIG from "../assets/optimized/logoig.webp";
+import { tx } from "../i18n";
 
 interface NameCaptureModalProps {
   onClose: () => void;
@@ -38,7 +39,7 @@ export function NameCaptureModal({
     nameInput,
     setNameInput,
   ] = useState(
-    "Explorador"
+    tx("Explorador")
   );
 
   const [
@@ -64,7 +65,7 @@ export function NameCaptureModal({
 
     const finalName =
       cleanName ||
-      "Explorador";
+      tx("Explorador");
 
     const currentProfile =
       loadUserProfile();
@@ -322,7 +323,7 @@ export function NameCaptureModal({
                 "uppercase",
             }}
           >
-            Tu anfitrión local
+            {tx("Tu anfitrión local")}
           </p>
 
           <h2
@@ -346,7 +347,7 @@ export function NameCaptureModal({
                 "-0.035em",
             }}
           >
-            Hola, soy Hospes
+            {tx("Hola, soy Hospes")}
           </h2>
 
           <p
@@ -367,10 +368,7 @@ export function NameCaptureModal({
                 1.6,
             }}
           >
-            Seré tu anfitrión
-            durante tus aventuras.
-            Antes de comenzar,
-            quisiera saber:
+            {tx("Seré tu anfitrión durante tus aventuras. Antes de comenzar, quisiera saber:")}
           </p>
 
           <label
@@ -395,8 +393,7 @@ export function NameCaptureModal({
                 "left",
             }}
           >
-            ¿Cómo deseas que te
-            llame?
+            {tx("¿Cómo deseas que te llame?")}
           </label>
 
           <input
@@ -420,7 +417,7 @@ export function NameCaptureModal({
             autoFocus
             autoComplete="name"
             maxLength={30}
-            placeholder="Explorador"
+            placeholder={tx("Explorador")}
             style={{
               width: "100%",
 
@@ -489,9 +486,7 @@ export function NameCaptureModal({
                 "left",
             }}
           >
-            Puedes dejar
-            “Explorador” o escribir
-            tu nombre.
+            {tx("Puedes dejar “Explorador” o escribir tu nombre.")}
           </p>
 
           <button
@@ -554,8 +549,8 @@ export function NameCaptureModal({
             }}
           >
             {isSaving
-              ? "Preparando tu aventura…"
-              : "Comenzar aventura"}
+              ? tx("Preparando tu aventura…")
+              : tx("Comenzar aventura")}
           </button>
 
           <p
@@ -573,9 +568,7 @@ export function NameCaptureModal({
                 1.4,
             }}
           >
-            Podrás cambiar tu
-            nombre más adelante
-            desde Perfil.
+            {tx("Podrás cambiar tu nombre más adelante desde Perfil.")}
           </p>
         </div>
       </form>

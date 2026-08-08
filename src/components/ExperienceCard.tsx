@@ -31,6 +31,7 @@ import FavoriteButton from "./FavoriteButton";
 import {
   Theme,
 } from "../styles/theme";
+import { tx } from "../i18n";
 
 type Props = {
   expedition: Experience;
@@ -213,9 +214,9 @@ function ExperienceCard({
                   "normal",
               }}
             >
-              {getPlaceHint(
+              {tx(getPlaceHint(
                 expedition
-              )}
+              ))}
             </div>
           )}
       </div>
@@ -383,8 +384,8 @@ function ExperienceCard({
             }}
           >
             {isStarting
-              ? "Buscando GPS…"
-              : "Comenzar exploración"}
+              ? tx("Buscando GPS…")
+              : tx("Comenzar exploración")}
           </strong>
 
           <span
@@ -405,7 +406,7 @@ function ExperienceCard({
                 650,
             }}
           >
-            Registrar ruta, recuerdos y llegada
+            {tx("Registrar ruta, recuerdos y llegada")}
           </span>
         </span>
       </button>

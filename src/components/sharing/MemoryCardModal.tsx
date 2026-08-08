@@ -11,6 +11,7 @@ import {
 import type {
   MemoryCardData,
 } from "../../types/memoryCard";
+import { tx } from "../../i18n";
 
 type Props = {
   open: boolean;
@@ -64,7 +65,7 @@ export default function MemoryCardModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`MemoryCard de ${cardData.title}`}
+      aria-label={tx("MemoryCard de {{title}}", { title: cardData.title })}
       onClick={onClose}
       style={{
         position:
@@ -169,7 +170,7 @@ export default function MemoryCardModal({
                   "11px",
               }}
             >
-              Una experiencia vivida como local
+              {tx("Una experiencia vivida como local")}
             </p>
           </div>
 
@@ -241,7 +242,7 @@ export default function MemoryCardModal({
               "pointer",
           }}
         >
-          Volver al mapa
+          {tx("Volver al mapa")}
         </button>
       </section>
     </div>

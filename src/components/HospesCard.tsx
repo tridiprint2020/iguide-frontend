@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { moods } from "../data/moods";
 import { getRecommendationOpener } from "../hospes/dialog";
 import { Theme } from "../styles/theme";
+import { tx } from "../i18n";
 
 function HospesPrompt() {
   const [selectedResponse, setSelectedResponse] = useState<string | null>(null);
@@ -26,7 +27,7 @@ function HospesPrompt() {
               boxSizing: "border-box"
             }}
           >
-            ¿Qué te provoca ahora?
+            {tx("¿Qué te provoca ahora?")}
           </p>
 
           <div
@@ -60,7 +61,7 @@ function HospesPrompt() {
                   cursor: "pointer",
                 }}
               >
-                {mood.icon} {mood.title}
+                {mood.icon} {tx(mood.title)}
               </button>
             ))}
           </div>
@@ -74,7 +75,7 @@ function HospesPrompt() {
             color: Theme.Colors.text,
           }}
         >
-          <p>{getRecommendationOpener()}</p>
+          <p>{tx(getRecommendationOpener())}</p>
 
           <button
             onClick={() => navigate(`/categoria/${selectedResponse}`)}
@@ -89,7 +90,7 @@ function HospesPrompt() {
               cursor: "pointer",
             }}
           >
-            Ver sugerencias →
+            {tx("Ver sugerencias")} →
           </button>
         </div>
       )}

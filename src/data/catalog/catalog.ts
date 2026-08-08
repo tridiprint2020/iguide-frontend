@@ -10,7 +10,77 @@ import { festivals } from "../experiences/festivals/festivals";
 import { events } from "../experiences/events/events";
 import { crafts } from "../experiences/crafts/crafts";
 
-export const catalog: Experience[] = [
+import {
+  getAppLanguage,
+  tx,
+} from "../../i18n";
+
+const TRANSLATABLE_STRING_FIELDS =
+  new Set([
+    "description",
+    "hospes",
+    "cuisine",
+    "specialty",
+  ]);
+
+const TRANSLATABLE_ARRAY_FIELDS =
+  new Set([
+    "tags",
+    "amenities",
+    "roomTypes",
+    "exhibitions",
+    "menuHighlights",
+  ]);
+
+function localizeExperience(
+  experience: Experience
+): Experience {
+  return new Proxy(
+    experience,
+    {
+      get(target, property, receiver) {
+        const value = Reflect.get(
+          target,
+          property,
+          receiver
+        ) as unknown;
+
+        if (
+          getAppLanguage() !== "en" ||
+          typeof property !== "string"
+        ) {
+          return value;
+        }
+
+        if (
+          TRANSLATABLE_STRING_FIELDS.has(
+            property
+          ) &&
+          typeof value === "string"
+        ) {
+          return tx(value.trim());
+        }
+
+        if (
+          TRANSLATABLE_ARRAY_FIELDS.has(
+            property
+          ) &&
+          Array.isArray(value)
+        ) {
+          return value.map((item) =>
+            typeof item === "string"
+              ? tx(item)
+              : item
+          );
+        }
+
+        return value;
+      },
+    }
+  );
+}
+
+const baseCatalog: Experience[] = [
     ...expeditions,
     ...restaurants,
     ...cafes,
@@ -21,3 +91,8 @@ export const catalog: Experience[] = [
     ...events,
     ...crafts,
 ];
+
+export const catalog: Experience[] =
+  baseCatalog.map(
+    localizeExperience
+  );

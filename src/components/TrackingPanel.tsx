@@ -15,6 +15,7 @@ import type { ExpeditionTrack } from "../types/tracking/tracking";
 import { Theme } from "../styles/theme";
 import { useJourney } from "../context/JourneyContext";
 import { useNavigate } from "react-router-dom";
+import { tx } from "../i18n";
 
 type Props = {
   experienceId: string;
@@ -51,7 +52,7 @@ const {
 
   const handleStart = () => {
     if (!navigator.geolocation) {
-      alert("Tu navegador no soporta GPS.");
+      alert(tx("Tu navegador no soporta GPS."));
       return;
     }
 
@@ -87,7 +88,7 @@ const {
       },
       (error) => {
         console.error("Error al obtener la ubicación inicial:", error);
-        alert("No se pudo acceder a tu ubicación para iniciar el recorrido.");
+        alert(tx("No se pudo acceder a tu ubicación para iniciar el recorrido."));
       },
       { enableHighAccuracy: true }
     );
@@ -146,7 +147,7 @@ completeTrack(experienceId);
 setInvalidCompletion({
   open: true,
   message:
-    "No se pudo obtener tu ubicación para validar la llegada. Activa el GPS e inténtalo nuevamente.",
+    tx("No se pudo obtener tu ubicación para validar la llegada. Activa el GPS e inténtalo nuevamente."),
 });
         completeExpedition(experienceId, 150);
         completeJourney();
@@ -176,7 +177,7 @@ setInvalidCompletion({
     const photoToSave = photoBase64;
     setNote("");
     setPhotoBase64(null);
-    alert("📍 ¡Hito registrado por Hospes! Guardando coordenadas en tu Timeline...");
+    alert(`📍 ${tx("¡Hito registrado por Hospes! Guardando coordenadas en tu Timeline...")}`);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -222,7 +223,7 @@ return (
             cursor: "pointer",
           }}
         >
-          🧭 Iniciar recorrido
+          🧭 {tx("Iniciar recorrido")}
         </button>
       )}
 
@@ -230,7 +231,7 @@ return (
         <>
           <p style={{ fontSize: "13px", color: Theme.Colors.textSoft }}>
             {/* ✅ Regla 13: El Timeline unificado almacena eventos semánticos completos */}
-            Grabando recorrido... {track?.timeline.length ?? 0} eventos registrados.
+            {tx("Grabando recorrido...")} {track?.timeline.length ?? 0} {tx("eventos registrados.")}
           </p>
 
 
@@ -246,14 +247,14 @@ return (
                 fontSize: "13px",
               }}
             >
-              {noriHint}
+              {tx(noriHint)}
             </div>
           )}
 
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="¿Qué está ocurriendo en este lugar?"
+            placeholder={tx("¿Qué está ocurriendo en este lugar?")}
             style={{
               width: "100%",
               padding: "10px",
@@ -288,7 +289,7 @@ return (
               marginBottom: Theme.Space.sm,
             }}
           >
-            📍 Guardar recuerdo
+            📍 {tx("Guardar recuerdo")}
           </button>
 
           <button
@@ -305,7 +306,7 @@ return (
               cursor: "pointer",
             }}
           >
-            ✔️ Finalizar recorrido
+            ✔️ {tx("Finalizar recorrido")}
           </button>
         </>
       )}
@@ -313,7 +314,7 @@ return (
       {track?.completedAt && (
         <p style={{ color: Theme.Colors.secondary, fontWeight: 600 }}>
           {/* ✅ Regla 14: UI derivada directo de la longitud del Timeline Core */}
-          ✔️ Recorrido completado — {track.timeline.filter(item => item.type === "memory").length} recuerdos guardados.
+          ✔️ {tx("Recorrido completado")} — {track.timeline.filter(item => item.type === "memory").length} {tx("recuerdos guardados.")}
         </p>
       )}
 
@@ -349,7 +350,7 @@ return (
             <div style={{ fontSize: "38px", marginBottom: "12px" }}>🧭</div>
             
             <h3 style={{ color: "#FFFFFF", fontSize: "18px", fontWeight: 700, margin: "0 0 10px 0" }}>
-              La expedición aún no puede finalizar
+              {tx("La expedición aún no puede finalizar")}
             </h3>
             
             <p style={{ color: "#A0A0A0", fontSize: "13px", lineHeight: 1.5, margin: "0 0 24px 0" }}>
@@ -361,7 +362,7 @@ return (
                 onClick={() => setInvalidCompletion({ open: false, message: "" })}
                 style={{ height: "46px", borderRadius: "12px", border: "none", backgroundColor: Theme.Colors.primary, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", fontSize: "14px" }}
               >
-                🥾 Continuar explorando
+                🥾 {tx("Continuar explorando")}
               </button>
 
               <button
@@ -386,7 +387,7 @@ return (
                   fontSize: "13px",
                 }}
               >
-                ⛔ Abandonar definitivamente
+                ⛔ {tx("Abandonar definitivamente")}
               </button>
            
             </div>

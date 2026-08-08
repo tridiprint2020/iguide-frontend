@@ -19,6 +19,7 @@ import {
 import type {
   TimelineItem,
 } from "../../types/tracking/tracking";
+import { tx } from "../../i18n";
 
 const MAX_IMAGE_EDGE = 1280;
 const JPEG_QUALITY = 0.74;
@@ -117,7 +118,7 @@ export function CameraView() {
         image.onerror = () =>
           reject(
             new Error(
-              "No se pudo preparar la fotografía."
+              tx("No se pudo preparar la fotografía.")
             )
           );
 
@@ -179,7 +180,7 @@ export function CameraView() {
 
     if (!context) {
       throw new Error(
-        "No se pudo procesar la fotografía."
+        tx("No se pudo procesar la fotografía.")
       );
     }
 
@@ -237,7 +238,7 @@ export function CameraView() {
 
             reject(
               new Error(
-                "No se pudo convertir la fotografía."
+                tx("No se pudo convertir la fotografía.")
               )
             );
           };
@@ -246,7 +247,7 @@ export function CameraView() {
           () =>
             reject(
               new Error(
-                "No se pudo leer la fotografía."
+                tx("No se pudo leer la fotografía.")
               )
             );
 
@@ -271,7 +272,7 @@ export function CameraView() {
         ) {
           reject(
             new Error(
-              "Este dispositivo no permite obtener ubicación GPS."
+              tx("Este dispositivo no permite obtener ubicación GPS.")
             )
           );
 
@@ -294,7 +295,7 @@ export function CameraView() {
           () => {
             reject(
               new Error(
-                "No se pudo obtener tu ubicación. Activa el GPS e inténtalo nuevamente."
+                tx("No se pudo obtener tu ubicación. Activa el GPS e inténtalo nuevamente.")
               )
             );
           },
@@ -349,7 +350,7 @@ export function CameraView() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "No se pudo cargar la imagen."
+          : tx("No se pudo cargar la imagen.")
       );
     }
   }
@@ -408,7 +409,7 @@ export function CameraView() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "No se pudo guardar el recuerdo."
+          : tx("No se pudo guardar el recuerdo.")
       );
 
       setIsSaving(
@@ -543,7 +544,7 @@ export function CameraView() {
             size={18}
           />
 
-          Ruta
+          {tx("Ruta")}
         </button>
 
         <span
@@ -565,8 +566,8 @@ export function CameraView() {
           }}
         >
           {preview
-            ? "Revisar foto"
-            : "Guardar recuerdo"}
+            ? tx("Revisar foto")
+            : tx("Guardar recuerdo")}
         </span>
       </header>
 
@@ -626,7 +627,7 @@ export function CameraView() {
               src={
                 preview
               }
-              alt="Vista previa de la fotografía"
+              alt={tx("Vista previa de la fotografía")}
               style={{
                 width:
                   "100%",
@@ -719,7 +720,7 @@ export function CameraView() {
                     "18px",
                 }}
               >
-                Captura el momento
+                {tx("Captura el momento")}
               </strong>
 
               <p
@@ -740,7 +741,7 @@ export function CameraView() {
                     1.5,
                 }}
               >
-                La fotografía se guardará comprimida junto con tu ubicación.
+                {tx("La fotografía se guardará comprimida junto con tu ubicación.")}
               </p>
             </div>
           )}
@@ -894,7 +895,7 @@ export function CameraView() {
                 size={18}
               />
 
-              Repetir
+              {tx("Repetir")}
             </button>
 
             <button
@@ -953,8 +954,8 @@ export function CameraView() {
               />
 
               {isSaving
-                ? "Guardando…"
-                : "Usar fotografía"}
+                ? tx("Guardando…")
+                : tx("Usar fotografía")}
             </button>
           </div>
         ) : (
@@ -1020,7 +1021,7 @@ export function CameraView() {
               size={20}
             />
 
-            Abrir cámara
+            {tx("Abrir cámara")}
           </button>
         )}
       </footer>

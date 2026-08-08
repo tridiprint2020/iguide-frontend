@@ -1,6 +1,7 @@
 import {
   useEffect,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Navigate,
@@ -26,6 +27,7 @@ import {
 } from "./components/journey/WalkingView";
 
 import ActiveJourneyBubble from "./components/journey/ActiveJourneyBubble";
+import LanguageToggle from "./components/LanguageToggle";
 
 import {
   useJourney,
@@ -100,8 +102,15 @@ function JourneyUiCoordinator() {
 }
 
 function App() {
+  /*
+   * La suscripción global vuelve a renderizar todas las rutas
+   * cuando el usuario cambia entre español e inglés.
+   */
+  useTranslation();
+
   return (
     <>
+      <LanguageToggle />
       <JourneyUiCoordinator />
 
       <Routes>

@@ -24,6 +24,7 @@ import {
 import {
   catalog,
 } from "../data/catalog";
+import { tx } from "../i18n";
 
 const ACTIVE_JOURNEY_KEY =
   "iguide_active_journey";
@@ -329,7 +330,7 @@ function HospesActionCard({
                 "5px",
             }}
           >
-            ● Hospes · misión activa
+            ● {tx("Hospes · misión activa")}
           </div>
 
           <div
@@ -389,7 +390,7 @@ function HospesActionCard({
                   "center",
               }}
             >
-              ● Misión activa
+              ● {tx("Misión activa")}
             </p>
 
             <h3
@@ -424,7 +425,7 @@ function HospesActionCard({
                   "13px",
               }}
             >
-              Qué bueno que comenzaste. Hospes ya está acompañando tu recorrido y te avisará cuando llegues.
+              {tx("Qué bueno que comenzaste. Hospes ya está acompañando tu recorrido y te avisará cuando llegues.")}
             </p>
 
             <button
@@ -453,7 +454,7 @@ function HospesActionCard({
                   "0 7px 22px rgba(255,0,255,0.25)",
               }}
             >
-              Ver recorrido →
+              {tx("Ver recorrido")} →
             </button>
           </>
         ) : (
@@ -536,9 +537,9 @@ function HospesActionCard({
               }}
             >
               {isExperienceAction
-                ? "Comenzar misión →"
+                ? `${tx("Comenzar misión")} →`
                 : decision.action.label ??
-                  "Ver el plan →"}
+                  `${tx("Ver el plan")} →`}
             </button>
 
             {isExperienceAction && (
@@ -556,7 +557,7 @@ function HospesActionCard({
                     0.75,
                 }}
               >
-                Un toque activa GPS, recorrido y aviso de llegada.
+                {tx("Un toque activa GPS, recorrido y aviso de llegada.")}
               </div>
             )}
           </>

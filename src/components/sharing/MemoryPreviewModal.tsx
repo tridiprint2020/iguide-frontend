@@ -35,6 +35,7 @@ import type {
 import type {
   MemoryCardData,
 } from "../../types/memoryCard";
+import { tx } from "../../i18n";
 
 type Props = {
   isOpen: boolean;
@@ -218,14 +219,14 @@ function MemoryPreviewModal({
                   "17px",
               }}
             >
-              Descubrimiento local
+              {tx("Descubrimiento local")}
             </h2>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar"
+            aria-label={tx("Cerrar")}
             style={{
               width:
                 "42px",
@@ -309,7 +310,7 @@ function MemoryPreviewModal({
             strokeWidth={2}
           />
 
-          Comenzar misión local
+          {tx("Comenzar misión local")}
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 import { loadUserProfile } from "../data/user";
 import { Theme } from "../styles/theme";
+import { tx } from "../i18n";
 
 export default function WelcomeHeader() {
   const user = loadUserProfile();
@@ -19,7 +20,7 @@ export default function WelcomeHeader() {
           color: Theme.Colors.text,
         }}
       >
-        ¡Hola, {user.name}! 👋
+        {tx("¡Hola, {{name}}!", { name: user.name })} 👋
       </span>
 
       <h1
@@ -31,7 +32,7 @@ export default function WelcomeHeader() {
           color: Theme.Colors.text,
         }}
       >
-        Bienvenido a
+        {tx("Bienvenido a")}
       </h1>
 
       <h1
@@ -54,9 +55,9 @@ export default function WelcomeHeader() {
           lineHeight: 1.6,
         }}
       >
-        No visites. Pertenece.
+        {tx("No visites. Pertenece.")}
         <br />
-        Vive la ciudad como un local.
+        {tx("Vive la ciudad como un local.")}
       </p>
     </div>
   );

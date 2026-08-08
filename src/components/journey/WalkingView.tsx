@@ -30,6 +30,7 @@ import ExpeditionMap from "../ExpeditionMap";
 import {
   getHospesMessage,
 } from "../../engine/hospesContextEngine";
+import { tx } from "../../i18n";
 
 const MAGENTA = "#FF00FF";
 const CYAN = "#39E7FF";
@@ -77,7 +78,7 @@ function formatDistance(
   meters: number | null
 ): string {
   if (meters === null) {
-    return "Calculando";
+    return tx("Calculando");
   }
 
   if (meters < 1000) {
@@ -196,10 +197,12 @@ export function WalkingView() {
         journey.startedAt === null
       ) {
         return {
-          title: "HOSPES · MISIÓN EN MARCHA",
+          title: tx("HOSPES · MISIÓN EN MARCHA"),
           message:
-            `Perfecto. Comenzamos la ruta hacia ${experience.title}. ` +
-            "Estoy ubicándote para crear el Punto 0; el timeline empezará a registrar tu recorrido en unos segundos.",
+            tx(
+              "Perfecto. Comenzamos la ruta hacia {{title}}. Estoy ubicándote para crear el Punto 0; el timeline empezará a registrar tu recorrido en unos segundos.",
+              { title: experience.title }
+            ),
           icon: "✦",
           color: MAGENTA,
           tone: "brand" as const,
@@ -212,11 +215,17 @@ export function WalkingView() {
         estimatedWalkingMinutes !== null
       ) {
         return {
-          title: "Misión iniciada",
+          title: tx("Misión iniciada"),
           message:
-            `Punto 0 registrado. ${experience.title} está a aproximadamente ${estimatedWalkingMinutes} min caminando. ` +
+            tx(
+              "Punto 0 registrado. {{title}} está a aproximadamente {{minutes}} min caminando.",
+              {
+                title: experience.title,
+                minutes: estimatedWalkingMinutes,
+              }
+            ) + " " +
             (experience.description ??
-              "Hospes te acompañará hasta la llegada."),
+              tx("Hospes te acompañará hasta la llegada.")),
           icon: "✦",
           color: MAGENTA,
           tone: "brand" as const,
@@ -260,7 +269,7 @@ export function WalkingView() {
   function handleAbandon() {
     const confirmed =
       window.confirm(
-        "¿Deseas abandonar definitivamente esta misión?\n\nLa ruta registrada permanecerá guardada en tu historial."
+        tx("¿Deseas abandonar definitivamente esta misión?\n\nLa ruta registrada permanecerá guardada en tu historial.")
       );
 
     if (!confirmed) {
@@ -330,7 +339,7 @@ export function WalkingView() {
               cursor: "pointer",
             }}
           >
-            ← Inicio
+            ← {tx("Inicio")}
           </button>
 
           <span
@@ -359,7 +368,7 @@ export function WalkingView() {
                   "0 0 15px rgba(255,0,255,0.92)",
               }}
             />
-            Misión activa
+            {tx("Misión activa")}
           </span>
         </header>
 
@@ -391,7 +400,7 @@ export function WalkingView() {
                   "uppercase",
               }}
             >
-              Explorando
+              {tx("Explorando")}
             </p>
 
             <h1
@@ -405,7 +414,7 @@ export function WalkingView() {
             >
               {journey.experience
                 ?.title ??
-                "Destino"}
+                tx("Destino")}
             </h1>
 
             <p
@@ -417,7 +426,7 @@ export function WalkingView() {
               }}
             >
               {journey.timeline.length}{" "}
-              eventos registrados
+              {tx("eventos registrados")}
             </p>
           </section>
 
@@ -477,8 +486,8 @@ export function WalkingView() {
                 }}
               >
                 {journey.startedAt === null
-                  ? "Preparando Punto 0…"
-                  : "Timeline en vivo"}
+                  ? tx("Preparando Punto 0…")
+                  : tx("Timeline en vivo")}
               </strong>
 
               <span
@@ -491,8 +500,8 @@ export function WalkingView() {
                 }}
               >
                 {journey.startedAt === null
-                  ? "Esperando la primera ubicación GPS"
-                  : `${journey.timeline.length} eventos registrados durante la ruta`}
+                  ? tx("Esperando la primera ubicación GPS")
+                  : tx("{{count}} eventos registrados durante la ruta", { count: journey.timeline.length })}
               </span>
             </div>
           </section>
@@ -516,7 +525,7 @@ export function WalkingView() {
                   fontSize: "12px",
                 }}
               >
-                ¿Ya estás en {journey.experience?.title}?
+                {tx("¿Ya estás en {{title}}?", { title: journey.experience?.title })}
               </strong>
 
               <span
@@ -527,7 +536,7 @@ export function WalkingView() {
                   lineHeight: 1.4,
                 }}
               >
-                Si el pin comercial está desplazado, confirma tu llegada con la ubicación GPS actual.
+                {tx("Si el pin comercial está desplazado, confirma tu llegada con la ubicación GPS actual.")}
               </span>
 
               <button
@@ -541,8 +550,8 @@ export function WalkingView() {
                 style={primaryButtonStyle}
               >
                 {isConfirmingArrival
-                  ? "Confirmando GPS…"
-                  : "📍 Estoy aquí · confirmar llegada"}
+                  ? tx("Confirmando GPS…")
+                  : tx("📍 Estoy aquí · confirmar llegada")}
               </button>
 
               {arrivalMessage && (
@@ -568,12 +577,12 @@ export function WalkingView() {
             }}
           >
             <Metric
-              label="Tiempo"
+              label={tx("Tiempo")}
               value={`${durationMinutes} min`}
             />
 
             <Metric
-              label="Recorrido"
+              label={tx("Recorrido")}
               value={`${(
                 stats
                   ?.totalDistanceKm ??
@@ -582,7 +591,7 @@ export function WalkingView() {
             />
 
             <Metric
-              label="Destino"
+              label={tx("Destino")}
               value={formatDistance(
                 distanceToTargetMeters
               )}
@@ -597,7 +606,7 @@ export function WalkingView() {
             }
             style={secondaryButtonStyle}
           >
-            Ver información del destino
+            {tx("Ver información del destino")}
           </button>
 
           <button
@@ -605,7 +614,7 @@ export function WalkingView() {
             onClick={handleGoHome}
             style={secondaryButtonStyle}
           >
-            Ir a Inicio · mantener misión
+            {tx("Ir a Inicio · mantener misión")}
           </button>
 
           <button
@@ -620,7 +629,7 @@ export function WalkingView() {
                 "rgba(255,138,0,0.07)",
             }}
           >
-            Abandonar misión
+            {tx("Abandonar misión")}
           </button>
         </main>
       </div>

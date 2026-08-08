@@ -37,6 +37,7 @@ import {
 import type {
   UserProfile,
 } from "../types/user/user";
+import { tx } from "../i18n";
 
 function Profile() {
   const navigate =
@@ -136,7 +137,7 @@ function Profile() {
 
   const displayName =
     profile.name?.trim() ||
-    "Explorador";
+    tx("Explorador");
 
   return (
     <main
@@ -219,7 +220,7 @@ function Profile() {
               strokeWidth={2.2}
             />
 
-            Inicio
+            {tx("Inicio")}
           </button>
 
           <img
@@ -322,7 +323,7 @@ function Profile() {
                   "uppercase",
               }}
             >
-              Pasaporte local
+              {tx("Pasaporte local")}
             </span>
 
             <h1
@@ -357,7 +358,7 @@ function Profile() {
                 fontSize: "12px",
               }}
             >
-              Nivel {profile.level} ·{" "}
+              {tx("Nivel")} {profile.level} ·{" "}
               {profile.experience} XP
             </p>
           </div>
@@ -430,7 +431,7 @@ function Profile() {
                   fontWeight: 800,
                 }}
               >
-                Progreso XP
+                {tx("Progreso XP")}
               </span>
             </div>
 
@@ -442,7 +443,7 @@ function Profile() {
                 fontSize: "12px",
               }}
             >
-              Nivel {profile.level}
+              {tx("Nivel")} {profile.level}
             </strong>
           </div>
 
@@ -497,11 +498,11 @@ function Profile() {
             }}
           >
             <span>
-              {profile.experience} XP acumulados
+              {profile.experience} {tx("XP acumulados")}
             </span>
 
             <span>
-              {xpToNextLevel} XP para subir
+              {xpToNextLevel} {tx("XP para subir")}
             </span>
           </div>
         </section>
@@ -521,30 +522,30 @@ function Profile() {
         >
           <StatCard
             icon={MapPin}
-            label="Descubrimientos"
+            label={tx("Descubrimientos")}
             value={`${visitedCount}`}
-            detail={`${cityProgress}% de la ciudad`}
+            detail={tx("{{progress}}% de la ciudad", { progress: cityProgress })}
           />
 
           <StatCard
             icon={Heart}
-            label="Favoritos"
+            label={tx("Favoritos")}
             value={`${favoriteCount}`}
-            detail="Lugares guardados"
+            detail={tx("Lugares guardados")}
           />
 
           <StatCard
             icon={Award}
-            label="Insignias"
+            label={tx("Insignias")}
             value={`${achievementCount}`}
-            detail="Logros obtenidos"
+            detail={tx("Logros obtenidos")}
           />
 
           <StatCard
             icon={Sparkles}
-            label="Experiencias"
+            label={tx("Experiencias")}
             value={`${totalActiveExperiences}`}
-            detail="Disponibles ahora"
+            detail={tx("Disponibles ahora")}
           />
         </section>
 
@@ -582,7 +583,7 @@ function Profile() {
               fontSize: "17px",
             }}
           >
-            Sigue aumentando tu localidad
+            {tx("Sigue aumentando tu localidad")}
           </h2>
 
           <p
@@ -598,9 +599,7 @@ function Profile() {
               lineHeight: 1.5,
             }}
           >
-            Completa nuevas misiones,
-            descubre lugares y vive
-            Huancayo como alguien de aquí.
+            {tx("Completa nuevas misiones, descubre lugares y vive Huancayo como alguien de aquí.")}
           </p>
 
           <button
@@ -632,7 +631,7 @@ function Profile() {
                 "0 9px 24px rgba(255,0,122,0.26)",
             }}
           >
-            Explorar nuevas misiones →
+            {tx("Explorar nuevas misiones")} →
           </button>
         </section>
       </div>

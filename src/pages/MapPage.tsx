@@ -98,6 +98,7 @@ import type {
 import type {
   MemoryCardData,
 } from "../types/memoryCard";
+import { tx } from "../i18n";
 
 type TypeFilter = {
   type: ExperienceType;
@@ -186,7 +187,9 @@ function getTypeLabel(
   return (
     TYPE_FILTERS.find(
       (filter) => filter.type === type
-    )?.label ?? type
+    )?.label
+      ? tx(TYPE_FILTERS.find((filter) => filter.type === type)!.label)
+      : type
   );
 }
 
@@ -591,7 +594,10 @@ function MapPage() {
         experience.experienceId
     ) {
       alert(
-        `Ya tienes una misión activa: ${activeExperience.title}. Continúala o abandónala antes de iniciar otra.`
+        tx(
+          "Ya tienes una misión activa: {{title}}. Continúala o abandónala antes de iniciar otra.",
+          { title: activeExperience.title }
+        )
       );
 
       return;
@@ -679,7 +685,7 @@ function MapPage() {
             size={16}
             strokeWidth={2.1}
           />
-          Inicio
+          {tx("Inicio")}
         </button>
 
         <img
@@ -719,7 +725,7 @@ function MapPage() {
           }}
         >
           <MapPinned size={14} />
-          Tu ciudad, a tu manera
+          {tx("Tu ciudad, a tu manera")}
         </span>
 
         <h1
@@ -733,7 +739,7 @@ function MapPage() {
             lineHeight: 1.05,
           }}
         >
-          Explora cerca de ti
+          {tx("Explora cerca de ti")}
         </h1>
 
         <p
@@ -744,12 +750,12 @@ function MapPage() {
             fontSize: "13px",
           }}
         >
-          Busca por nombre, filtra e inicia una misión.
+          {tx("Busca por nombre, filtra e inicia una misión.")}
         </p>
       </header>
 
       <section
-        aria-label="Buscar en el mapa"
+        aria-label={tx("Buscar en el mapa")}
         style={{
           position: "relative",
           zIndex: 900,
@@ -788,8 +794,8 @@ function MapPage() {
                 event.target.value
               )
             }
-            placeholder="Buscar Don Juko, París, café, museo..."
-            aria-label="Buscar lugar por nombre o categoría"
+            placeholder={tx("Buscar Don Juko, París, café, museo...")}
+            aria-label={tx("Buscar lugar por nombre o categoría")}
             style={{
               flex: 1,
               minWidth: 0,
@@ -808,7 +814,7 @@ function MapPage() {
               onClick={() =>
                 setSearchQuery("")
               }
-              aria-label="Limpiar búsqueda"
+              aria-label={tx("Limpiar búsqueda")}
               style={{
                 width: "32px",
                 height: "32px",
@@ -910,7 +916,7 @@ function MapPage() {
                         fontWeight: 850,
                       }}
                     >
-                      Ver →
+                      {tx("Ver")} →
                     </span>
                   </button>
                 )
@@ -925,7 +931,7 @@ function MapPage() {
                   textAlign: "center",
                 }}
               >
-                Todavía no encontramos ese lugar.
+                {tx("Todavía no encontramos ese lugar.")}
               </div>
             )}
           </div>
@@ -933,7 +939,7 @@ function MapPage() {
       </section>
 
       <section
-        aria-label="Filtros rápidos del mapa"
+        aria-label={tx("Filtros rápidos del mapa")}
         style={{
           maxWidth: "1080px",
           margin: "0 auto 10px",
@@ -946,7 +952,7 @@ function MapPage() {
         <QuickFilterButton
           active={onlyUnvisited}
           icon={Sparkles}
-          label="Por descubrir"
+          label={tx("Por descubrir")}
           onClick={() =>
             setOnlyUnvisited(
               (current) => !current
@@ -957,7 +963,7 @@ function MapPage() {
         <QuickFilterButton
           active={onlyFavorites}
           icon={Heart}
-          label="Mis favoritos"
+          label={tx("Mis favoritos")}
           onClick={() =>
             setOnlyFavorites(
               (current) => !current
@@ -968,7 +974,7 @@ function MapPage() {
         <QuickFilterButton
           active={showMemories}
           icon={Images}
-          label="Mis recuerdos"
+          label={tx("Mis recuerdos")}
           onClick={() =>
             setShowMemories(
               (current) => !current
@@ -978,7 +984,7 @@ function MapPage() {
       </section>
 
       <section
-        aria-label="Categorías del mapa"
+        aria-label={tx("Categorías del mapa")}
         style={{
           maxWidth: "1080px",
           margin: "0 auto 14px",
@@ -1056,7 +1062,7 @@ function MapPage() {
                   />
 
                   <span>
-                    {filter.label}
+                    {tx(filter.label)}
                   </span>
 
                   <span
@@ -1172,7 +1178,7 @@ function MapPage() {
               }}
             >
               <RotateCcw size={14} />
-              Limpiar filtros
+              {tx("Limpiar filtros")}
             </button>
           </div>
         )}
@@ -1192,13 +1198,11 @@ function MapPage() {
         }}
       >
         <span>
-          El mapa se centra en tu GPS
-          mostrando aproximadamente
-          200 m alrededor.
+          {tx("El mapa se centra en tu GPS mostrando aproximadamente 200 m alrededor.")}
         </span>
 
         <span>
-          Mostrando{" "}
+          {tx("Mostrando")} {" "}
           <strong
             style={{
               color:
@@ -1207,7 +1211,7 @@ function MapPage() {
           >
             {visibleExperiences.length}
           </strong>{" "}
-          lugares
+          {tx("lugares")}
         </span>
       </div>
 
@@ -1325,8 +1329,8 @@ function MapPage() {
                       }
                       primaryActionLabel={
                         isCurrentMission
-                          ? "Continuar misión →"
-                          : "Iniciar misión →"
+                          ? `${tx("Continuar misión")} →`
+                          : `${tx("Iniciar misión")} →`
                       }
                       onPrimaryAction={() =>
                         handleStartMission(
@@ -1380,7 +1384,7 @@ function MapPage() {
                       }}
                     >
                       <strong>
-                        Recuerdo guardado
+                        {tx("Recuerdo guardado")}
                       </strong>
 
                       <p
@@ -1418,7 +1422,7 @@ function MapPage() {
                           cursor: "pointer",
                         }}
                       >
-                        Ver MemoryCard
+                        {tx("Ver MemoryCard")}
                       </button>
                     </div>
                   </Popup>

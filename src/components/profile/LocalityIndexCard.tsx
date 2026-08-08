@@ -11,6 +11,7 @@ import {
 import type {
   UserProfile,
 } from "../../types/user/user";
+import { tx } from "../../i18n";
 
 type Props = {
   profile: UserProfile;
@@ -30,9 +31,9 @@ export default function LocalityIndexCard({
   const finalMessage =
     progress.nextTier
       ? progress.remainingMissions === 1
-        ? `Te falta 1 misión para convertirte en ${progress.nextTier.label}.`
-        : `Te faltan ${progress.remainingMissions} misiones para convertirte en ${progress.nextTier.label}.`
-      : "Ya alcanzaste el máximo Índice de Localidad de Huancayo.";
+        ? tx("Te falta 1 misión para convertirte en {{tier}}.", { tier: tx(progress.nextTier.label) })
+        : tx("Te faltan {{count}} misiones para convertirte en {{tier}}.", { count: progress.remainingMissions, tier: tx(progress.nextTier.label) })
+      : tx("Ya alcanzaste el máximo Índice de Localidad de Huancayo.");
 
   return (
     <section
@@ -80,7 +81,7 @@ export default function LocalityIndexCard({
               textTransform: "uppercase",
             }}
           >
-            Tu transformación
+            {tx("Tu transformación")}
           </span>
 
           <h2
@@ -93,7 +94,7 @@ export default function LocalityIndexCard({
               lineHeight: 1.15,
             }}
           >
-            Índice de Localidad
+            {tx("Índice de Localidad")}
           </h2>
         </div>
 
@@ -142,7 +143,7 @@ export default function LocalityIndexCard({
             color: "#334155",
           }}
         >
-          Nivel de pertenencia
+          {tx("Nivel de pertenencia")}
         </span>
 
         <strong
@@ -152,8 +153,7 @@ export default function LocalityIndexCard({
           }}
         >
           {
-            progress.currentTier
-              .label
+            tx(progress.currentTier.label)
           }
         </strong>
       </div>
@@ -208,8 +208,8 @@ export default function LocalityIndexCard({
           fontWeight: 700,
         }}
       >
-        <span>Visitante</span>
-        <span>Wanka Honorario</span>
+        <span>{tx("Visitante")}</span>
+        <span>{tx("Wanka Honorario")}</span>
       </div>
 
       {/* TIERS */}
@@ -237,7 +237,7 @@ export default function LocalityIndexCard({
           return (
             <div
               key={tier.id}
-              title={tier.label}
+              title={tx(tier.label)}
               style={{
                 minHeight: "48px",
 
@@ -287,7 +287,7 @@ export default function LocalityIndexCard({
                     : "none",
               }}
             >
-              {tier.label}
+              {tx(tier.label)}
             </div>
           );
         })}
@@ -348,9 +348,9 @@ export default function LocalityIndexCard({
               lineHeight: 1.4,
             }}
           >
-            {progress.currentXp} XP acumulados
+            {progress.currentXp} {tx("XP acumulados")}
             {progress.nextTier
-              ? ` · ${progress.remainingXp} XP restantes`
+              ? ` · ${progress.remainingXp} ${tx("XP restantes")}`
               : ""}
           </p>
         </div>

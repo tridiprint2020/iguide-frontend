@@ -5,6 +5,7 @@ import {
 import type {
   MemoryCardData,
 } from "../types/memoryCard";
+import { tx } from "../i18n";
 
 export interface SharePayload {
   title: string;
@@ -59,12 +60,12 @@ function buildShareText(
     cardData.note?.trim();
 
   const sections = [
-    `Completé ${cardData.title} en ${cardData.city} con I.GUIDE.`,
+    tx("Completé {{title}} en {{city}} con I.GUIDE.", { title: cardData.title, city: cardData.city }),
     note
       ? `“${note}”`
       : null,
-    `${cardData.stats.totalDistanceKm.toFixed(2)} km · ${cardData.stats.totalMemories} recuerdo(s)`,
-    "No visites. Pertenece. Vive la ciudad como un local.",
+    tx("{{distance}} km · {{count}} recuerdo(s)", { distance: cardData.stats.totalDistanceKm.toFixed(2), count: cardData.stats.totalMemories }),
+    tx("No visites. Pertenece. Vive la ciudad como un local."),
     "#IGuide #LiveLikeLocal #FeelTheCity",
   ];
 
@@ -107,7 +108,7 @@ async function renderCardBlob(
 
   if (!blob) {
     throw new Error(
-      "No se pudo crear la imagen de la MemoryCard."
+      tx("No se pudo crear la imagen de la MemoryCard.")
     );
   }
 
@@ -124,7 +125,7 @@ async function nativeShare(
     );
 
     alert(
-      "Descripción copiada. Ya puedes pegarla en tu red favorita."
+      tx("Descripción copiada. Ya puedes pegarla en tu red favorita.")
     );
 
     return false;
@@ -174,7 +175,7 @@ export const shareEngine = {
   ): Promise<boolean> {
     if (!nodeRef) {
       alert(
-        "La MemoryCard todavía no está lista para exportarse."
+        tx("La MemoryCard todavía no está lista para exportarse.")
       );
 
       return false;
@@ -229,7 +230,7 @@ export const shareEngine = {
       );
 
       alert(
-        "No se pudo generar la imagen. Inténtalo nuevamente con el mapa completamente cargado."
+        tx("No se pudo generar la imagen. Inténtalo nuevamente con el mapa completamente cargado.")
       );
 
       return false;
@@ -243,7 +244,7 @@ export const shareEngine = {
     const payload:
       SharePayload = {
       title:
-        `Mi momento en ${cardData.title}`,
+        tx("Mi momento en {{title}}", { title: cardData.title }),
       text:
         buildShareText(
           cardData
@@ -289,7 +290,7 @@ export const shareEngine = {
       );
 
       alert(
-        "No se pudo adjuntar la imagen, pero la descripción quedó copiada."
+        tx("No se pudo adjuntar la imagen, pero la descripción quedó copiada.")
       );
 
       return false;
@@ -309,7 +310,7 @@ export const shareEngine = {
     );
 
     alert(
-      "Descripción copiada."
+      tx("Descripción copiada.")
     );
 
     return text;
@@ -329,9 +330,9 @@ export const shareEngine = {
   ): Promise<boolean> {
     return nativeShare({
       title:
-        `Explorador de ${title}`,
+        tx("Explorador de {{title}}", { title }),
       text:
-        `${description}\n\nNo visites. Pertenece. Vive la ciudad como un local.\n\n#IGuide #LiveLikeLocal`,
+        `${description}\n\n${tx("No visites. Pertenece. Vive la ciudad como un local.")}\n\n#IGuide #LiveLikeLocal`,
     });
   },
 };

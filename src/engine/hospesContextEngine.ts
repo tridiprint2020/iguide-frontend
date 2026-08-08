@@ -2,6 +2,7 @@ import type { Experience } from "../types/experience";
 import type { TimelineItem } from "../types/tracking/tracking";
 import type { HospesMessage } from "../types/hospes";
 import type { WeatherStatus } from "./weatherEngine";
+import { tx } from "../i18n";
 
 export type HospesScreen =
   | "home"
@@ -70,12 +71,17 @@ function formatDistance(
   if (
     distanceMeters < 1000
   ) {
-    return `${Math.max(
-      0,
-      Math.round(
-        distanceMeters
-      )
-    )} metros`;
+    return tx(
+      "{{distance}} metros",
+      {
+        distance: Math.max(
+          0,
+          Math.round(
+            distanceMeters
+          )
+        ),
+      }
+    );
   }
 
   return `${(
@@ -90,18 +96,18 @@ function getTimeLabel(
     date.getHours();
 
   if (hour < 6) {
-    return "esta madrugada";
+    return tx("esta madrugada");
   }
 
   if (hour < 12) {
-    return "esta mañana";
+    return tx("esta mañana");
   }
 
   if (hour < 18) {
-    return "esta tarde";
+    return tx("esta tarde");
   }
 
-  return "esta noche";
+  return tx("esta noche");
 }
 
 function getOpeningStatus(
@@ -305,17 +311,28 @@ export function getHospesMessage(
 
       const greeting =
         hour < 6
-          ? "La ciudad todavía duerme"
+          ? tx("La ciudad todavía duerme")
           : hour < 12
-            ? "Buenos días"
+            ? tx("Buenos días")
             : hour < 18
-              ? "Buenas tardes"
-              : "Buenas noches";
+              ? tx("Buenas tardes")
+              : tx("Buenas noches");
 
       const personalGreeting =
         userName
-          ? `${greeting}, ${userName}.`
-          : `${greeting}.`;
+          ? tx(
+              "{{greeting}}, {{name}}.",
+              {
+                greeting,
+                name: userName,
+              }
+            )
+          : tx(
+              "{{greeting}}.",
+              {
+                greeting,
+              }
+            );
 
       let opening: string;
 
@@ -324,22 +341,44 @@ export function getHospesMessage(
         hour < 6
       ) {
         opening =
-          `${personalGreeting} Huancayo está en silencio, ` +
-          "pero algunas de sus mejores historias comienzan antes que el resto.";
+          tx(
+            "{{greeting}} Huancayo está en silencio, pero algunas de sus mejores historias comienzan antes que el resto.",
+            {
+              greeting:
+                personalGreeting,
+            }
+          );
       } else if (
         isNight
       ) {
         opening =
-          `${personalGreeting} Huancayo ya encendió su vida nocturna.`;
+          tx(
+            "{{greeting}} Huancayo ya encendió su vida nocturna.",
+            {
+              greeting:
+                personalGreeting,
+            }
+          );
       } else if (
         hour < 12
       ) {
         opening =
-          `${personalGreeting} Huancayo acaba de comenzar ` +
-          "y todavía tenemos todo el día para descubrirlo.";
+          tx(
+            "{{greeting}} Huancayo acaba de comenzar y todavía tenemos todo el día para descubrirlo.",
+            {
+              greeting:
+                personalGreeting,
+            }
+          );
       } else {
         opening =
-          `${personalGreeting} La ciudad todavía tiene algo preparado para ti.`;
+          tx(
+            "{{greeting}} La ciudad todavía tiene algo preparado para ti.",
+            {
+              greeting:
+                personalGreeting,
+            }
+          );
       }
 
       let weatherObservation =
@@ -351,31 +390,31 @@ export function getHospesMessage(
         ) {
           case "rain":
             weatherObservation =
-              " Está lloviendo en el Valle, así que elegí una experiencia cómoda y protegida.";
+              ` ${tx("Está lloviendo en el Valle, así que elegí una experiencia cómoda y protegida.")}`;
             break;
 
           case "drizzle":
             weatherObservation =
-              " Hay llovizna en el Valle, así que elegí una experiencia cómoda y segura.";
+              ` ${tx("Hay llovizna en el Valle, así que elegí una experiencia cómoda y segura.")}`;
             break;
 
           case "sunny":
             weatherObservation =
               isNight
-                ? " El cielo está despejado y la noche permite continuar explorando con calma."
-                : " El cielo está despejado: es un buen momento para caminar y descubrir la ciudad.";
+                ? ` ${tx("El cielo está despejado y la noche permite continuar explorando con calma.")}`
+                : ` ${tx("El cielo está despejado: es un buen momento para caminar y descubrir la ciudad.")}`;
             break;
 
           case "cloudy":
             weatherObservation =
               isNight
-                ? " La noche está nublada, así que prioricé una experiencia urbana y accesible."
-                : " El cielo está nublado, una condición cómoda para recorrer la ciudad.";
+                ? ` ${tx("La noche está nublada, así que prioricé una experiencia urbana y accesible.")}`
+                : ` ${tx("El cielo está nublado, una condición cómoda para recorrer la ciudad.")}`;
             break;
 
           case "snow":
             weatherObservation =
-              " Las condiciones de montaña requieren precaución, así que prioricé experiencias urbanas.";
+              ` ${tx("Las condiciones de montaña requieren precaución, así que prioricé experiencias urbanas.")}`;
             break;
 
           default:
@@ -395,18 +434,18 @@ export function getHospesMessage(
       const recommendationWarning =
         unsafeOutdoorWeather &&
         suggestedExperience
-          ? " Elegí una alternativa bajo techo para que disfrutes la ciudad con comodidad."
+          ? ` ${tx("Elegí una alternativa bajo techo para que disfrutes la ciudad con comodidad.")}`
           : "";
 
       const suggestionObservation =
         suggestedExperience
-          ? ` Mi elección es ${suggestedExperience.title}.`
-          : " Tengo varias posibilidades listas para ti.";
+          ? ` ${tx("Mi elección es {{title}}.", { title: suggestedExperience.title })}`
+          : ` ${tx("Tengo varias posibilidades listas para ti.")}`;
 
       const closing =
         suggestedExperience
-          ? " ¿Vamos?"
-          : " Dime cómo quieres sentir la ciudad y prepararé el siguiente paso.";
+          ? ` ${tx("¿Vamos?")}`
+          : ` ${tx("Dime cómo quieres sentir la ciudad y prepararé el siguiente paso.")}`;
 
       return {
         title:
@@ -444,7 +483,13 @@ export function getHospesMessage(
                   suggestedExperience.slug,
 
                 label:
-                  `Iniciar misión: ${suggestedExperience.title}`,
+                  tx(
+                    "Iniciar misión: {{title}}",
+                    {
+                      title:
+                        suggestedExperience.title,
+                    }
+                  ),
               }
             : {
                 type:
@@ -454,7 +499,7 @@ export function getHospesMessage(
                   "/explorer",
 
                 label:
-                  "Explorar Huancayo",
+                  tx("Explorar Huancayo"),
               },
       };
     }
@@ -470,13 +515,21 @@ export function getHospesMessage(
 
       const progressText =
         totalCount > 0
-          ? `Ya descubriste ${visitedCount} de ${totalCount} experiencias disponibles.`
-          : "Tengo experiencias listas para ti.";
+          ? tx(
+              "Ya descubriste {{visited}} de {{total}} experiencias disponibles.",
+              {
+                visited:
+                  visitedCount,
+                total:
+                  totalCount,
+              }
+            )
+          : tx("Tengo experiencias listas para ti.");
 
       const suggestionText =
         suggestedExperience
-          ? ` Mi recomendación ${timeLabel} es ${suggestedExperience.title}.`
-          : " Elige una y te acompañaré durante todo el recorrido.";
+          ? ` ${tx("Mi recomendación {{time}} es {{title}}.", { time: timeLabel, title: suggestedExperience.title })}`
+          : ` ${tx("Elige una y te acompañaré durante todo el recorrido.")}`;
 
       return {
         title:
@@ -502,7 +555,13 @@ export function getHospesMessage(
                   suggestedExperience.slug,
 
                 label:
-                  `Ver ${suggestedExperience.title}`,
+                  tx(
+                    "Ver {{title}}",
+                    {
+                      title:
+                        suggestedExperience.title,
+                    }
+                  ),
               }
             : {
                 type:
@@ -512,7 +571,7 @@ export function getHospesMessage(
                   "/mapa",
 
                 label:
-                  "Explorar el mapa",
+                  tx("Explorar el mapa"),
               },
       };
     }
@@ -521,10 +580,10 @@ export function getHospesMessage(
       if (!experience) {
         return {
           title:
-            "Tu próxima experiencia",
+            tx("Tu próxima experiencia"),
 
           message:
-            "Elige un destino y prepararé el recorrido contigo.",
+            tx("Elige un destino y prepararé el recorrido contigo."),
 
           icon: "📍",
 
@@ -542,11 +601,24 @@ export function getHospesMessage(
       ) {
         return {
           title:
-            `${experience.title} está cerrado`,
+            tx(
+              "{{title}} está cerrado",
+              {
+                title:
+                  experience.title,
+              }
+            ),
 
           message:
-            `${experience.title} abre a las ${openingStatus.opensAt}. ` +
-            "Puedes guardar el plan o explorar otra experiencia cercana mientras tanto.",
+            tx(
+              "{{title}} abre a las {{time}}. Puedes guardar el plan o explorar otra experiencia cercana mientras tanto.",
+              {
+                title:
+                  experience.title,
+                time:
+                  openingStatus.opensAt,
+              }
+            ),
 
           icon: "🕒",
 
@@ -563,7 +635,7 @@ export function getHospesMessage(
               "/mapa",
 
             label:
-              "Ver alternativas",
+              tx("Ver alternativas"),
           },
         };
       }
@@ -571,15 +643,21 @@ export function getHospesMessage(
       const scheduleText =
         openingStatus
           .hasSchedule
-          ? ` Está abierto hasta las ${openingStatus.closesAt}.`
+          ? ` ${tx("Está abierto hasta las {{time}}.", { time: openingStatus.closesAt })}`
           : "";
 
       return {
         title:
-          "HOSPES · TU MISIÓN",
+          tx("HOSPES · TU MISIÓN"),
 
         message:
-          `Puedo registrar tu ruta, tus recuerdos y tu llegada.${scheduleText}`,
+          tx(
+            "Puedo registrar tu ruta, tus recuerdos y tu llegada.{{schedule}}",
+            {
+              schedule:
+                scheduleText,
+            }
+          ),
 
         icon:
           experience.type ===
@@ -600,7 +678,7 @@ export function getHospesMessage(
             experience.slug,
 
           label:
-            "Comenzar experiencia",
+            tx("Comenzar experiencia"),
         },
       };
     }
@@ -609,11 +687,17 @@ export function getHospesMessage(
       if (hasFinish) {
         return {
           title:
-            "Llegada registrada",
+            tx("Llegada registrada"),
 
           message:
-            `Ya reconocí tu llegada a ${experience?.title ?? "el destino"}. ` +
-            "Estoy preparando tu recompensa y el resumen del recorrido.",
+            tx(
+              "Ya reconocí tu llegada a {{title}}. Estoy preparando tu recompensa y el resumen del recorrido.",
+              {
+                title:
+                  experience?.title ??
+                  tx("el destino"),
+              }
+            ),
 
           icon: "🏁",
 
@@ -627,10 +711,10 @@ export function getHospesMessage(
       if (hasAbort) {
         return {
           title:
-            "Ruta conservada",
+            tx("Ruta conservada"),
 
           message:
-            "El recorrido quedó guardado. Podrás revisarlo y compartirlo desde Explorer.",
+            tx("El recorrido quedó guardado. Podrás revisarlo y compartirlo desde Explorer."),
 
           icon: "🟠",
 
@@ -647,7 +731,7 @@ export function getHospesMessage(
               "/explorer",
 
             label:
-              "Ver mi recorrido",
+              tx("Ver mi recorrido"),
           },
         };
       }
@@ -660,12 +744,26 @@ export function getHospesMessage(
       ) {
         return {
           title:
-            "Ya casi llegas",
+            tx("Ya casi llegas"),
 
           message:
             memories.length > 0
-              ? `Estás dentro del área de ${experience?.title ?? "llegada"}. Ya tienes un recuerdo y puedo certificar esta experiencia.`
-              : `Estás muy cerca de ${experience?.title ?? "tu destino"}. La llegada se certificará con el GPS; una foto o nota es opcional.`,
+              ? tx(
+                  "Estás dentro del área de {{title}}. Ya tienes un recuerdo y puedo certificar esta experiencia.",
+                  {
+                    title:
+                      experience?.title ??
+                      tx("llegada"),
+                  }
+                )
+              : tx(
+                  "Estás muy cerca de {{title}}. La llegada se certificará con el GPS; una foto o nota es opcional.",
+                  {
+                    title:
+                      experience?.title ??
+                      tx("tu destino"),
+                  }
+                ),
 
           icon: "📍",
 
@@ -686,17 +784,21 @@ export function getHospesMessage(
       ) {
         return {
           title:
-            "Tu historia está creciendo",
+            tx("Tu historia está creciendo"),
 
           message:
-            `Ya guardaste ${memories.length} ${
+            tx(
               memories.length === 1
-                ? "recuerdo"
-                : "recuerdos"
-            } durante esta ruta.` +
+                ? "Ya guardaste {{count}} recuerdo durante esta ruta."
+                : "Ya guardaste {{count}} recuerdos durante esta ruta.",
+              {
+                count:
+                  memories.length,
+              }
+            ) +
             (
               distanceLabel
-                ? ` Faltan aproximadamente ${distanceLabel}.`
+                ? ` ${tx("Faltan aproximadamente {{distance}}.", { distance: distanceLabel })}`
                 : ""
             ),
 
@@ -714,14 +816,21 @@ export function getHospesMessage(
       ) {
         return {
           title:
-            "Te acompaño",
+            tx("Te acompaño"),
 
           message:
-            `La ruta está activa hacia ${experience?.title ?? "tu destino"}.` +
+            tx(
+              "La ruta está activa hacia {{title}}.",
+              {
+                title:
+                  experience?.title ??
+                  tx("tu destino"),
+              }
+            ) +
             (
               distanceLabel
-                ? ` Estás a ${distanceLabel}.`
-                : " Seguiré registrando el recorrido."
+                ? ` ${tx("Estás a {{distance}}.", { distance: distanceLabel })}`
+                : ` ${tx("Seguiré registrando el recorrido.")}`
             ),
 
           icon: "🥾",
@@ -735,10 +844,10 @@ export function getHospesMessage(
 
       return {
         title:
-          "Preparando tu recorrido",
+          tx("Preparando tu recorrido"),
 
         message:
-          "Estoy estabilizando la señal GPS para registrar una ruta más limpia y precisa.",
+          tx("Estoy estabilizando la señal GPS para registrar una ruta más limpia y precisa."),
 
         icon: "🛰️",
 
@@ -752,14 +861,18 @@ export function getHospesMessage(
     case "memory":
       return {
         title:
-          "Recuerdo asegurado",
+          tx("Recuerdo asegurado"),
 
         message:
-          `La ubicación quedó guardada en tu Timeline. Ya tienes ${memories.length} ${
+          tx(
             memories.length === 1
-              ? "recuerdo"
-              : "recuerdos"
-          } en esta experiencia.`,
+              ? "La ubicación quedó guardada en tu Timeline. Ya tienes {{count}} recuerdo en esta experiencia."
+              : "La ubicación quedó guardada en tu Timeline. Ya tienes {{count}} recuerdos en esta experiencia.",
+            {
+              count:
+                memories.length,
+            }
+          ),
 
         icon: "📸",
 
@@ -776,8 +889,14 @@ export function getHospesMessage(
 
         message:
           experience
-            ? `Completaste ${experience.title}. La ruta, tus recuerdos y la llegada quedaron guardados en tu pasaporte.`
-            : "La experiencia quedó certificada y añadida a tu historial.",
+            ? tx(
+                "Completaste {{title}}. La ruta, tus recuerdos y la llegada quedaron guardados en tu pasaporte.",
+                {
+                  title:
+                    experience.title,
+                }
+              )
+            : tx("La experiencia quedó certificada y añadida a tu historial."),
 
         icon: "🏅",
 
@@ -794,7 +913,7 @@ export function getHospesMessage(
             "/explorer",
 
           label:
-            "Seguir explorando",
+            tx("Seguir explorando"),
         },
       };
 
@@ -804,7 +923,7 @@ export function getHospesMessage(
           "FEEL THE CITY",
 
         message:
-          "Hospes está listo para acompañarte.",
+          tx("Hospes está listo para acompañarte."),
 
         icon: "🧭",
 

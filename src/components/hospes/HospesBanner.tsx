@@ -11,6 +11,10 @@ import type {
 
 import NeonIcon from "../ui/NeonIcon";
 
+import {
+  tx,
+} from "../../i18n";
+
 type ProgressData = {
   level: number;
   xp: number;
@@ -273,7 +277,7 @@ export default function HospesBanner({
           type="button"
           onClick={onProgressClick}
           disabled={!onProgressClick}
-          aria-label="Abrir mi progreso"
+          aria-label={tx("Abrir mi progreso")}
           style={{
             position: "relative",
             zIndex: 2,
@@ -349,7 +353,7 @@ export default function HospesBanner({
                   textTransform: "uppercase",
                 }}
               >
-                Progreso local
+                {tx("Progreso local")}
               </span>
             </div>
 
@@ -363,7 +367,9 @@ export default function HospesBanner({
                   "0 0 8px rgba(0,230,255,0.38)",
               }}
             >
-              Nivel {progress.level}
+              {tx("Nivel {{level}}", {
+                level: progress.level,
+              })}
             </strong>
           </div>
 
@@ -419,13 +425,17 @@ export default function HospesBanner({
             }}
           >
             <span>
-              {progress.visitedCount}/
-              {progress.totalCount} descubrimientos
+              {tx("{{visited}}/{{total}} descubrimientos", {
+                visited: progress.visitedCount,
+                total: progress.totalCount,
+              })}
             </span>
 
             <span>
-              {progress.xp} XP ·{" "}
-              {progress.xpToNextLevel} para subir
+              {tx("{{xp}} XP · {{remaining}} para subir", {
+                xp: progress.xp,
+                remaining: progress.xpToNextLevel,
+              })}
             </span>
           </div>
         </button>

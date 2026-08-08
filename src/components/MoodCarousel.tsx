@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { moods } from "../data/moods";
 import { countExperiencesByTag } from "../engine/experienceEngine";
 import { Theme } from "../styles/theme";
+import { tx } from "../i18n";
 
 function MoodCarousel() {
   const navigate = useNavigate();
@@ -10,10 +11,10 @@ function MoodCarousel() {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: Theme.Space.sm }}>
         <h2 style={{ color: Theme.Colors.text, fontSize: "18px", margin: 0 }}>
-          ¿Cómo quieres <span style={{ color: Theme.Colors.primary }}>sentirte</span> hoy?
+          {tx("¿Cómo quieres")} <span style={{ color: Theme.Colors.primary }}>{tx("sentirte")}</span> {tx("hoy?")}
         </h2>
         <span style={{ color: Theme.Colors.primary, fontSize: "13px", cursor: "pointer" }} onClick={() => navigate("/explorer")}>
-          Ver todas las experiencias →
+          {tx("Ver todas las experiencias")} →
         </span>
       </div>
 
@@ -48,10 +49,10 @@ function MoodCarousel() {
               >
                 {mood.icon}
               </div>
-              <h3 style={{ margin: "0 0 4px", color: Theme.Colors.text, fontSize: "15px" }}>{mood.title}</h3>
-              <p style={{ margin: 0, color: Theme.Colors.textSoft, fontSize: "12px" }}>{mood.subtitle}</p>
+              <h3 style={{ margin: "0 0 4px", color: Theme.Colors.text, fontSize: "15px" }}>{tx(mood.title)}</h3>
+              <p style={{ margin: 0, color: Theme.Colors.textSoft, fontSize: "12px" }}>{tx(mood.subtitle)}</p>
               <span style={{ display: "block", marginTop: "8px", fontSize: "11px", color: Theme.Colors.primary }}>
-                {count} {count === 1 ? "experiencia" : "experiencias"}
+                {count} {tx(count === 1 ? "experiencia" : "experiencias")}
               </span>
             </div>
           );

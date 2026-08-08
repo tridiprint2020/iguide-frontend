@@ -46,6 +46,7 @@ import {
 } from "../context/JourneyContext";
 
 import UserLocationLayer from "./maps/UserLocationLayer";
+import { getAppLanguage, tx } from "../i18n";
 
 type Props = {
   expedition: Experience;
@@ -139,8 +140,8 @@ function ExpeditionMap({
         <button
           type="button"
           onClick={onCaptureMemory}
-          aria-label="Tomar una fotografía y guardarla en el timeline"
-          title="Guardar recuerdo"
+          aria-label={tx("Tomar una fotografía y guardarla en el timeline")}
+          title={tx("Guardar recuerdo")}
           style={{
             position: "absolute",
             top: "12px",
@@ -211,7 +212,7 @@ function ExpeditionMap({
               }}
             >
               <strong>
-                Destino · {expedition.title}
+                {tx("Destino")} · {expedition.title}
               </strong>
 
               <p
@@ -221,7 +222,7 @@ function ExpeditionMap({
                   color: "#666666",
                 }}
               >
-                Sigue el recorrido hasta este punto.
+                {tx("Sigue el recorrido hasta este punto.")}
               </p>
             </div>
           </Popup>
@@ -279,7 +280,7 @@ function ExpeditionMap({
                           color: "#161616",
                         }}
                       >
-                        Recuerdo registrado
+                        {tx("Recuerdo registrado")}
                       </p>
 
                       <button
@@ -297,7 +298,7 @@ function ExpeditionMap({
                             date: new Date(
                               point.timestamp
                             ).toLocaleDateString(
-                              "es-PE"
+                              getAppLanguage() === "en" ? "en-US" : "es-PE"
                             ),
                             note:
                               point.note ?? "",
@@ -334,7 +335,7 @@ function ExpeditionMap({
                           cursor: "pointer",
                         }}
                       >
-                        Ver MemoryCard
+                        {tx("Ver MemoryCard")}
                       </button>
                     </div>
                   </Popup>
@@ -386,8 +387,8 @@ function ExpeditionMap({
                       }}
                     >
                       {isStart
-                        ? "Inicio de misión"
-                        : "Llegada certificada"}
+                        ? tx("Inicio de misión")
+                        : tx("Llegada certificada")}
                     </h4>
 
                     <button
@@ -413,11 +414,11 @@ function ExpeditionMap({
                           date: new Date(
                             point.timestamp
                           ).toLocaleDateString(
-                            "es-PE"
+                            getAppLanguage() === "en" ? "en-US" : "es-PE"
                           ),
                           note: isStart
-                            ? "Comencé esta misión con I.GUIDE."
-                            : "Completé esta misión con I.GUIDE.",
+                            ? tx("Comencé esta misión con I.GUIDE.")
+                            : tx("Completé esta misión con I.GUIDE."),
                           title:
                             expedition.title,
                           stats: {
@@ -435,7 +436,7 @@ function ExpeditionMap({
                         });
                       }}
                     >
-                      Compartir
+                      {tx("Compartir")}
                     </button>
                   </div>
                 </Popup>

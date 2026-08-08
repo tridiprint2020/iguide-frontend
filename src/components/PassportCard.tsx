@@ -10,6 +10,7 @@ import { getExplorationProgress } from "../engine/journeyEngine";
 import { Theme } from "../styles/theme";
 // 🏛️ Paso 1: Importar el catálogo real arriba del archivo
 import { catalog } from "../data/catalog";
+import { tx } from "../i18n";
 
 type Props = {
   user: UserProfile;
@@ -17,7 +18,7 @@ type Props = {
 
 function PassportCard({ user }: Props) {
   const rank = getExplorerRank(user.level);
-  const rankName = rankLabels[rank];
+  const rankName = tx(rankLabels[rank]);
   const xpToNext = getXPToNextLevel(user.experience);
   const currentLevelXP = user.experience % 300;
   const progressPercent = (currentLevelXP / 300) * 100;
@@ -58,7 +59,7 @@ const explorationProgress = getExplorationProgress(
         }}
       >
         <span style={{ fontSize: "12px", color: Theme.Colors.textSoft }}>
-          PASAPORTE EXPLORADOR
+          {tx("PASAPORTE EXPLORADOR")}
         </span>
         <span
           style={{
@@ -69,7 +70,7 @@ const explorationProgress = getExplorationProgress(
             fontWeight: 600,
           }}
         >
-          Nivel {user.level}
+          {tx("Nivel")} {user.level}
         </span>
       </div>
 
@@ -79,7 +80,7 @@ const explorationProgress = getExplorationProgress(
       </p>
 
       <div style={{ fontSize: "13px", marginBottom: "4px" }}>
-        {xpToNext} XP para el siguiente nivel
+        {xpToNext} {tx("XP para el siguiente nivel")}
       </div>
       <div
         style={{
@@ -111,9 +112,9 @@ const explorationProgress = getExplorationProgress(
             color: Theme.Colors.textSoft,
           }}
         >
-          <span>Progreso del Valle</span>
+          <span>{tx("Progreso del Valle")}</span>
           <span style={{ color: Theme.Colors.secondary, fontWeight: "bold" }}>
-            {explorationProgress}% descubierto
+            {explorationProgress}% {tx("descubierto")}
           </span>
         </div>
         <div
@@ -139,15 +140,15 @@ const explorationProgress = getExplorationProgress(
       {knownAchievements.length > 0 && (
         <div style={{ marginTop: Theme.Space.md }}>
           <span style={{ fontSize: "12px", color: Theme.Colors.textSoft }}>
-            LOGROS DESBLOQUEADOS
+            {tx("LOGROS DESBLOQUEADOS")}
           </span>
           <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
             {knownAchievements.map((id) => (
               <li key={id} style={{ marginBottom: "6px", fontSize: "13px" }}>
-                🏅 <strong>{achievementLabels[id].title}</strong>
+                🏅 <strong>{tx(achievementLabels[id].title)}</strong>
                 <br />
                 <span style={{ color: Theme.Colors.textSoft, fontSize: "12px" }}>
-                  {achievementLabels[id].description}
+                  {tx(achievementLabels[id].description)}
                 </span>
               </li>
             ))}

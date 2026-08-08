@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { tx } from "../../i18n";
 
 type Props = {
   open: boolean;
@@ -169,7 +170,7 @@ function ShareDrawer({
       <section
         role="dialog"
         aria-modal="true"
-        aria-label="Compartir recuerdo"
+        aria-label={tx("Compartir recuerdo")}
         style={{
           position:
             "fixed",
@@ -296,7 +297,7 @@ function ShareDrawer({
                   "19px",
               }}
             >
-              Comparte tu recuerdo
+              {tx("Comparte tu recuerdo")}
             </h2>
 
             <p
@@ -314,7 +315,7 @@ function ShareDrawer({
                   1.4,
               }}
             >
-              Envía la experiencia o guarda la imagen en tu dispositivo.
+              {tx("Envía la experiencia o guarda la imagen en tu dispositivo.")}
             </p>
           </div>
 
@@ -323,7 +324,7 @@ function ShareDrawer({
             onClick={
               onClose
             }
-            aria-label="Cerrar"
+            aria-label={tx("Cerrar")}
             style={{
               width:
                 "38px",
@@ -411,8 +412,8 @@ function ShareDrawer({
               }}
             >
               {busyAction === "share"
-                ? "Preparando…"
-                : "↗ Compartir"}
+                ? tx("Preparando…")
+                : `↗ ${tx("Compartir")}`}
             </button>
           )}
 
@@ -460,8 +461,8 @@ function ShareDrawer({
             }}
           >
             {busyAction === "download"
-              ? "Preparando imagen…"
-              : "↓ Descargar imagen"}
+              ? tx("Preparando imagen…")
+              : `↓ ${tx("Descargar imagen")}`}
           </button>
 
           <button
@@ -499,8 +500,8 @@ function ShareDrawer({
             }}
           >
             {busyAction === "copy"
-              ? "Copiando…"
-              : "🔗 Copiar enlace"}
+              ? tx("Copiando…")
+              : `🔗 ${tx("Copiar enlace")}`}
           </button>
         </div>
 
@@ -522,7 +523,7 @@ function ShareDrawer({
               1.4,
           }}
         >
-          Próximamente podrás elegir si deseas destacar la fotografía, ruta, tiempo, hitos o nota.
+          {tx("Próximamente podrás elegir si deseas destacar la fotografía, ruta, tiempo, hitos o nota.")}
         </p>
       </section>
     </>

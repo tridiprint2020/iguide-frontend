@@ -30,6 +30,7 @@ import {
 import type {
   Experience,
 } from "../types/experience";
+import { tx } from "../i18n";
 
 function HospesPrompt() {
   const [
@@ -217,7 +218,7 @@ function HospesPrompt() {
                     "uppercase",
                 }}
               >
-                Misión activa
+                {tx("Misión activa")}
               </p>
 
               <h3
@@ -250,11 +251,7 @@ function HospesPrompt() {
                 1.55,
             }}
           >
-            Qué bueno que
-            comenzaste. Hospes ya
-            está acompañando tu
-            recorrido y te avisará
-            cuando llegues.
+            {tx("Qué bueno que comenzaste. Hospes ya está acompañando tu recorrido y te avisará cuando llegues.")}
           </p>
 
           <button
@@ -282,7 +279,7 @@ function HospesPrompt() {
                 "0 8px 22px rgba(255,0,255,0.22)",
             }}
           >
-            Ver recorrido →
+            {tx("Ver recorrido")} →
           </button>
         </div>
       ) : (
@@ -313,8 +310,7 @@ function HospesPrompt() {
                     "uppercase",
                 }}
               >
-                ¿Qué te provoca
-                ahora?
+                {tx("¿Qué te provoca ahora?")}
               </p>
 
               <div
@@ -413,7 +409,7 @@ function HospesPrompt() {
 
                         <span>
                           {
-                            mood.title
+                            tx(mood.title)
                           }
                         </span>
                       </button>
@@ -445,7 +441,7 @@ function HospesPrompt() {
                       "pointer",
                   }}
                 >
-                  Más opciones
+                  {tx("Más opciones")}
                 </button>
               </div>
             </>
@@ -492,7 +488,7 @@ function HospesPrompt() {
                         "uppercase",
                     }}
                   >
-                    Hospes recomienda
+                    {tx("Hospes recomienda")}
                   </span>
 
                   <h3
@@ -554,7 +550,7 @@ function HospesPrompt() {
                       "0 8px 24px rgba(255,0,255,0.26)",
                   }}
                 >
-                  Comenzar misión →
+                  {tx("Comenzar misión")} →
                 </button>
 
                 <button
@@ -577,7 +573,7 @@ function HospesPrompt() {
                       "pointer",
                   }}
                 >
-                  Elegir otra
+                  {tx("Elegir otra")}
                 </button>
               </div>
             )}

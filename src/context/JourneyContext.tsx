@@ -27,6 +27,7 @@ import {
 } from "../engine/trackingEngine";
 
 import { locationTracker } from "../engine/locationTracker";
+import { tx } from "../i18n";
 
 interface JourneyContextType {
   journey: ActiveJourney;
@@ -235,7 +236,7 @@ export function JourneyProvider({
 
   if (!navigator.geolocation) {
     alert(
-      "Tu dispositivo no soporta geolocalización."
+      tx("Tu dispositivo no soporta geolocalización.")
     );
     return false;
   }
@@ -268,7 +269,7 @@ export function JourneyProvider({
       !activeTrack.completedAt
     ) {
       alert(
-        "Ya tienes una misión activa. Continúala o abandónala antes de iniciar otra."
+        tx("Ya tienes una misión activa. Continúala o abandónala antes de iniciar otra.")
       );
       return false;
     }
@@ -427,7 +428,7 @@ export function JourneyProvider({
       );
 
       alert(
-        "No se pudo iniciar la misión. Activa el GPS y concede permiso de ubicación."
+        tx("No se pudo iniciar la misión. Activa el GPS y concede permiso de ubicación.")
       );
     },
 
@@ -676,7 +677,7 @@ function confirmArrival(): Promise<CompletionResult> {
       success: false,
       reason: "timeline",
       message:
-        "No hay una misión activa para confirmar.",
+        tx("No hay una misión activa para confirmar."),
     });
   }
 
@@ -685,7 +686,7 @@ function confirmArrival(): Promise<CompletionResult> {
       success: false,
       reason: "gps",
       message:
-        "Este dispositivo no permite obtener ubicación GPS.",
+        tx("Este dispositivo no permite obtener ubicación GPS."),
     });
   }
 
@@ -719,7 +720,7 @@ function confirmArrival(): Promise<CompletionResult> {
             success: false,
             reason: "gps",
             message:
-              "No pude leer tu ubicación. Activa el GPS e inténtalo nuevamente.",
+              tx("No pude leer tu ubicación. Activa el GPS e inténtalo nuevamente."),
           });
         },
         {

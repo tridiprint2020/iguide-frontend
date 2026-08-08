@@ -35,6 +35,7 @@ import logoIG from "../assets/optimized/logoig.webp";
 import {
   Theme,
 } from "../styles/theme";
+import { getAppLanguage, tx } from "../i18n";
 
 const WANT_OPTIONS: {
   value: string;
@@ -167,6 +168,10 @@ function ItineraryPage() {
   );
 
   const todayIso = toIsoDate(today);
+  const weekdayLabels =
+    getAppLanguage() === "en"
+      ? ["M", "T", "W", "T", "F", "S", "S"]
+      : WEEKDAY_LABELS;
 
   const [selectedDate, setSelectedDate] =
     useState<string | null>(null);
@@ -315,7 +320,7 @@ function ItineraryPage() {
               cursor: "pointer",
             }}
           >
-            ← Inicio
+            ← {tx("Inicio")}
           </button>
 
           <img
@@ -350,7 +355,7 @@ function ItineraryPage() {
               color: "#FF00C8",
             }}
           >
-            Arma tu plan
+            {tx("Arma tu plan")}
           </p>
 
           <h1
@@ -362,7 +367,7 @@ function ItineraryPage() {
               textAlign: "center",
             }}
           >
-            Itinerario
+            {tx("Itinerario")}
           </h1>
         </div>
 
@@ -400,7 +405,7 @@ function ItineraryPage() {
               }}
             >
               {today.toLocaleDateString(
-                "es-PE",
+                getAppLanguage() === "en" ? "en-US" : "es-PE",
                 {
                   month: "long",
                   year: "numeric",
@@ -418,9 +423,9 @@ function ItineraryPage() {
               marginBottom: "6px",
             }}
           >
-            {WEEKDAY_LABELS.map((label) => (
+            {weekdayLabels.map((label, index) => (
               <span
-                key={label}
+                key={`${label}-${index}`}
                 style={{
                   textAlign: "center",
                   fontSize: "10px",
@@ -513,7 +518,7 @@ function ItineraryPage() {
                   fontSize: "13px",
                 }}
               >
-                ¿A qué hora empiezas?
+                {tx("¿A qué hora empiezas?")}
               </strong>
             </div>
 
@@ -556,7 +561,7 @@ function ItineraryPage() {
                   marginBottom: "10px",
                 }}
               >
-                ¿Qué quieres vivir?
+                {tx("¿Qué quieres vivir?")}
               </strong>
 
               <div
@@ -569,7 +574,7 @@ function ItineraryPage() {
                 {WANT_OPTIONS.map((option) => (
                   <Chip
                     key={option.value}
-                    label={option.label}
+                    label={tx(option.label)}
                     selected={
                       want === option.value
                     }
@@ -592,7 +597,7 @@ function ItineraryPage() {
                   marginBottom: "10px",
                 }}
               >
-                ¿Cómo te moverás?
+                {tx("¿Cómo te moverás?")}
               </strong>
 
               <div
@@ -606,7 +611,7 @@ function ItineraryPage() {
                   (option) => (
                     <Chip
                       key={option.value}
-                      label={option.label}
+                      label={tx(option.label)}
                       selected={
                         transport ===
                         option.value
@@ -659,7 +664,7 @@ function ItineraryPage() {
               verticalAlign: "-3px",
             }}
           />
-          Hospes, arma mi plan
+          {tx("Hospes, arma mi plan")}
         </button>
 
         {/* RESULTADO */}
@@ -738,7 +743,7 @@ function ItineraryPage() {
                       cursor: "pointer",
                     }}
                   >
-                    Iniciar
+                    {tx("Iniciar")}
                   </button>
 
                   <button
@@ -760,7 +765,7 @@ function ItineraryPage() {
                       cursor: "pointer",
                     }}
                   >
-                    Reemplazar
+                    {tx("Reemplazar")}
                   </button>
                 </div>
               </article>
@@ -792,7 +797,7 @@ function ItineraryPage() {
             }}
           >
             <Route size={14} strokeWidth={2.2} />
-            ¿Necesitas algo más específico?
+            {tx("¿Necesitas algo más específico?")}
           </div>
 
           <button
@@ -811,7 +816,7 @@ function ItineraryPage() {
               cursor: "pointer",
             }}
           >
-            Preguntar a Hospes →
+            {tx("Preguntar a Hospes")} →
           </button>
         </section>
       </div>

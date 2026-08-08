@@ -45,6 +45,10 @@ import {
   Theme,
 } from "../styles/theme";
 
+import {
+  tx,
+} from "../i18n";
+
 const CYAN_ACCENT = "#39E7FF";
 
 function Explorer() {
@@ -120,12 +124,18 @@ const hospesBannerMessage:
   ...baseHospesBannerMessage,
 
   title:
-    "MODO EXPLORADOR",
+    tx("MODO EXPLORADOR"),
 
   message:
     visitedCount === 0
-      ? "Tengo algo local preparado para ti. Déjame elegir una primera misión sencilla según el momento."
-      : `Ya descubriste ${visitedCount} de ${totalActiveExperiences} experiencias. Déjame elegir algo diferente para continuar tu historia.`,
+      ? tx("Tengo algo local preparado para ti. Déjame elegir una primera misión sencilla según el momento.")
+      : tx(
+          "Ya descubriste {{visited}} de {{total}} experiencias. Déjame elegir algo diferente para continuar tu historia.",
+          {
+            visited: visitedCount,
+            total: totalActiveExperiences,
+          }
+        ),
 
   action:
     suggestedExperience
@@ -137,14 +147,14 @@ const hospesBannerMessage:
             suggestedExperience.slug,
 
           label:
-            "Sorpréndeme",
+            tx("Sorpréndeme"),
         }
       : baseHospesBannerMessage.action
         ? {
             ...baseHospesBannerMessage.action,
 
             label:
-              "Sorpréndeme",
+              tx("Sorpréndeme"),
           }
         : undefined,
 };
@@ -248,7 +258,7 @@ const hospesBannerMessage:
               cursor: "pointer",
             }}
           >
-            ← Inicio
+            ← {tx("Inicio")}
           </button>
 
           <img
@@ -317,7 +327,7 @@ const hospesBannerMessage:
                   color: "#FF00C8",
                 }}
               >
-                HOSPES · EXPLORA CERCA DE TI
+                {tx("HOSPES · EXPLORA CERCA DE TI")}
               </p>
 
               <p
@@ -336,7 +346,7 @@ const hospesBannerMessage:
 
         {/* C) PASAPORTE COMPACTO */}
         <section
-          aria-label="Pasaporte del explorador"
+          aria-label={tx("Pasaporte del explorador")}
           style={{
             minHeight: "108px",
             boxSizing: "border-box",
@@ -386,7 +396,9 @@ const hospesBannerMessage:
                   "0 0 18px rgba(255,0,200,0.24)",
               }}
             >
-              NIVEL {user.level}
+              {tx("NIVEL {{level}}", {
+                level: user.level,
+              })}
             </span>
           </div>
 
@@ -428,7 +440,7 @@ const hospesBannerMessage:
             </span>
 
             <span style={{ textAlign: "right" }}>
-              Lugares{" "}
+              {tx("Lugares")}{" "}
               <strong
                 style={{
                   color: "#FFFFFF",
@@ -491,7 +503,7 @@ const hospesBannerMessage:
               boxShadow: "0 12px 32px rgba(255,0,200,0.30)",
             }}
           >
-            Sorpréndeme →
+            {tx("Sorpréndeme")} →
           </button>
         </div>
 
@@ -573,7 +585,7 @@ const hospesBannerMessage:
                     "18px",
                 }}
               >
-                ¿Te ayudo a buscar?
+                {tx("¿Te ayudo a buscar?")}
               </h2>
 
               <p
@@ -590,12 +602,7 @@ const hospesBannerMessage:
                   lineHeight: 1.5,
                 }}
               >
-                Cuéntame qué deseas
-                comer, conocer o hacer.
-                Hospes buscará una
-                experiencia según la
-                hora, el clima y tus
-                preferencias.
+                {tx("Cuéntame qué deseas comer, conocer o hacer. Hospes buscará una experiencia según la hora, el clima y tus preferencias.")}
               </p>
 
               <button
@@ -628,7 +635,7 @@ const hospesBannerMessage:
                   cursor: "pointer",
                 }}
               >
-                Preguntar a Hospes →
+                {tx("Preguntar a Hospes")} →
               </button>
             </div>
           </div>

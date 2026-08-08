@@ -32,6 +32,7 @@ import {
   loadTrack,
   updateMemoryNote,
 } from "../../engine/trackingEngine";
+import { tx } from "../../i18n";
 
 export function PointSavedView() {
   const {
@@ -193,7 +194,7 @@ export function PointSavedView() {
                 textTransform: "uppercase",
               }}
             >
-              Hito geolocalizado
+              {tx("Hito geolocalizado")}
             </span>
             <h1
               style={{
@@ -205,7 +206,7 @@ export function PointSavedView() {
                 letterSpacing: "-0.035em",
               }}
             >
-              ¡Recuerdo asegurado!
+              {tx("¡Recuerdo asegurado!")}
             </h1>
           </div>
         </header>
@@ -239,7 +240,7 @@ export function PointSavedView() {
               fontSize: "12px",
             }}
           >
-            Preparando la tarjeta del recuerdo…
+            {tx("Preparando la tarjeta del recuerdo…")}
           </div>
         )}
 
@@ -267,7 +268,7 @@ export function PointSavedView() {
               textTransform: "uppercase",
             }}
           >
-            Añade una nota a este momento
+            {tx("Añade una nota a este momento")}
           </label>
 
           <textarea
@@ -277,7 +278,7 @@ export function PointSavedView() {
               setNote(event.target.value)
             }
             maxLength={180}
-            placeholder="¿Qué te hizo sentir este rincón de la ciudad?"
+            placeholder={tx("¿Qué te hizo sentir este rincón de la ciudad?")}
             style={{
               width: "100%",
               minHeight: "88px",
@@ -333,7 +334,7 @@ export function PointSavedView() {
           }}
         >
           <Route size={19} color="#42E8F5" />
-          Guardar nota y continuar paseo
+          {tx("Guardar nota y continuar paseo")}
         </button>
       </main>
 

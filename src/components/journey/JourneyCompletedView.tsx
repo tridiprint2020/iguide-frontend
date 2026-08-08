@@ -30,6 +30,7 @@ import {
 import type {
   Experience,
 } from "../../types/experience/experience";
+import { getAppLanguage, tx } from "../../i18n";
 
 export default function JourneyCompletedView() {
   const {
@@ -94,11 +95,11 @@ export default function JourneyCompletedView() {
 
     title:
       activeExperience?.title ??
-      "Destino",
+      tx("Destino"),
 
     placeLabel:
       activeExperience?.title ??
-      "Lugar visitado",
+      tx("Lugar visitado"),
 
     city:
       activeExperience?.city ??
@@ -106,7 +107,9 @@ export default function JourneyCompletedView() {
 
     date:
       new Date().toLocaleDateString(
-        "es-PE"
+        getAppLanguage() === "en"
+          ? "en-US"
+          : "es-PE"
       ),
 
     photo: lastPhoto,
@@ -227,7 +230,7 @@ export default function JourneyCompletedView() {
             fontSize: "13px",
           }}
         >
-          ✓ Expedición completada
+          ✓ {tx("Expedición completada")}
         </div>
 
         <HospesBanner
@@ -246,7 +249,7 @@ export default function JourneyCompletedView() {
             lineHeight: 1.08,
           }}
         >
-          ¡Aventura finalizada!
+          {tx("¡Aventura finalizada!")}
         </h1>
 
         <p
@@ -259,8 +262,7 @@ export default function JourneyCompletedView() {
             fontSize: "13px",
           }}
         >
-          Tu recorrido, recuerdos y
-          llegada quedaron guardados.
+          {tx("Tu recorrido, recuerdos y llegada quedaron guardados.")}
         </p>
 
         {/* Resumen único, sin repetir dentro y fuera varias veces */}
@@ -274,7 +276,7 @@ export default function JourneyCompletedView() {
           }}
         >
           <Metric
-            label="Distancia"
+            label={tx("Distancia")}
             value={`${(
               stats?.totalDistanceKm ??
               0
@@ -282,7 +284,7 @@ export default function JourneyCompletedView() {
           />
 
           <Metric
-            label="Tiempo"
+            label={tx("Tiempo")}
             value={formatDuration(
               stats?.durationSeconds ??
                 0
@@ -290,7 +292,7 @@ export default function JourneyCompletedView() {
           />
 
           <Metric
-            label="Hitos"
+            label={tx("Hitos")}
             value={`${
               stats?.totalMemories ??
               0
@@ -342,7 +344,7 @@ export default function JourneyCompletedView() {
                   "uppercase",
               }}
             >
-              Tu nota
+              {tx("Tu nota")}
             </span>
 
             <p
@@ -386,7 +388,7 @@ export default function JourneyCompletedView() {
             cursor: "pointer",
           }}
         >
-          Explorar otro lugar →
+          {tx("Explorar otro lugar")} →
         </button>
       </div>
 

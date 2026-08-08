@@ -13,6 +13,10 @@ import {
 
 import NeonIcon from "./ui/NeonIcon";
 
+import {
+  tx,
+} from "../i18n";
+
 type WeatherCondition =
   | "sunny"
   | "cloudy"
@@ -203,7 +207,7 @@ function WeatherCard({
             fontWeight: 650,
           }}
         >
-          {visual.label}
+          {tx(visual.label)}
         </span>
       </div>
     </div>

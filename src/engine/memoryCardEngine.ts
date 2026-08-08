@@ -18,6 +18,7 @@ import {
 import {
   getGeoLabel,
 } from "./geoLabelEngine";
+import { getAppLanguage } from "../i18n";
 
 function getUserNote(
   item: TimelineItem
@@ -79,7 +80,9 @@ export const MemoryCardEngine = {
 
       date:
         new Date().toLocaleDateString(
-          "es-PE"
+          getAppLanguage() === "en"
+            ? "en-US"
+            : "es-PE"
         ),
 
       photo:
@@ -178,7 +181,9 @@ export const MemoryCardEngine = {
         new Date(
           item.timestamp
         ).toLocaleDateString(
-          "es-PE"
+          getAppLanguage() === "en"
+            ? "en-US"
+            : "es-PE"
         ),
 
       photo:

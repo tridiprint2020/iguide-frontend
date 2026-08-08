@@ -14,6 +14,7 @@ import { getGreeting } from "../hospes/dialog";
 import { getRecommendations } from "./recommendationEngine";
 import { getExplorationProgress } from "./journeyEngine";
 import { getCurrentTimeContext } from "./timeEngine";
+import { tx } from "../i18n";
 
 export function getHospesProgressMessage(user: UserProfile): string {
   const total = expeditions.length;
@@ -22,22 +23,27 @@ export function getHospesProgressMessage(user: UserProfile): string {
   const progress = getExplorationProgress(user, total);
 
   if (visited >= total) {
-    return `Has completado el 100% del Valle. Eres un verdadero Embajador de ${currentCity}. 👑`;
+    return tx("Has completado el 100% del Valle. Eres un verdadero Embajador de {{city}}. 👑", { city: currentCity });
   }
 
   if (visited === 0) {
-    return `Aún no has comenzado. El Valle del Mantaro tiene ${total} rutas esperándote. ¡Da tu primer paso! ✨`;
+    return tx("Aún no has comenzado. El Valle del Mantaro tiene {{total}} rutas esperándote. ¡Da tu primer paso! ✨", { total });
   }
 
   if (progress < 40) {
-    return `Vas muy bien. Llevas ${visited} de ${total} rutas. Sigue avanzando, cada paso cuenta. 🐾`;
+    return tx("Vas muy bien. Llevas {{visited}} de {{total}} rutas. Sigue avanzando, cada paso cuenta. 🐾", { visited, total });
   }
 
   if (progress < 80) {
-    return `Ya casi la mitad. Te faltan ${remaining} rutas para completar el Valle. ¡No te detengas! 🌎`;
+    return tx("Ya casi la mitad. Te faltan {{remaining}} rutas para completar el Valle. ¡No te detengas! 🌎", { remaining });
   }
 
-  return `Estás muy cerca. Solo ${remaining} ${remaining === 1 ? "ruta" : "rutas"} más y conquistas todo ${currentCity}. 🏆`;
+  return tx(
+    remaining === 1
+      ? "Estás muy cerca. Solo {{remaining}} ruta más y conquistas todo {{city}}. 🏆"
+      : "Estás muy cerca. Solo {{remaining}} rutas más y conquistas todo {{city}}. 🏆",
+    { remaining, city: currentCity }
+  );
 }
 
 function getNextSuggestion(context: ExplorerContext) {
@@ -54,31 +60,31 @@ function getSuggestionContext(suggestion: NonNullable<ReturnType<typeof getNextS
   switch (suggestion.type) {
     case "expedition":
       return suggestion.driveTime
-        ? `a ${suggestion.driveTime} de aquí`
-        : "muy cerca de ti";
+        ? tx("a {{time}} de aquí", { time: suggestion.driveTime })
+        : tx("muy cerca de ti");
 
     case "restaurant":
     case "cafe":
-      return "ideal para este momento del día";
+      return tx("ideal para este momento del día");
 
     case "bar":
     case "nightclub":
-      return "perfecto para disfrutar la noche";
+      return tx("perfecto para disfrutar la noche");
 
     case "hotel":
-      return "una excelente opción para descansar";
+      return tx("una excelente opción para descansar");
 
     case "museum":
-      return "ideal para descubrir la cultura local";
+      return tx("ideal para descubrir la cultura local");
 
     case "festival":
-      return "una experiencia única del Valle";
+      return tx("una experiencia única del Valle");
 
     case "craft":
-      return "perfecto para conocer la artesanía local";
+      return tx("perfecto para conocer la artesanía local");
 
     default:
-      return "muy cerca de ti";
+      return tx("muy cerca de ti");
   }
 }
 
@@ -90,7 +96,11 @@ export function getHospesMessage(
   const timeContext = getCurrentTimeContext();
 
   const greeting =
-    `${getGreeting()} ${user.name}. Bienvenido a ${currentCity}.`;
+    tx("{{greeting}} {{name}}. Bienvenido a {{city}}.", {
+      greeting: tx(getGreeting()),
+      name: user.name,
+      city: currentCity,
+    });
 
   const context: ExplorerContext = {
     profile: user,
@@ -102,11 +112,11 @@ export function getHospesMessage(
   const suggestion = getNextSuggestion(context);
 
   if (visited >= total) {
-    return `${greeting} Has completado el 100% del Valle. Eres un verdadero Embajador de ${currentCity}. 👑`;
+    return `${greeting} ${tx("Has completado el 100% del Valle. Eres un verdadero Embajador de {{city}}. 👑", { city: currentCity })}`;
   }
 
   if (timeContext.isNight) {
-    return `${greeting} El sol ya se ocultó en el Valle. Buen momento para pensar en la cena o descansar para tu próxima aventura.`;
+    return `${greeting} ${tx("El sol ya se ocultó en el Valle. Buen momento para pensar en la cena o descansar para tu próxima aventura.")}`;
   }
 
   if (
@@ -114,7 +124,7 @@ export function getHospesMessage(
       weather.condition === "rain") &&
     suggestion
   ) {
-    return `${greeting} Hay riesgo de lluvia en las alturas. Te sugiero ${suggestion.title}, ${getSuggestionContext(suggestion)}.`;
+    return `${greeting} ${tx("Hay riesgo de lluvia en las alturas. Te sugiero {{title}}, {{context}}.", { title: suggestion.title, context: getSuggestionContext(suggestion) })}`;
   }
 
   if (
@@ -122,12 +132,12 @@ export function getHospesMessage(
     user.interests.includes("photography") &&
     suggestion
   ) {
-    return `${greeting} Estamos en la hora dorada. ${suggestion.title} sería una excelente elección para aprovechar la luz.`;
+    return `${greeting} ${tx("Estamos en la hora dorada. {{title}} sería una excelente elección para aprovechar la luz.", { title: suggestion.title })}`;
   }
 
   if (suggestion) {
-    return `${greeting} Llevas ${visited} de ${total} experiencias descubiertas (${progress}%). Mi recomendación es ${suggestion.title}, ${getSuggestionContext(suggestion)}.`;
+    return `${greeting} ${tx("Llevas {{visited}} de {{total}} experiencias descubiertas ({{progress}}%). Mi recomendación es {{title}}, {{context}}.", { visited, total, progress, title: suggestion.title, context: getSuggestionContext(suggestion) })}`;
   }
 
-  return `${greeting} El Valle del Mantaro te espera. ¡Elige tu primera aventura!`;
+  return `${greeting} ${tx("El Valle del Mantaro te espera. ¡Elige tu primera aventura!")}`;
 }

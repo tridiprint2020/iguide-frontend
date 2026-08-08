@@ -5,6 +5,7 @@ import type {
   TimelineItem,
   CompletionResult,
 } from "../types/tracking/tracking";
+import { tx } from "../i18n";
 
 // =======================================================================
 // 🏛️ 1. UTILIDADES INTERNAS Y ACCESO A PERSISTENCIA
@@ -851,7 +852,7 @@ export function certifyArrivalAtPosition(
       success: false,
       reason: "timeline",
       message:
-        "No se encontró una misión activa en este dispositivo.",
+        tx("No se encontró una misión activa en este dispositivo."),
     };
   }
 
@@ -867,7 +868,7 @@ export function certifyArrivalAtPosition(
       success: false,
       reason: "destination",
       message:
-        "No se encontró el destino oficial.",
+        tx("No se encontró el destino oficial."),
     };
   }
 
@@ -899,7 +900,7 @@ export function certifyArrivalAtPosition(
       success: false,
       reason: "distance",
       message:
-        `El GPS todavía te ubica fuera del área de ${confirmationRadiusMeters} m del destino.`,
+        tx("El GPS todavía te ubica fuera del área de {{radius}} m del destino.", { radius: confirmationRadiusMeters }),
     };
   }
 
@@ -912,7 +913,7 @@ export function certifyArrivalAtPosition(
   return {
     success: true,
     message:
-      "Llegada confirmada con tu ubicación actual.",
+      tx("Llegada confirmada con tu ubicación actual."),
   };
 }
 
@@ -927,7 +928,7 @@ export function canCompleteJourney(
       success: false,
       reason: "timeline",
       message:
-        "No se encontró una expedición activa en este dispositivo.",
+        tx("No se encontró una expedición activa en este dispositivo."),
     };
   }
 
@@ -943,7 +944,7 @@ export function canCompleteJourney(
       success: false,
       reason: "destination",
       message:
-        "No se pudo encontrar el destino oficial.",
+        tx("No se pudo encontrar el destino oficial."),
     };
   }
 
@@ -960,7 +961,7 @@ export function canCompleteJourney(
       success: false,
       reason: "gps",
       message:
-        "Todavía no se ha registrado la llegada al destino.",
+        tx("Todavía no se ha registrado la llegada al destino."),
     };
   }
 
@@ -1001,7 +1002,7 @@ export function canCompleteJourney(
       success: false,
       reason: "distance",
       message:
-        `La llegada quedó fuera del área de certificación de ${certificationRadiusMeters} metros.`,
+        tx("La llegada quedó fuera del área de certificación de {{radius}} metros.", { radius: certificationRadiusMeters }),
     };
   }
 
@@ -1016,6 +1017,6 @@ export function canCompleteJourney(
     success: true,
     reason: "destination",
     message:
-      `Llegada certificada en ${experience.title}.`,
+      tx("Llegada certificada en {{title}}.", { title: experience.title }),
   };
 }

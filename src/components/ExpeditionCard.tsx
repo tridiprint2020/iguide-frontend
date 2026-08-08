@@ -1,5 +1,6 @@
 import type { ExpeditionExperience } from "../types/experience/experience";
 import { useNavigate } from "react-router-dom";
+import { tx } from "../i18n";
 
 type Props = {
   expedition: ExpeditionExperience;
@@ -51,7 +52,7 @@ function ExperienceCard({ expedition }: Props) {
             navigate(`/expedition/${expedition.slug}`)
           }
         >
-          Explorar
+          {tx("Explorar")}
         </button>
       </div>
     </div>

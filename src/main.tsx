@@ -8,6 +8,7 @@ import App from "./App";
 import { JourneyProvider } from "./context/JourneyContext";
 import { WeatherProvider } from "./context/WeatherContext";
 
+import "./i18n";
 import "./index.css";
 
 ReactDOM.createRoot(

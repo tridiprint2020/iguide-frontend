@@ -23,6 +23,7 @@ import {
 import type {
   TimelineItem,
 } from "../../types/tracking/tracking";
+import { tx } from "../../i18n";
 
 type Props = {
   center: [
@@ -465,7 +466,7 @@ function MemoryMapCanvas({
           }}
         />
 
-        Mi recorrido
+        {tx("Mi recorrido")}
         </div>
       )}
 

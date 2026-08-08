@@ -18,6 +18,10 @@ import {
 import NeonIcon from "./ui/NeonIcon";
 
 import {
+  tx,
+} from "../i18n";
+
+import {
   NeonTheme,
 } from "../styles/neonTheme";
 
@@ -76,7 +80,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
 function Sidebar() {
   return (
     <aside
-      aria-label="Navegación principal"
+      aria-label={tx("Navegación principal")}
       style={{
         position: "fixed",
         top: 0,
@@ -102,14 +106,16 @@ function Sidebar() {
     >
       {NAVIGATION_ITEMS.map((item) => {
         const Icon = item.icon;
+        const translatedLabel =
+          tx(item.label);
 
         return (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
-            title={item.label}
-            aria-label={item.label}
+            title={translatedLabel}
+            aria-label={translatedLabel}
             style={({ isActive }) => ({
               width: "50px",
               height: "50px",

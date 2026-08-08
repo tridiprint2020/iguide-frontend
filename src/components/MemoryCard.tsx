@@ -30,6 +30,7 @@ import type {
 import type {
   MemoryCardData,
 } from "../types/memoryCard";
+import { tx } from "../i18n";
 
 type Props = {
   data: MemoryCardData;
@@ -139,7 +140,7 @@ function getJourneyStatus(
 
   if (hasFinish) {
     return {
-      label: "Misión completada",
+      label: tx("Misión completada"),
       color: MAGENTA_SOFT,
       background: "rgba(38,9,32,0.68)",
       border: "rgba(255,32,206,0.42)",
@@ -148,7 +149,7 @@ function getJourneyStatus(
 
   if (hasAbort) {
     return {
-      label: "Ruta conservada",
+      label: tx("Ruta conservada"),
       color: ORANGE,
       background: "rgba(40,24,8,0.68)",
       border: "rgba(255,154,61,0.42)",
@@ -156,7 +157,7 @@ function getJourneyStatus(
   }
 
   return {
-    label: "Ruta registrada",
+    label: tx("Ruta registrada"),
     color: CYAN,
     background: "rgba(5,30,34,0.68)",
     border: "rgba(66,232,245,0.36)",
@@ -272,7 +273,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
           {hasPhoto ? (
             <img
               src={data.photo}
-              alt={`Recuerdo de ${data.title}`}
+              alt={tx("Recuerdo de {{title}}", { title: data.title })}
               style={{
                 position: "absolute",
                 inset: 0,
@@ -301,7 +302,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 fontSize: "12px",
               }}
             >
-              Preparando tu recuerdo…
+              {tx("Preparando tu recuerdo…")}
             </div>
           )}
 
@@ -419,7 +420,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                   "0 0 10px rgba(255,32,206,0.95)",
               }}
             />
-            {pointCount} puntos · {memoryCount} recuerdos
+            {tx("{{points}} puntos · {{memories}} recuerdos", { points: pointCount, memories: memoryCount })}
           </div>
 
           {/* Texto inferior: ocupa solo el lado izquierdo del mapa. */}
@@ -583,9 +584,9 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                   backdropFilter: "blur(8px)",
                 }}
               >
-                <MapStat value={formattedTime} label="Tiempo" />
-                <MapStat value={formattedDistance} label="Distancia" />
-                <MapStat value={`${memoryCount}`} label="Hitos" accent />
+                <MapStat value={formattedTime} label={tx("Tiempo")} />
+                <MapStat value={formattedDistance} label={tx("Distancia")} />
+                <MapStat value={`${memoryCount}`} label={tx("Hitos")} accent />
               </div>
             </div>
           )}
@@ -619,7 +620,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                   textTransform: "uppercase",
                 }}
               >
-                {formattedDistance} · {memoryCount} hitos
+                {tx("{{distance}} · {{count}} hitos", { distance: formattedDistance, count: memoryCount })}
               </span>
             </div>
           )}
@@ -647,7 +648,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
               }}
             >
               <Footprints size={13} color={CYAN} />
-              ¿Qué te dejó esta experiencia?
+              {tx("¿Qué te dejó esta experiencia?")}
             </div>
 
             <div
@@ -671,7 +672,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                       handleReaction(reaction.id)
                     }
                     aria-pressed={selected}
-                    title={reaction.label}
+                    title={tx(reaction.label)}
                     style={{
                       minWidth: 0,
                       minHeight: "50px",
@@ -708,7 +709,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {reaction.compactLabel}
+                      {tx(reaction.compactLabel)}
                     </span>
                   </button>
                 );
@@ -740,8 +741,8 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 }}
                 disabled={isDownloading}
                 aria-busy={isDownloading}
-                aria-label="Descargar imagen"
-                title="Descargar imagen"
+                aria-label={tx("Descargar imagen")}
+                title={tx("Descargar imagen")}
                 style={{
                   minHeight: "48px",
                   display: "grid",
@@ -783,7 +784,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
               }}
             >
               <Share2 size={17} strokeWidth={2.1} />
-              Compartir momento
+              {tx("Compartir momento")}
             </button>
           </div>
         </footer>
@@ -811,7 +812,7 @@ function MapStat({
         color: accent ? MAGENTA_SOFT : "#FFFFFF",
         textAlign: "center",
         borderRight:
-          label !== "Hitos"
+          !accent
             ? "1px solid rgba(255,255,255,0.10)"
             : "none",
       }}

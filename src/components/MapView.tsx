@@ -73,6 +73,7 @@ import type {
 import type {
   MemoryCardData,
 } from "../types/memoryCard";
+import { tx } from "../i18n";
 
 interface Props {
   track: ExpeditionTrack | null;
@@ -602,8 +603,8 @@ function MapView({ track }: Props) {
                       }
                       primaryActionLabel={
                         isCurrentMission
-                          ? "Continuar misión →"
-                          : "Iniciar misión →"
+                          ? `${tx("Continuar misión")} →`
+                          : `${tx("Iniciar misión")} →`
                       }
                       onPrimaryAction={() =>
                         handleStartMission(
@@ -669,7 +670,7 @@ function MapView({ track }: Props) {
                       ]}
                       icon={createIguidePin(
                         "start",
-                        `Inicio: ${experience.title}`
+                        tx("Inicio: {{title}}", { title: experience.title })
                       )}
                     >
                       <Popup
@@ -677,8 +678,8 @@ function MapView({ track }: Props) {
                         className="iguide-premium-popup"
                       >
                         <TimelinePopup
-                          eyebrow="Inicio"
-                          title="Comienzo del recorrido"
+                          eyebrow={tx("Inicio")}
+                          title={tx("Comienzo del recorrido")}
                           experienceTitle={experience.title}
                           tone="magenta"
                           onOpen={() =>
@@ -704,7 +705,7 @@ function MapView({ track }: Props) {
                       ]}
                       icon={createIguidePin(
                         "abort",
-                        `Ruta conservada: ${experience.title}`
+                        tx("Ruta conservada: {{title}}", { title: experience.title })
                       )}
                     >
                       <Popup
@@ -712,8 +713,8 @@ function MapView({ track }: Props) {
                         className="iguide-premium-popup"
                       >
                         <TimelinePopup
-                          eyebrow="Ruta conservada"
-                          title="Recorrido interrumpido"
+                          eyebrow={tx("Ruta conservada")}
+                          title={tx("Recorrido interrumpido")}
                           experienceTitle={experience.title}
                           tone="orange"
                           onOpen={() =>
@@ -739,7 +740,7 @@ function MapView({ track }: Props) {
                       ]}
                       icon={createIguidePin(
                         "finish",
-                        `Llegada: ${experience.title}`
+                        tx("Llegada: {{title}}", { title: experience.title })
                       )}
                     >
                       <Popup
@@ -747,8 +748,8 @@ function MapView({ track }: Props) {
                         className="iguide-premium-popup"
                       >
                         <TimelinePopup
-                          eyebrow="Misión completada"
-                          title="Llegada certificada"
+                          eyebrow={tx("Misión completada")}
+                          title={tx("Llegada certificada")}
                           experienceTitle={experience.title}
                           tone="magenta"
                           onOpen={() =>
@@ -777,7 +778,7 @@ function MapView({ track }: Props) {
                       ]}
                       icon={createIguidePin(
                         "memory",
-                        `Recuerdo: ${experience.title}`
+                        tx("Recuerdo: {{title}}", { title: experience.title })
                       )}
                     >
                       <Popup
@@ -785,8 +786,8 @@ function MapView({ track }: Props) {
                         className="iguide-premium-popup"
                       >
                         <TimelinePopup
-                          eyebrow="Recuerdo"
-                          title="Momento guardado"
+                          eyebrow={tx("Recuerdo")}
+                          title={tx("Momento guardado")}
                           experienceTitle={experience.title}
                           tone="magenta"
                           onOpen={() =>
@@ -825,7 +826,7 @@ function MapView({ track }: Props) {
                 fontSize: "14px",
               }}
             >
-              Exploración guardada
+              {tx("Exploración guardada")}
             </strong>
             <p
               style={{
@@ -834,7 +835,7 @@ function MapView({ track }: Props) {
                 fontSize: "10px",
               }}
             >
-              El mapa recuerda tu última posición y nivel de zoom
+              {tx("El mapa recuerda tu última posición y nivel de zoom")}
             </p>
           </div>
 
@@ -865,8 +866,8 @@ function MapView({ track }: Props) {
             }}
           >
             {showQhapaqNan
-              ? "Ocultar Qhapaq Ñan"
-              : "Activar Qhapaq Ñan"}
+              ? tx("Ocultar Qhapaq Ñan")
+              : tx("Activar Qhapaq Ñan")}
           </button>
         </header>
 
@@ -894,7 +895,7 @@ function MapView({ track }: Props) {
                   `3px dashed ${ORANGE}`,
               }}
             />
-            Camino prehispánico del Valle del Mantaro
+            {tx("Camino prehispánico del Valle del Mantaro")}
           </div>
         )}
 
@@ -998,7 +999,7 @@ function TimelinePopup({
           cursor: "pointer",
         }}
       >
-        Ver Memory Card
+        {tx("Ver Memory Card")}
       </button>
     </div>
   );

@@ -3,6 +3,7 @@ import { Theme } from "../styles/theme";
 import { loadUserProfile } from "../data/user";
 import { useWeather } from "../context/WeatherContext";
 import { getHospesMessage } from "../engine/hospesEngine";
+import { tx } from "../i18n";
 
 export default function Hospes() {
   const user = loadUserProfile();
@@ -16,6 +17,13 @@ export default function Hospes() {
 
   const [messages, setMessages] = useState<string[]>([]);
   const [input, setInput] = useState("");
+  const conditionLabel = {
+    sunny: tx("Soleado"),
+    cloudy: tx("Nublado"),
+    rain: tx("Lluvia"),
+    drizzle: tx("Llovizna"),
+    snow: tx("Nieve"),
+  }[weather.condition] ?? weather.condition;
 
   useEffect(() => {
     if (isLoading) {
@@ -43,7 +51,7 @@ export default function Hospes() {
     setMessages((old) => [
       ...old,
       `👤 ${input}`,
-      "🎩 Estoy analizando la mejor option para ti. Muy pronto podré recomendarte rutas, reservar restaurantes y organizar todo tu itinerario.",
+      `🎩 ${tx("Estoy analizando la mejor opción para ti. Muy pronto podré recomendarte rutas, reservar restaurantes y organizar todo tu itinerario.")}`,
     ]);
 
     setInput("");
@@ -72,7 +80,7 @@ export default function Hospes() {
           marginBottom: Theme.Space.lg,
         }}
       >
-        Listo para ayudarte, hoy tengo esto para ti.
+        {tx("Listo para ayudarte, hoy tengo esto para ti.")}
       </p>
 
       <div
@@ -83,8 +91,8 @@ export default function Hospes() {
         }}
       >
         {isLoading
-          ? "🌤️ Consultando las condiciones reales de Huancayo…"
-          : `🌤️ ${weather.temperature}° · ${weather.condition} · ${weather.city}`}
+          ? `🌤️ ${tx("Consultando las condiciones reales de Huancayo…")}`
+          : `🌤️ ${weather.temperature}° · ${conditionLabel} · ${weather.city}`}
       </div>
 
       {error && (
@@ -103,7 +111,7 @@ export default function Hospes() {
             cursor: "pointer",
           }}
         >
-          Reintentar clima real
+          {tx("Reintentar clima real")}
         </button>
       )}
 
@@ -141,7 +149,7 @@ export default function Hospes() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Escribe a Hospes..."
+            placeholder={tx("Escribe a Hospes...")}
             style={{
               flex: 1,
               padding: "14px",
@@ -163,7 +171,7 @@ export default function Hospes() {
               fontWeight: 600,
             }}
           >
-            Enviar
+            {tx("Enviar")}
           </button>
         </div>
       </div>

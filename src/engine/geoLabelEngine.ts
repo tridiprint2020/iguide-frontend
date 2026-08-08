@@ -1,5 +1,6 @@
 import { ExperienceEngine } from "./experienceEngine";
 import type { Experience } from "../types/experience/experience";
+import { tx } from "../i18n";
 
 export interface GeoLabel {
   text: string;
@@ -52,7 +53,7 @@ export function getGeoLabel(
 
   if (!nearest || minDistance > 3000) {
     return {
-      text: "Un rincón del Valle del Mantaro",
+      text: tx("Un rincón del Valle del Mantaro"),
       nearest: null,
     };
   }
@@ -60,7 +61,7 @@ export function getGeoLabel(
   const minutes = Math.max(1, Math.round(minDistance / 80));
 
   return {
-    text: `A ${minutes} min de ${nearest.title}`,
+    text: tx("A {{minutes}} min de {{title}}", { minutes, title: nearest.title }),
     nearest,
   };
 }

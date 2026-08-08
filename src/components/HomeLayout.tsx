@@ -45,6 +45,10 @@ import {
   Theme,
 } from "../styles/theme";
 
+import {
+  tx,
+} from "../i18n";
+
 import type {
   Experience,
 } from "../types/experience";
@@ -351,10 +355,10 @@ function HomeLayout() {
       id: "food",
 
       title:
-        "Comer increíble",
+        tx("Comer increíble"),
 
       subtitle:
-        "Sabores que los locales recomiendan",
+        tx("Sabores que los locales recomiendan"),
 
       icon:
         Utensils,
@@ -375,10 +379,10 @@ function HomeLayout() {
       id: "corners",
 
       title:
-        "Descubrir rincones",
+        tx("Descubrir rincones"),
 
       subtitle:
-        "Miradores, historias y lugares ocultos",
+        tx("Miradores, historias y lugares ocultos"),
 
       icon:
         Camera,
@@ -399,10 +403,10 @@ function HomeLayout() {
       id: "surprise",
 
       title:
-        "Sorpresa local",
+        tx("Sorpresa local"),
 
       subtitle:
-        "Algo que Huancayo está viviendo hoy",
+        tx("Algo que Huancayo está viviendo hoy"),
 
       icon:
         PartyPopper,
@@ -423,10 +427,10 @@ function HomeLayout() {
       id: "nearby",
 
       title:
-        "Cerca de ti",
+        tx("Cerca de ti"),
 
       subtitle:
-        "Descubre qué tienes alrededor",
+        tx("Descubre qué tienes alrededor"),
 
       icon:
         MapPin,

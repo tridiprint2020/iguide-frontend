@@ -59,6 +59,7 @@ import type {
 } from "../types/memoryCard";
 
 import logoIG from "../assets/optimized/logoig.webp";
+import { tx } from "../i18n";
 
 const CYAN = "#39E7FF";
 const MAGENTA = "#FF00FF";
@@ -101,26 +102,26 @@ function getTypeLabel(
 ): string {
   switch (type) {
     case "restaurant":
-      return "Restaurante";
+      return tx("Restaurante");
     case "cafe":
-      return "Café";
+      return tx("Café");
     case "bar":
       return "Bar";
     case "nightclub":
-      return "Vida nocturna";
+      return tx("Vida nocturna");
     case "hotel":
       return "Hotel";
     case "museum":
-      return "Museo";
+      return tx("Museo");
     case "festival":
-      return "Festividad";
+      return tx("Festividad");
     case "craft":
-      return "Artesanía";
+      return tx("Artesanía");
     case "event":
-      return "Evento";
+      return tx("Evento");
     case "expedition":
     default:
-      return "Misión local";
+      return tx("Misión local");
   }
 }
 
@@ -181,7 +182,7 @@ function Expedition() {
           }}
         >
           <h1>
-            Misión no encontrada
+            {tx("Misión no encontrada")}
           </h1>
 
           <button
@@ -192,7 +193,7 @@ function Expedition() {
               )
             }
           >
-            Volver a explorar
+            {tx("Volver a explorar")}
           </button>
         </div>
       </div>
@@ -312,13 +313,13 @@ function Expedition() {
   const information:
     InfoItem[] = [
     {
-      label: "Zona",
+      label: tx("Zona"),
       value:
         expedition.city,
       icon: MapPin,
     },
     {
-      label: "Tipo",
+      label: tx("Tipo"),
       value:
         getTypeLabel(
           expedition.type
@@ -329,7 +330,7 @@ function Expedition() {
       ? [
           {
             label:
-              "Horario",
+              tx("Horario"),
             value:
               openingHours,
             icon:
@@ -341,7 +342,7 @@ function Expedition() {
       ? [
           {
             label:
-              "Distancia",
+              tx("Distancia"),
             value:
               distance,
             icon:
@@ -353,7 +354,7 @@ function Expedition() {
       ? [
           {
             label:
-              "Caminando",
+              tx("Caminando"),
             value:
               walkTime,
             icon:
@@ -365,7 +366,7 @@ function Expedition() {
       ? [
           {
             label:
-              "Vehículo",
+              tx("Vehículo"),
             value:
               driveTime,
             icon:
@@ -377,7 +378,7 @@ function Expedition() {
       ? [
           {
             label:
-              "Duración",
+              tx("Duración"),
             value:
               duration,
             icon:
@@ -389,7 +390,7 @@ function Expedition() {
       ? [
           {
             label:
-              "Presupuesto",
+              tx("Presupuesto"),
             value:
               price,
             icon:
@@ -401,7 +402,7 @@ function Expedition() {
       ? [
           {
             label:
-              "Intensidad",
+              tx("Intensidad"),
             value:
               difficulty,
             icon:
@@ -418,7 +419,7 @@ function Expedition() {
 
   if (!navigator.geolocation) {
     alert(
-      "Tu dispositivo no permite usar la ubicación."
+      tx("Tu dispositivo no permite usar la ubicación.")
     );
     return;
   }
@@ -501,7 +502,7 @@ function Expedition() {
                 "pointer",
             }}
           >
-            ← Inicio
+            ← {tx("Inicio")}
           </button>
 
           <img
@@ -544,7 +545,7 @@ function Expedition() {
                 "pointer",
             }}
           >
-            Explorar
+            {tx("Explorar")}
           </button>
         </header>
 
@@ -616,7 +617,7 @@ function Expedition() {
                     850,
                 }}
               >
-                ● Activa
+                ● {tx("Activa")}
               </span>
             )}
           </div>
@@ -760,8 +761,8 @@ function Expedition() {
             }}
           >
             {isTrackingActive
-              ? "Misión activa · Ver recorrido →"
-              : "Comenzar misión →"}
+              ? `${tx("Misión activa · Ver recorrido")} →`
+              : `${tx("Comenzar misión")} →`}
           </button>
         </section>
 
@@ -829,7 +830,7 @@ function Expedition() {
                   "uppercase",
               }}
             >
-              Lo esencial
+              {tx("Lo esencial")}
             </strong>
           </div>
 
@@ -937,7 +938,7 @@ function Expedition() {
                     900,
                 }}
               >
-                Dato local ·{" "}
+                {tx("Dato local")} ·{" "}
               </span>
               {localTip}
             </p>

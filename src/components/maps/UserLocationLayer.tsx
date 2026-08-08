@@ -12,6 +12,7 @@ import {
 } from "react-leaflet";
 
 import L from "leaflet";
+import { tx } from "../../i18n";
 
 type UserPosition = {
   lat: number;
@@ -189,6 +190,9 @@ export default function UserLocationLayer({
   radiusMeters = 200,
 }: Props) {
   const map = useMap();
+  const userLocationLabel = tx("Tu ubicación");
+  const locateTitle = tx("Dónde estoy");
+  const centerLocationLabel = tx("Centrar mapa en mi ubicación");
 
   const [position, setPosition] =
     useState<UserPosition | null>(null);
@@ -216,7 +220,7 @@ export default function UserLocationLayer({
         html: `
           <span
             class="iguide-user-location"
-            aria-label="Tu ubicación"
+            aria-label="${userLocationLabel}"
           >
             <span class="iguide-user-location__pulse"></span>
             <span class="iguide-user-location__dot"></span>
@@ -225,7 +229,7 @@ export default function UserLocationLayer({
         iconSize: [42, 42],
         iconAnchor: [21, 21],
       }),
-    []
+    [userLocationLabel]
   );
 
   function centerOnUser(
@@ -268,10 +272,10 @@ export default function UserLocationLayer({
           ) as HTMLButtonElement;
 
         button.type = "button";
-        button.title = "Dónde estoy";
+        button.title = locateTitle;
         button.setAttribute(
           "aria-label",
-          "Centrar mapa en mi ubicación"
+          centerLocationLabel
         );
         button.textContent = "◎";
 
@@ -307,7 +311,7 @@ export default function UserLocationLayer({
     return () => {
       control.remove();
     };
-  }, [map, maxZoom, safeRadiusMeters]);
+  }, [map, maxZoom, safeRadiusMeters, locateTitle, centerLocationLabel]);
 
   useEffect(() => {
     if (!navigator.geolocation) {

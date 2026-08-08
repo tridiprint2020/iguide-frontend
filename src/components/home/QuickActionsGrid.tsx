@@ -10,6 +10,10 @@ import {
 import NeonIcon from "../ui/NeonIcon";
 
 import {
+  tx,
+} from "../../i18n";
+
+import {
   NeonTheme,
 } from "../../styles/neonTheme";
 
@@ -49,7 +53,7 @@ function QuickActionsGrid({
 }: Props) {
   return (
     <section
-      aria-label="Acciones rápidas"
+      aria-label={tx("Acciones rápidas")}
       style={{
         width: "100%",
 

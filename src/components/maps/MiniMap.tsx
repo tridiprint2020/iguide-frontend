@@ -1,6 +1,7 @@
 import {
   Theme,
 } from "../../styles/theme";
+import { tx } from "../../i18n";
 
 type MapNode = {
   lat: number;
@@ -73,7 +74,7 @@ export function MiniMap({
             "10px",
         }}
       >
-        Sin recorrido registrado
+        {tx("Sin recorrido registrado")}
       </div>
     );
   }

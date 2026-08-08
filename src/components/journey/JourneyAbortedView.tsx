@@ -31,6 +31,7 @@ import type {
 import HospesBanner from "../hospes/HospesBanner";
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
+import { getAppLanguage, tx } from "../../i18n";
 
 export default function JourneyAbortedView() {
   const {
@@ -84,16 +85,18 @@ export default function JourneyAbortedView() {
       experience?.experienceId,
     title:
       experience?.title ??
-      "Ruta guardada",
+      tx("Ruta guardada"),
     placeLabel:
       experience?.title ??
-      "Recorrido interrumpido",
+      tx("Recorrido interrumpido"),
     city:
       experience?.city ??
       "Huancayo",
     date:
       new Date().toLocaleDateString(
-        "es-PE"
+        getAppLanguage() === "en"
+          ? "en-US"
+          : "es-PE"
       ),
     note: "",
     photo:
@@ -183,7 +186,7 @@ export default function JourneyAbortedView() {
             marginBottom: "12px",
           }}
         >
-          ● Ruta interrumpida y conservada
+          ● {tx("Ruta interrumpida y conservada")}
         </div>
 
         <HospesBanner
@@ -197,7 +200,7 @@ export default function JourneyAbortedView() {
               "clamp(1.75rem, 7vw, 2.35rem)",
           }}
         >
-          Tu recorrido no se perdió
+          {tx("Tu recorrido no se perdió")}
         </h1>
 
         <p
@@ -209,9 +212,7 @@ export default function JourneyAbortedView() {
             lineHeight: 1.5,
           }}
         >
-          Guardé el Punto 0, la ruta,
-          los recuerdos y el lugar donde
-          decidiste detenerte.
+          {tx("Guardé el Punto 0, la ruta, los recuerdos y el lugar donde decidiste detenerte.")}
         </p>
 
         <section
@@ -224,19 +225,19 @@ export default function JourneyAbortedView() {
           }}
         >
           <Metric
-            label="Distancia"
+            label={tx("Distancia")}
             value={`${stats.totalDistanceKm.toFixed(2)} km`}
           />
 
           <Metric
-            label="Eventos"
+            label={tx("Eventos")}
             value={String(
               journey.timeline.length
             )}
           />
 
           <Metric
-            label="Recuerdos"
+            label={tx("Recuerdos")}
             value={String(
               stats.totalMemories
             )}
@@ -278,7 +279,7 @@ export default function JourneyAbortedView() {
             cursor: "pointer",
           }}
         >
-          Ver recorrido guardado en Explorer →
+          {tx("Ver recorrido guardado en Explorer")} →
         </button>
       </main>
 

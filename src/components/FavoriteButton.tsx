@@ -15,6 +15,7 @@ import {
 import {
   Theme,
 } from "../styles/theme";
+import { tx } from "../i18n";
 
 type Props = {
   experienceId:
@@ -109,13 +110,13 @@ function FavoriteButton({
       }
       aria-label={
         selected
-          ? "Quitar de favoritos"
-          : "Guardar en favoritos"
+          ? tx("Quitar de favoritos")
+          : tx("Guardar en favoritos")
       }
       title={
         selected
-          ? "Guardado en Mis lugares"
-          : "Guardar para después"
+          ? tx("Guardado en Mis lugares")
+          : tx("Guardar para después")
       }
       style={{
         minWidth:
@@ -202,8 +203,8 @@ function FavoriteButton({
       {!compact && (
         <span>
           {selected
-            ? "Guardado"
-            : "Guardar"}
+            ? tx("Guardado")
+            : tx("Guardar")}
         </span>
       )}
     </button>

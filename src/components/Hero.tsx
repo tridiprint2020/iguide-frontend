@@ -3,6 +3,10 @@ import WeatherCard from "./WeatherCard";
 import { loadUserProfile } from "../data/user";
 import { Theme } from "../styles/theme";
 
+import {
+  tx,
+} from "../i18n";
+
 import type { WeatherStatus } from "../engine/weatherEngine";
 
 type Props = {
@@ -19,7 +23,7 @@ function Hero({
 
   const displayName =
     profile.name?.trim() ||
-    "Explorador";
+    tx("Explorador");
 
   return (
     <section
@@ -72,7 +76,9 @@ function Hero({
                 "left",
             }}
           >
-            ¡Hola, {displayName}! 👋
+            {tx("¡Hola, {{name}}!", {
+              name: displayName,
+            })} 👋
           </p>
 
           <h1
@@ -98,7 +104,7 @@ function Hero({
                 Theme.Colors.text,
             }}
           >
-            Bienvenido a
+            {tx("Bienvenido a")}
             <br />
 
             <span
@@ -134,7 +140,7 @@ function Hero({
             }}
           >
             {
-              "No visites.\nPertenece.\nVive la ciudad como un local."
+              tx("No visites.\nPertenece.\nVive la ciudad como un local.")
             }
           </p>
         </div>
@@ -155,9 +161,7 @@ function Hero({
               "right",
           }}
         >
-          Consultando
-          <br />
-          clima…
+          {tx("Consultando clima…")}
         </div>
       ) : (
         <WeatherCard

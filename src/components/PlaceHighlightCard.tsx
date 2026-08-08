@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { Experience } from "../types/experience/experience";
 import { getPlaceHint } from "../engine/noriEngine";
 import { Theme } from "../styles/theme";
+import { tx } from "../i18n";
 
 type Props = {
   expedition: Experience;
@@ -59,7 +60,7 @@ function PlaceHighlightCard({ expedition }: Props) {
                 zIndex: 20,
               }}
             >
-              ✦ {getPlaceHint(expedition)}
+              ✦ {tx(getPlaceHint(expedition))}
             </div>
           )}
         </div>
@@ -88,7 +89,7 @@ function PlaceHighlightCard({ expedition }: Props) {
             textDecoration: "none",
           }}
         >
-          📍 Ver mapa
+          📍 {tx("Ver mapa")}
         </a>
       )}
     </Link>
