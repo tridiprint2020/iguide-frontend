@@ -131,6 +131,9 @@ function MemoryMapCanvas({
   const isGlass =
     variant === "glass";
 
+  const isDark =
+    variant === "glass";
+
   const routeSegments =
     waypoints.length > 0
       ? getTimelineRouteSegments(
@@ -213,7 +216,7 @@ function MemoryMapCanvas({
 
         backgroundColor:
           isGlass
-            ? "rgba(255,255,255,0.04)"
+            ? "rgba(5,7,13,0.24)"
             : "#F4F3F0",
       }}
     >
@@ -221,7 +224,9 @@ function MemoryMapCanvas({
         className={
           isGlass
             ? "iguide-memory-map iguide-memory-map--glass"
-            : "iguide-memory-map"
+            : isDark
+              ? "iguide-memory-map iguide-memory-map--dark"
+              : "iguide-memory-map"
         }
         center={center}
         zoom={16}
@@ -250,7 +255,7 @@ function MemoryMapCanvas({
           crossOrigin="anonymous"
           opacity={
             isGlass
-              ? 0.30
+              ? 0.72
               : variant === "full"
                 ? 0.96
                 : 1
@@ -272,14 +277,20 @@ function MemoryMapCanvas({
             <Polyline
               positions={segment}
               pathOptions={{
-                color: "#FFFFFF",
+                color:
+                  isDark
+                    ? "#160216"
+                    : "#FFFFFF",
 
                 weight:
                   isGlass
                     ? 7
                     : 9,
 
-                opacity: 0.92,
+                opacity:
+                  isDark
+                    ? 0.82
+                    : 0.92,
 
                 lineCap:
                   "round",
@@ -343,7 +354,7 @@ function MemoryMapCanvas({
           />
         )}
 
-        {/* RECUERDOS: CELESTE PEQUEÑO */}
+        {/* RECUERDOS: MAGENTA PEQUEÑO */}
         {memories.map(
           (
             memory,
@@ -373,7 +384,8 @@ function MemoryMapCanvas({
 
                 weight: 2,
 
-                fillColor: "#42E8F5",
+                fillColor:
+                  Theme.Colors.primary,
 
                 fillOpacity: 1,
               }}
@@ -485,9 +497,13 @@ function MemoryMapCanvas({
           padding: "2px 4px",
           borderRadius: "5px",
           background:
-            "rgba(255,255,255,0.58)",
+            isDark
+              ? "rgba(4,6,10,0.48)"
+              : "rgba(255,255,255,0.74)",
           color:
-            "rgba(0,0,0,0.55)",
+            isDark
+              ? "rgba(255,255,255,0.56)"
+              : "rgba(0,0,0,0.55)",
           fontSize: "5px",
           lineHeight: 1.2,
           fontWeight: 650,

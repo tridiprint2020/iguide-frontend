@@ -1,14 +1,32 @@
+import {
+  toBlob,
+} from "html-to-image";
+
 import type {
   MemoryCardData,
 } from "../types/memoryCard";
-import {
-  renderMemoryCardBlob,
-} from "./memoryCardRenderEngine";
 import { tx } from "../i18n";
 
 export interface SharePayload {
   title: string;
   text: string;
+}
+
+function getExportPixelRatio(): number {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia(
+      "(max-width: 520px)"
+    ).matches
+  ) {
+    /*
+     * Evita picos de memoria en Chrome Android al
+     * rasterizar una tarjeta que contiene un mapa.
+     */
+    return 1;
+  }
+
+  return 2;
 }
 
 function sanitizeFileName(
@@ -59,6 +77,103 @@ function buildShareText(
         Boolean(section)
     )
     .join("\n\n");
+}
+
+function waitForImage(
+  image: HTMLImageElement
+): Promise<void> {
+  if (image.complete && image.naturalWidth > 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(
+      () => reject(new Error(tx("La fotografía todavía se está preparando."))),
+      6000
+    );
+
+    image.addEventListener(
+      "load",
+      () => {
+        window.clearTimeout(timeout);
+        resolve();
+      },
+      { once: true }
+    );
+
+    image.addEventListener(
+      "error",
+      () => {
+        window.clearTimeout(timeout);
+        reject(new Error(tx("No se pudo cargar una imagen de la tarjeta.")));
+      },
+      { once: true }
+    );
+  });
+}
+
+async function waitForCardMedia(
+  nodeRef: HTMLElement
+): Promise<void> {
+  const startedAt = Date.now();
+
+  while (
+    nodeRef.dataset.iguideMediaReady === "false" &&
+    Date.now() - startedAt < 6000
+  ) {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 80);
+    });
+  }
+
+  if (nodeRef.dataset.iguideMediaReady === "false") {
+    throw new Error(
+      tx("La fotografía todavía se está preparando. Inténtalo nuevamente en un momento.")
+    );
+  }
+
+  await Promise.all(
+    Array.from(nodeRef.querySelectorAll("img")).map(waitForImage)
+  );
+}
+
+async function renderCardBlob(
+  nodeRef: HTMLElement
+): Promise<Blob> {
+  await waitForCardMedia(nodeRef);
+
+  const blob =
+    await toBlob(
+      nodeRef,
+      {
+        /* Los recuerdos de IndexedDB se muestran con blob URLs. */
+        cacheBust: false,
+        pixelRatio:
+          getExportPixelRatio(),
+        backgroundColor:
+          "#090A12",
+        filter: (node) => {
+          if (
+            node instanceof HTMLElement &&
+            node.dataset
+              .exportIgnore ===
+              "true"
+          ) {
+            return false;
+          }
+
+          return true;
+        },
+      }
+    );
+
+  if (!blob) {
+    throw new Error(
+      tx("No se pudo crear la imagen de la MemoryCard.")
+    );
+  }
+
+  return blob;
 }
 
 async function nativeShare(
@@ -117,13 +232,21 @@ async function nativeShare(
 export const shareEngine = {
   async downloadImage(
     cardData: MemoryCardData,
-    _nodeRef: HTMLElement | null
+    nodeRef: HTMLElement | null
   ): Promise<boolean> {
-    void _nodeRef;
+    if (!nodeRef) {
+      alert(
+        tx("La MemoryCard todavía no está lista para exportarse.")
+      );
+
+      return false;
+    }
 
     try {
       const blob =
-        await renderMemoryCardBlob(cardData);
+        await renderCardBlob(
+          nodeRef
+        );
 
       const objectUrl =
         URL.createObjectURL(
@@ -168,7 +291,7 @@ export const shareEngine = {
       );
 
       alert(
-        tx("No se pudo preparar la imagen. Inténtalo nuevamente.")
+        tx("No se pudo generar la imagen. Inténtalo nuevamente con el mapa completamente cargado.")
       );
 
       return false;
@@ -177,10 +300,8 @@ export const shareEngine = {
 
   async shareMemory(
     cardData: MemoryCardData,
-    _nodeRef?: HTMLElement | null
+    nodeRef?: HTMLElement | null
   ): Promise<boolean> {
-    void _nodeRef;
-
     const payload:
       SharePayload = {
       title:
@@ -192,23 +313,32 @@ export const shareEngine = {
     };
 
     try {
-      const blob = await renderMemoryCardBlob(cardData);
+      if (nodeRef) {
+        const blob =
+          await renderCardBlob(
+            nodeRef
+          );
 
-      const file =
-        new File(
-          [blob],
-          `iguide-${sanitizeFileName(
-            cardData.title
-          )}.png`,
-          {
-            type:
-              "image/png",
-          }
+        const file =
+          new File(
+            [blob],
+            `iguide-${sanitizeFileName(
+              cardData.title
+            )}.png`,
+            {
+              type:
+                "image/png",
+            }
+          );
+
+        return await nativeShare(
+          payload,
+          file
         );
+      }
 
       return await nativeShare(
-        payload,
-        file
+        payload
       );
     } catch (error) {
       console.error(

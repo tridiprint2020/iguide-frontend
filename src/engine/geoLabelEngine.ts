@@ -1,38 +1,11 @@
+import { ExperienceEngine } from "./experienceEngine";
+import type { Experience } from "../types/experience/experience";
 import { tx } from "../i18n";
-
-export interface GeoLandmark {
-  name: string;
-  lat: number;
-  lng: number;
-}
 
 export interface GeoLabel {
   text: string;
-  nearest: GeoLandmark | null;
+  nearest: Experience | null;
 }
-
-const HUANCAYO_LANDMARKS: GeoLandmark[] = [
-  {
-    name: "Plaza Constitución",
-    lat: -12.0681,
-    lng: -75.21,
-  },
-  {
-    name: "Parque de la Identidad Wanka",
-    lat: -12.049,
-    lng: -75.1975,
-  },
-  {
-    name: "Cerrito de la Libertad",
-    lat: -12.0623,
-    lng: -75.1958,
-  },
-  {
-    name: "Torre Torre",
-    lat: -12.0597,
-    lng: -75.181,
-  },
-];
 
 function calculateDistanceMeters(
   lat1: number,
@@ -60,21 +33,21 @@ export function getGeoLabel(
   lng: number
 ): GeoLabel {
 
-  let nearest: GeoLandmark | null = null;
+  let nearest: Experience | null = null;
   let minDistance = Infinity;
 
-  for (const landmark of HUANCAYO_LANDMARKS) {
+  for (const experience of ExperienceEngine.getAll()) {
 
     const d = calculateDistanceMeters(
       lat,
       lng,
-      landmark.lat,
-      landmark.lng
+      experience.latitude,
+      experience.longitude
     );
 
     if (d < minDistance) {
       minDistance = d;
-      nearest = landmark;
+      nearest = experience;
     }
   }
 
@@ -85,20 +58,10 @@ export function getGeoLabel(
     };
   }
 
-  if (minDistance < 100) {
-    return {
-      text: tx("En {{title}}", { title: nearest.name }),
-      nearest,
-    };
-  }
-
   const minutes = Math.max(1, Math.round(minDistance / 80));
 
   return {
-    text: tx("A {{minutes}} min a pie de {{title}}", {
-      minutes,
-      title: nearest.name,
-    }),
+    text: tx("A {{minutes}} min de {{title}}", { minutes, title: nearest.title }),
     nearest,
   };
 }

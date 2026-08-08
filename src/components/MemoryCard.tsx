@@ -52,8 +52,17 @@ type ReactionOption = {
     | typeof Repeat2;
 };
 
+type StatusStyle = {
+  label: string;
+  color: string;
+  background: string;
+  border: string;
+};
+
+const MAGENTA = "#FF20CE";
 const MAGENTA_SOFT = "#FF65DF";
 const CYAN = "#42E8F5";
+const ORANGE = "#FF9A3D";
 
 const AUTOMATIC_NOTES = [
   "guardando la esencia del momento",
@@ -122,6 +131,43 @@ function formatDuration(totalSeconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
+function getJourneyStatus(
+  data: MemoryCardData
+): StatusStyle {
+  const waypoints = data.waypoints ?? [];
+  const hasFinish = waypoints.some(
+    (point) => point.type === "finish"
+  );
+  const hasAbort = waypoints.some(
+    (point) => point.type === "abort"
+  );
+
+  if (hasFinish) {
+    return {
+      label: tx("Misión completada"),
+      color: MAGENTA_SOFT,
+      background: "rgba(38,9,32,0.68)",
+      border: "rgba(255,32,206,0.42)",
+    };
+  }
+
+  if (hasAbort) {
+    return {
+      label: tx("Ruta conservada"),
+      color: ORANGE,
+      background: "rgba(40,24,8,0.68)",
+      border: "rgba(255,154,61,0.42)",
+    };
+  }
+
+  return {
+    label: tx("Ruta registrada"),
+    color: CYAN,
+    background: "rgba(5,30,34,0.68)",
+    border: "rgba(66,232,245,0.36)",
+  };
+}
+
 function getExperienceId(
   data: MemoryCardData
 ): string | null {
@@ -146,6 +192,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
     const hasPhoto = Boolean(photoUrl);
     const hasMap = Boolean(data.mapBackground);
     const hasUserNote = isUserNote(data.note);
+    const status = getJourneyStatus(data);
     const experienceId = getExperienceId(data);
 
     const [
@@ -175,6 +222,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
       data.stats.durationSeconds
     );
     const memoryCount = data.stats.totalMemories;
+    const pointCount = data.waypoints?.length ?? 0;
 
     function handleReaction(
       reaction: FavoriteReaction
@@ -353,11 +401,80 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 height: "38px",
                 objectFit: "contain",
                 objectPosition: "left center",
-                mixBlendMode: "screen",
                 filter:
                   "drop-shadow(0 3px 10px rgba(0,0,0,0.65))",
               }}
             />
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              top: "16px",
+              right: "14px",
+              zIndex: 5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              minHeight: "28px",
+              padding: "4px 9px",
+              borderRadius: "999px",
+              color: status.color,
+              background: status.background,
+              border: `1px solid ${status.border}`,
+              backdropFilter: "blur(10px)",
+              fontSize: "7px",
+              fontWeight: 900,
+              letterSpacing: "0.075em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: status.color,
+                boxShadow: `0 0 8px ${status.color}`,
+              }}
+            />
+            {status.label}
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              left: "15px",
+              top: "63px",
+              zIndex: 5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              padding: "6px 9px",
+              borderRadius: "999px",
+              color: "rgba(255,255,255,0.90)",
+              background: "rgba(5,6,12,0.52)",
+              border:
+                "1px solid rgba(255,255,255,0.10)",
+              backdropFilter: "blur(8px)",
+              fontSize: "8px",
+              fontWeight: 800,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: "7px",
+                height: "7px",
+                borderRadius: "50%",
+                backgroundColor: MAGENTA,
+                boxShadow:
+                  "0 0 10px rgba(255,32,206,0.95)",
+              }}
+            />
+            {tx("{{points}} puntos · {{memories}} recuerdos", { points: pointCount, memories: memoryCount })}
           </div>
 
           {/* Texto inferior: ocupa solo el lado izquierdo del mapa. */}
@@ -365,7 +482,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
             style={{
               position: "absolute",
               left: "16px",
-              right: hasMap ? "40%" : "16px",
+              right: hasMap ? "48%" : "16px",
               bottom: "16px",
               zIndex: 5,
               textAlign: "left",
@@ -478,21 +595,22 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 right: "10px",
                 bottom: "10px",
                 zIndex: 4,
-                width: "36%",
-                height: "31%",
+                width: "43%",
+                height: "36%",
                 overflow: "hidden",
                 borderRadius: "15px",
                 border:
-                  "1px solid rgba(255,255,255,0.38)",
-                background: "rgba(255,255,255,0.07)",
+                  "1px solid rgba(255,255,255,0.26)",
+                background: "rgba(5,7,13,0.28)",
                 boxShadow:
-                  "0 8px 20px rgba(0,0,0,0.20), 0 0 14px rgba(255,255,255,0.08)",
+                  "0 12px 28px rgba(0,0,0,0.34), 0 0 18px rgba(255,32,206,0.10)",
+                backdropFilter: "blur(2px)",
               }}
             >
               <div
                 style={{
                   position: "absolute",
-                  inset: "0 0 36px",
+                  inset: "0 0 42px",
                 }}
               >
                 <MemoryRouteGraphic
@@ -525,13 +643,14 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  height: "36px",
+                  height: "42px",
                   display: "grid",
                   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                   alignItems: "center",
-                  background: "rgba(5,7,13,0.48)",
+                  background: "rgba(5,7,13,0.76)",
                   borderTop:
                     "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(8px)",
                 }}
               >
                 <MapStat value={formattedTime} label={tx("Tiempo")} />

@@ -1,7 +1,6 @@
 import {
   useRef,
 } from "react";
-import { createPortal } from "react-dom";
 
 import MemoryCard from "../MemoryCard";
 
@@ -62,7 +61,7 @@ export default function MemoryCardModal({
     );
   }
 
-  return createPortal(
+  return (
     <div
       role="dialog"
       aria-modal="true"
@@ -72,7 +71,7 @@ export default function MemoryCardModal({
         position:
           "fixed",
         inset: 0,
-        zIndex: 130000,
+        zIndex: 20000,
         overflowY:
           "auto",
         boxSizing:
@@ -246,7 +245,6 @@ export default function MemoryCardModal({
           {tx("Volver al mapa")}
         </button>
       </section>
-    </div>,
-    document.body
+    </div>
   );
 }

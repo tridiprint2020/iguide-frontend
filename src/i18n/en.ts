@@ -524,8 +524,6 @@ const en: Record<string, string> = {
   "Centrar mapa en mi ubicación": "Center map on my location",
   "Un rincón del Valle del Mantaro": "A corner of the Mantaro Valley",
   "A {{minutes}} min de {{title}}": "{{minutes}} min from {{title}}",
-  "En {{title}}": "At {{title}}",
-  "A {{minutes}} min a pie de {{title}}": "{{minutes}} min walk from {{title}}",
 
   // Catalog descriptions
   "uno de los mejores bares de Huancayo, variedad en vino, vodka, tequila, pisco y más... Es genial en pleno corazón de Huancayo": "One of Huancayo's best bars, with a selection of wine, vodka, tequila, pisco and more, right in the heart of the city.",

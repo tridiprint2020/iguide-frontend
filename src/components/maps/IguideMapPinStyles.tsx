@@ -121,10 +121,6 @@ function IguideMapPinStyles() {
         .iguide-neon-pin__icon {
           width: 86%;
           height: 86%;
-          filter:
-            drop-shadow(0 0 3px rgba(255,255,255,0.90))
-            drop-shadow(0 0 7px rgba(0,230,255,0.98))
-            drop-shadow(0 0 13px rgba(0,230,255,0.66));
         }
 
         .iguide-neon-pin--catalog
