@@ -40,6 +40,11 @@ type Props = {
 
   waypoints?:
     TimelineItem[];
+
+  variant?:
+    | "default"
+    | "glass"
+    | "full";
 };
 
 type FitRouteProps = {
@@ -52,11 +57,14 @@ type FitRouteProps = {
     number,
     number,
   ][];
+
+  compact?: boolean;
 };
 
 function FitRoute({
   center,
   path,
+  compact = false,
 }: FitRouteProps) {
   const map =
     useMap();
@@ -74,8 +82,12 @@ function FitRoute({
         bounds,
         {
           padding: [
-            28,
-            28,
+            compact
+              ? 14
+              : 28,
+            compact
+              ? 14
+              : 28,
           ],
 
           maxZoom: 17,
@@ -96,6 +108,7 @@ function FitRoute({
     );
   }, [
     center,
+    compact,
     map,
     path,
   ]);
@@ -108,7 +121,14 @@ function MemoryMapCanvas({
   path,
   memories,
   waypoints = [],
+  variant = "default",
 }: Props) {
+  const isGlass =
+    variant === "glass";
+
+  const isDark =
+    variant !== "default";
+
   const startNode =
     waypoints.find(
       (item) =>
@@ -180,10 +200,21 @@ function MemoryMapCanvas({
         zIndex: 0,
 
         backgroundColor:
-          "#F4F3F0",
+          isGlass
+            ? "rgba(5,7,13,0.42)"
+            : isDark
+              ? "#080A10"
+              : "#F4F3F0",
       }}
     >
       <MapContainer
+        className={
+          isGlass
+            ? "iguide-memory-map iguide-memory-map--glass"
+            : isDark
+              ? "iguide-memory-map iguide-memory-map--dark"
+              : "iguide-memory-map"
+        }
         center={center}
         zoom={16}
         zoomControl={false}
@@ -193,30 +224,34 @@ function MemoryMapCanvas({
         boxZoom={false}
         keyboard={false}
         touchZoom={false}
-        attributionControl
+        attributionControl={false}
         preferCanvas
         style={{
           height: "100%",
 
           width: "100%",
 
-          /*
-           * Leve aumento de claridad.
-           * No oscurecemos las calles.
-           */
-          filter:
-            "brightness(1.08) contrast(1.06) saturate(0.82)",
+          background:
+            "transparent",
         }}
       >
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
+          opacity={
+            isGlass
+              ? 0.52
+              : isDark
+                ? 0.72
+                : 1
+          }
         />
 
         <FitRoute
           center={center}
           path={path}
+          compact={isGlass}
         />
 
         {path.length >= 2 && (
@@ -226,11 +261,19 @@ function MemoryMapCanvas({
               positions={path}
               pathOptions={{
                 color:
-                  "#FFFFFF",
+                  isDark
+                    ? "#160216"
+                    : "#FFFFFF",
 
-                weight: 9,
+                weight:
+                  isGlass
+                    ? 7
+                    : 9,
 
-                opacity: 0.92,
+                opacity:
+                  isDark
+                    ? 0.82
+                    : 0.92,
 
                 lineCap:
                   "round",
@@ -247,7 +290,10 @@ function MemoryMapCanvas({
                 color:
                   Theme.Colors.primary,
 
-                weight: 5,
+                weight:
+                  isGlass
+                    ? 4
+                    : 5,
 
                 opacity: 1,
 
@@ -267,12 +313,19 @@ function MemoryMapCanvas({
             center={
               startPosition
             }
-            radius={10}
+            radius={
+              isGlass
+                ? 6
+                : 10
+            }
             pathOptions={{
               color:
                 "#FFFFFF",
 
-              weight: 3,
+              weight:
+                isGlass
+                  ? 2
+                  : 3,
 
               fillColor:
                 Theme.Colors.primary,
@@ -299,8 +352,12 @@ function MemoryMapCanvas({
               ]}
               radius={
                 memory.photo
-                  ? 7
-                  : 5
+                  ? isGlass
+                    ? 4
+                    : 7
+                  : isGlass
+                    ? 3
+                    : 5
               }
               pathOptions={{
                 color:
@@ -323,12 +380,19 @@ function MemoryMapCanvas({
             center={
               endPosition
             }
-            radius={12}
+            radius={
+              isGlass
+                ? 7
+                : 12
+            }
             pathOptions={{
               color:
                 "#FFFFFF",
 
-              weight: 3,
+              weight:
+                isGlass
+                  ? 2
+                  : 3,
 
               fillColor:
                 isAbandoned
@@ -341,8 +405,9 @@ function MemoryMapCanvas({
         )}
       </MapContainer>
 
-      {/* Leyenda mínima */}
-      <div
+      {/* Leyenda: solo se usa cuando el mapa es el visual principal. */}
+      {!isDark && (
+        <div
         style={{
           position: "absolute",
 
@@ -401,7 +466,49 @@ function MemoryMapCanvas({
         />
 
         Mi recorrido
-      </div>
+        </div>
+      )}
+
+      <span
+        style={{
+          position: "absolute",
+          right: "4px",
+          top: "3px",
+          zIndex: 500,
+          padding: "2px 4px",
+          borderRadius: "5px",
+          background:
+            isDark
+              ? "rgba(4,6,10,0.48)"
+              : "rgba(255,255,255,0.74)",
+          color:
+            isDark
+              ? "rgba(255,255,255,0.56)"
+              : "rgba(0,0,0,0.55)",
+          fontSize: "5px",
+          lineHeight: 1.2,
+          fontWeight: 650,
+          pointerEvents: "none",
+        }}
+      >
+        © OpenStreetMap
+      </span>
+
+      <style>
+        {`
+          .iguide-memory-map.leaflet-container {
+            background: transparent;
+          }
+
+          .iguide-memory-map--glass .leaflet-tile-pane {
+            filter: grayscale(0.9) brightness(0.56) contrast(1.22) saturate(0.5);
+          }
+
+          .iguide-memory-map--dark .leaflet-tile-pane {
+            filter: grayscale(0.72) brightness(0.64) contrast(1.18) saturate(0.62);
+          }
+        `}
+      </style>
     </div>
   );
 }

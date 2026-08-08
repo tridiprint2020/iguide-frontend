@@ -1,20 +1,18 @@
 import {
   forwardRef,
-  useEffect,
-  useMemo,
   useState,
 } from "react";
 
 import {
+  CalendarDays,
   Download,
+  Footprints,
   Heart,
-  MapPinned,
+  MapPin,
   MessageCircleHeart,
   Repeat2,
   Share2,
-  Sparkles,
 } from "lucide-react";
-
 
 import {
   getFavorite,
@@ -23,7 +21,7 @@ import {
 
 import MemoryMapCanvas from "./sharing/MemoryMapCanvas";
 
-import logo from "../assets/optimized/logo-iguide.webp";
+import logo from "../assets/optimized/logoig.webp";
 
 import type {
   FavoriteReaction,
@@ -35,10 +33,8 @@ import type {
 
 type Props = {
   data: MemoryCardData;
-  onShare: () =>
-    void | Promise<void>;
-  onDownload?: () =>
-    void | Promise<void>;
+  onShare: () => void | Promise<void>;
+  onDownload?: () => void | Promise<void>;
 };
 
 type ReactionOption = {
@@ -51,10 +47,17 @@ type ReactionOption = {
     | typeof Repeat2;
 };
 
-const MAGENTA = "#FF00FF";
-const MAGENTA_SOFT = "#FF3DE8";
-const CYAN = "#00E6FF";
-const ORANGE = "#FF8A00";
+type StatusStyle = {
+  label: string;
+  color: string;
+  background: string;
+  border: string;
+};
+
+const MAGENTA = "#FF20CE";
+const MAGENTA_SOFT = "#FF65DF";
+const CYAN = "#42E8F5";
+const ORANGE = "#FF9A3D";
 
 const AUTOMATIC_NOTES = [
   "guardando la esencia del momento",
@@ -93,12 +96,9 @@ const REACTIONS: ReactionOption[] = [
   },
 ];
 
-function isUserNote(
-  note?: string
-): boolean {
+function isUserNote(note?: string): boolean {
   const normalized =
-    note?.trim().toLowerCase() ??
-    "";
+    note?.trim().toLowerCase() ?? "";
 
   if (!normalized) {
     return false;
@@ -106,1426 +106,745 @@ function isUserNote(
 
   return !AUTOMATIC_NOTES.some(
     (automaticNote) =>
-      normalized.includes(
-        automaticNote
-      )
+      normalized.includes(automaticNote)
   );
 }
 
-function formatDuration(
-  totalSeconds: number
-): string {
-  const safeSeconds =
-    Math.max(
-      0,
-      Math.floor(totalSeconds)
-    );
+function formatDuration(totalSeconds: number): string {
+  const safeSeconds = Math.max(
+    0,
+    Math.floor(totalSeconds)
+  );
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor(
+    (safeSeconds % 3600) / 60
+  );
+  const seconds = safeSeconds % 60;
+  const pad = (value: number) =>
+    String(value).padStart(2, "0");
 
-  const hours =
-    Math.floor(
-      safeSeconds / 3600
-    );
-
-  const minutes =
-    Math.floor(
-      (safeSeconds % 3600) /
-        60
-    );
-
-  const seconds =
-    safeSeconds % 60;
-
-  const pad = (
-    value: number
-  ) =>
-    String(value).padStart(
-      2,
-      "0"
-    );
-
-  return `${pad(hours)}:${pad(
-    minutes
-  )}:${pad(seconds)}`;
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
 function getJourneyStatus(
   data: MemoryCardData
-) {
-  const waypoints =
-    data.waypoints ?? [];
-
-  const hasFinish =
-    waypoints.some(
-      (point) =>
-        point.type === "finish"
-    );
-
-  const hasAbort =
-    waypoints.some(
-      (point) =>
-        point.type === "abort"
-    );
+): StatusStyle {
+  const waypoints = data.waypoints ?? [];
+  const hasFinish = waypoints.some(
+    (point) => point.type === "finish"
+  );
+  const hasAbort = waypoints.some(
+    (point) => point.type === "abort"
+  );
 
   if (hasFinish) {
     return {
-      label:
-        "Misión completada",
-
-      color:
-        MAGENTA,
-
-      background:
-        "rgba(255,0,255,0.11)",
-
-      border:
-        "rgba(255,0,255,0.36)",
+      label: "Misión completada",
+      color: MAGENTA_SOFT,
+      background: "rgba(38,9,32,0.68)",
+      border: "rgba(255,32,206,0.42)",
     };
   }
 
   if (hasAbort) {
     return {
-      label:
-        "Ruta conservada",
-
-      color:
-        ORANGE,
-
-      background:
-        "rgba(255,138,0,0.10)",
-
-      border:
-        "rgba(255,138,0,0.34)",
+      label: "Ruta conservada",
+      color: ORANGE,
+      background: "rgba(40,24,8,0.68)",
+      border: "rgba(255,154,61,0.42)",
     };
   }
 
   return {
-    label:
-      "Ruta registrada",
-
-    color:
-      CYAN,
-
-    background:
-      "rgba(0,230,255,0.08)",
-
-    border:
-      "rgba(0,230,255,0.24)",
+    label: "Ruta registrada",
+    color: CYAN,
+    background: "rgba(5,30,34,0.68)",
+    border: "rgba(66,232,245,0.36)",
   };
 }
 
 function getExperienceId(
   data: MemoryCardData
 ): string | null {
-  const source =
-    data as MemoryCardData & {
-      experienceId?: string;
-    };
-
-  return (
-    source.experienceId ??
-    null
-  );
+  return data.experienceId ?? null;
 }
 
-const MemoryCard = forwardRef<HTMLElement, Props>(function MemoryCard(
-  {
-    data,
-    onShare,
-    onDownload,
-  },
-  ref
-) {
-  const hasPhoto =
-    Boolean(data.photo);
+const MemoryCard = forwardRef<HTMLElement, Props>(
+  function MemoryCard(
+    {
+      data,
+      onShare,
+      onDownload,
+    },
+    ref
+  ) {
+    const hasPhoto = Boolean(data.photo);
+    const hasMap = Boolean(data.mapBackground);
+    const hasUserNote = isUserNote(data.note);
+    const status = getJourneyStatus(data);
+    const experienceId = getExperienceId(data);
 
-  const hasMap =
-    Boolean(
-      data.mapBackground
-    );
+    const [
+      reactionSelection,
+      setReactionSelection,
+    ] = useState<{
+      experienceId: string;
+      reaction: FavoriteReaction;
+    } | null>(null);
 
-  const hasUserNote =
-    isUserNote(data.note);
+    const [
+      isDownloading,
+      setIsDownloading,
+    ] = useState(false);
 
-  const status =
-    getJourneyStatus(data);
+    const selectedReaction =
+      experienceId &&
+      reactionSelection?.experienceId === experienceId
+        ? reactionSelection.reaction
+        : experienceId
+          ? getFavorite(experienceId)?.reaction ?? null
+          : null;
 
-  const experienceId =
-    getExperienceId(data);
-
-  const [
-    selectedReaction,
-    setSelectedReaction,
-  ] =
-    useState<FavoriteReaction | null>(
-      null
-    );
-
-  const [
-    isDownloading,
-    setIsDownloading,
-  ] = useState(false);
-
-  useEffect(() => {
-    if (!experienceId) {
-      setSelectedReaction(
-        null
-      );
-
-      return;
-    }
-
-    const favorite =
-      getFavorite(
-        experienceId
-      );
-
-    setSelectedReaction(
-      favorite?.reaction ??
-        null
-    );
-  }, [experienceId]);
-
-  const formattedDistance =
-    `${data.stats.totalDistanceKm.toFixed(
-      2
-    )} km`;
-
-  const formattedTime =
-    formatDuration(
+    const formattedDistance =
+      `${data.stats.totalDistanceKm.toFixed(2)} km`;
+    const formattedTime = formatDuration(
       data.stats.durationSeconds
     );
+    const memoryCount = data.stats.totalMemories;
+    const pointCount = data.waypoints?.length ?? 0;
 
-  const memoryCount =
-    data.stats.totalMemories;
-
-  const primaryVisualLabel =
-    hasPhoto
-      ? "Tu recuerdo"
-      : "Tu recorrido";
-
-  const routeSummary =
-    useMemo(
-      () => ({
-        points:
-          data.waypoints?.length ??
-          0,
-
-        memories:
-          memoryCount,
-      }),
-      [
-        data.waypoints,
-        memoryCount,
-      ]
-    );
-
-  function handleReaction(
-    reaction: FavoriteReaction
-  ) {
-    if (!experienceId) {
-      return;
-    }
-
-    setFavoriteReaction(
-      experienceId,
-      reaction
-    );
-
-    setSelectedReaction(
-      reaction
-    );
-  }
-
-  async function handleDownloadClick() {
-    if (
-      !onDownload ||
-      isDownloading
+    function handleReaction(
+      reaction: FavoriteReaction
     ) {
-      return;
+      if (!experienceId) {
+        return;
+      }
+
+      setFavoriteReaction(experienceId, reaction);
+      setReactionSelection({
+        experienceId,
+        reaction,
+      });
     }
 
-    setIsDownloading(true);
+    async function handleDownloadClick() {
+      if (!onDownload || isDownloading) {
+        return;
+      }
 
-    try {
-      await onDownload();
-    } finally {
-      setIsDownloading(false);
+      setIsDownloading(true);
+
+      try {
+        await onDownload();
+      } finally {
+        setIsDownloading(false);
+      }
     }
-  }
 
-  return (
-    <article
-      ref={ref}
-      data-iguide-memory-card="true"
-      style={{
-        width:
-          "min(92vw, 390px)",
-
-        boxSizing:
-          "border-box",
-
-        overflow:
-          "hidden",
-
-        borderRadius:
-          "28px",
-
-        background:
-          `
-            radial-gradient(
-              circle at 12% 0%,
-              rgba(255,0,255,0.13),
-              transparent 30%
-            ),
-            radial-gradient(
-              circle at 96% 95%,
-              rgba(0,230,255,0.08),
-              transparent 30%
-            ),
-            linear-gradient(
-              180deg,
-              #171827 0%,
-              #090A12 100%
-            )
-          `,
-
-        border:
-          "1px solid rgba(255,255,255,0.08)",
-
-        boxShadow:
-          `
-            0 28px 70px rgba(0,0,0,0.56),
-            0 0 34px rgba(255,0,255,0.08)
-          `,
-
-        color:
-          "#FFFFFF",
-      }}
-    >
-      {/* MARCA */}
-      <header
+    return (
+      <article
+        ref={ref}
+        data-iguide-memory-card="true"
         style={{
-          display:
-            "flex",
-
-          alignItems:
-            "center",
-
-          gap:
-            "11px",
-
-          padding:
-            "17px 17px 14px",
-
-          borderBottom:
-            "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        <img
-          src={logo}
-          alt="I.GUIDE"
-          style={{
-            width:
-              "40px",
-
-            height:
-              "40px",
-
-            flexShrink:
-              0,
-
-            objectFit:
-              "contain",
-
-            borderRadius:
-              "10px",
-
-            backgroundColor:
-              "#FFFFFF",
-
-            boxShadow:
-              "0 0 16px rgba(255,0,255,0.16)",
-          }}
-        />
-
-        <div
-          style={{
-            minWidth:
-              0,
-
-            flex:
-              1,
-          }}
-        >
-          <div
-            style={{
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                "6px",
-
-              marginBottom:
-                "3px",
-            }}
-          >
-            <span
-              style={{
-                color:
-                  MAGENTA_SOFT,
-
-                fontSize:
-                  "9px",
-
-                fontWeight:
-                  900,
-
-                letterSpacing:
-                  "0.14em",
-
-                textTransform:
-                  "uppercase",
-              }}
-            >
-              Live Like Local
-            </span>
-
-            <Sparkles
-              size={12}
-              strokeWidth={1.8}
-              color={CYAN}
-              style={{
-                filter:
-                  "drop-shadow(0 0 6px rgba(0,230,255,0.65))",
-              }}
-            />
-          </div>
-
-          <h2
-            style={{
-              margin:
-                0,
-
-              color:
-                "#FFFFFF",
-
-              fontSize:
-                "20px",
-
-              lineHeight:
-                1.12,
-
-              fontWeight:
-                900,
-
-              letterSpacing:
-                "-0.025em",
-
-              overflowWrap:
-                "anywhere",
-            }}
-          >
-            {data.title}
-          </h2>
-        </div>
-
-        <div
-          style={{
-            display:
-              "inline-flex",
-
-            alignItems:
-              "center",
-
-            gap:
-              "6px",
-
-            minHeight:
-              "30px",
-
-            padding:
-              "5px 9px",
-
-            borderRadius:
-              "999px",
-
-            color:
-              status.color,
-
-            background:
-              status.background,
-
-            border:
-              `1px solid ${status.border}`,
-
-            fontSize:
-              "8px",
-
-            fontWeight:
-              900,
-
-            textTransform:
-              "uppercase",
-
-            letterSpacing:
-              "0.07em",
-
-            whiteSpace:
-              "nowrap",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              width:
-                "7px",
-
-              height:
-                "7px",
-
-              borderRadius:
-                "50%",
-
-              backgroundColor:
-                status.color,
-
-              boxShadow:
-                `0 0 9px ${status.color}`,
-            }}
-          />
-
-          {status.label}
-        </div>
-      </header>
-
-      {/* UBICACIÓN */}
-      <section
-        style={{
-          display:
-            "flex",
-
-          justifyContent:
-            "space-between",
-
-          alignItems:
-            "flex-start",
-
-          gap:
-            "12px",
-
-          padding:
-            "12px 17px 0",
-        }}
-      >
-        <div
-          style={{
-            minWidth:
-              0,
-          }}
-        >
-          {data.placeLabel && (
-            <p
-              style={{
-                margin:
-                  "0 0 4px",
-
-                color:
-                  "rgba(255,255,255,0.78)",
-
-                fontSize:
-                  "11px",
-
-                fontWeight:
-                  700,
-
-                lineHeight:
-                  1.35,
-              }}
-            >
-              {data.placeLabel}
-            </p>
-          )}
-
-          <p
-            style={{
-              margin:
-                0,
-
-              color:
-                "rgba(255,255,255,0.43)",
-
-              fontSize:
-                "10px",
-            }}
-          >
-            {data.city} · {data.date}
-          </p>
-        </div>
-
-        <div
-          style={{
-            display:
-              "inline-flex",
-
-            alignItems:
-              "center",
-
-            gap:
-              "6px",
-
-            color:
-              CYAN,
-
-            fontSize:
-              "9px",
-
-            fontWeight:
-              800,
-          }}
-        >
-          <MapPinned
-            size={14}
-            strokeWidth={1.8}
-          />
-
-          {primaryVisualLabel}
-        </div>
-      </section>
-
-      {/* VISUAL PRINCIPAL */}
-      <section
-        style={{
-          position:
-            "relative",
-
-          height:
-            "390px",
-
-          margin:
-            "14px 13px 0",
-
-          overflow:
-            "hidden",
-
-          borderRadius:
-            "21px",
-
-          backgroundColor:
-            "#080912",
-
+          width: "min(92vw, 410px)",
+          boxSizing: "border-box",
+          overflow: "hidden",
+          borderRadius: "28px",
+          background:
+            "linear-gradient(180deg, #11131D 0%, #080910 100%)",
           border:
-            "1px solid rgba(255,255,255,0.08)",
-
+            "1px solid rgba(255,255,255,0.10)",
           boxShadow:
-            `
-              inset 0 0 0 1px rgba(255,0,255,0.03),
-              0 16px 34px rgba(0,0,0,0.30)
-            `,
+            "0 28px 76px rgba(0,0,0,0.58), 0 0 34px rgba(255,32,206,0.08)",
+          color: "#FFFFFF",
         }}
       >
-        {hasPhoto ? (
-          <>
+        {/* La pieza exportable: formato social 4:5. */}
+        <section
+          style={{
+            position: "relative",
+            aspectRatio: "4 / 5",
+            overflow: "hidden",
+            background:
+              "linear-gradient(145deg, #151827, #080910)",
+          }}
+        >
+          {hasPhoto ? (
             <img
               src={data.photo}
               alt={`Recuerdo de ${data.title}`}
               style={{
-                position:
-                  "absolute",
-
-                inset:
-                  0,
-
-                width:
-                  "100%",
-
-                height:
-                  "100%",
-
-                objectFit:
-                  "cover",
-
-                display:
-                  "block",
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                display: "block",
+                objectFit: "cover",
               }}
             />
+          ) : hasMap ? (
+            <MemoryMapCanvas
+              center={data.mapBackground!.center}
+              path={data.mapBackground!.path}
+              memories={data.mapBackground!.memories}
+              waypoints={data.waypoints ?? []}
+              variant="full"
+            />
+          ) : (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "grid",
+                placeItems: "center",
+                color: "rgba(255,255,255,0.42)",
+                fontSize: "12px",
+              }}
+            >
+              Preparando tu recuerdo…
+            </div>
+          )}
 
-            {/* MAPA FLOTANTE SOBRE FOTO */}
-            {hasMap && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 1,
+              background: hasPhoto
+                ? `
+                    linear-gradient(
+                      180deg,
+                      rgba(4,5,10,0.50) 0%,
+                      rgba(4,5,10,0.04) 30%,
+                      rgba(4,5,10,0.16) 54%,
+                      rgba(4,5,10,0.90) 100%
+                    )
+                  `
+                : "linear-gradient(180deg, rgba(4,5,10,0.28), rgba(4,5,10,0.78))",
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Marca integrada, como en la maqueta social. */}
+          <div
+            style={{
+              position: "absolute",
+              top: "14px",
+              left: "15px",
+              zIndex: 5,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <img
+              src={logo}
+              alt="I.GUIDE"
+              style={{
+                width: "88px",
+                height: "38px",
+                objectFit: "contain",
+                objectPosition: "left center",
+                filter:
+                  "drop-shadow(0 3px 10px rgba(0,0,0,0.65))",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              top: "16px",
+              right: "14px",
+              zIndex: 5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              minHeight: "28px",
+              padding: "4px 9px",
+              borderRadius: "999px",
+              color: status.color,
+              background: status.background,
+              border: `1px solid ${status.border}`,
+              backdropFilter: "blur(10px)",
+              fontSize: "7px",
+              fontWeight: 900,
+              letterSpacing: "0.075em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: status.color,
+                boxShadow: `0 0 8px ${status.color}`,
+              }}
+            />
+            {status.label}
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              left: "15px",
+              top: "63px",
+              zIndex: 5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              padding: "6px 9px",
+              borderRadius: "999px",
+              color: "rgba(255,255,255,0.90)",
+              background: "rgba(5,6,12,0.52)",
+              border:
+                "1px solid rgba(255,255,255,0.10)",
+              backdropFilter: "blur(8px)",
+              fontSize: "8px",
+              fontWeight: 800,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: "7px",
+                height: "7px",
+                borderRadius: "50%",
+                backgroundColor: MAGENTA,
+                boxShadow:
+                  "0 0 10px rgba(255,32,206,0.95)",
+              }}
+            />
+            {pointCount} puntos · {memoryCount} recuerdos
+          </div>
+
+          {/* Texto inferior: ocupa solo el lado izquierdo del mapa. */}
+          <div
+            style={{
+              position: "absolute",
+              left: "16px",
+              right: hasMap ? "48%" : "16px",
+              bottom: "16px",
+              zIndex: 5,
+              textAlign: "left",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                color: "#FFFFFF",
+                fontSize: "clamp(22px, 6vw, 30px)",
+                lineHeight: 1.02,
+                fontWeight: 900,
+                letterSpacing: "-0.045em",
+                overflowWrap: "anywhere",
+                textShadow: "0 3px 18px rgba(0,0,0,0.88)",
+              }}
+            >
+              {data.title}
+            </h2>
+
+            {data.placeLabel && (
+              <p
+                style={{
+                  margin: "4px 0 0",
+                  color: "rgba(255,255,255,0.92)",
+                  fontSize: "10px",
+                  fontWeight: 750,
+                  lineHeight: 1.3,
+                }}
+              >
+                {data.placeLabel}
+              </p>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "5px 8px",
+                marginTop: "8px",
+                color: "rgba(255,255,255,0.76)",
+                fontSize: "8px",
+                fontWeight: 700,
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <MapPin size={11} strokeWidth={2} />
+                {data.city}
+              </span>
+
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <CalendarDays size={11} strokeWidth={2} />
+                {data.date}
+              </span>
+            </div>
+
+            {hasUserNote && (
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  color: "#FFFFFF",
+                  fontSize: "9px",
+                  lineHeight: 1.42,
+                  fontStyle: "italic",
+                  fontWeight: 650,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  textShadow: "0 2px 12px rgba(0,0,0,0.9)",
+                }}
+              >
+                “{data.note?.trim()}”
+              </p>
+            )}
+
+            <p
+              style={{
+                margin: "10px 0 0",
+                color: MAGENTA_SOFT,
+                fontSize: "8px",
+                fontWeight: 850,
+              }}
+            >
+              #IGuide #LiveLikeLocal
+            </p>
+          </div>
+
+          {/*
+           * El mapa queda pegado a la esquina inferior derecha.
+           * Sus teselas usan 52% de opacidad: la fotografía sigue
+           * siendo visible y la ruta magenta conserva contraste.
+           */}
+          {hasPhoto && hasMap && (
+            <div
+              style={{
+                position: "absolute",
+                right: "10px",
+                bottom: "10px",
+                zIndex: 4,
+                width: "43%",
+                height: "36%",
+                overflow: "hidden",
+                borderRadius: "15px",
+                border:
+                  "1px solid rgba(255,255,255,0.26)",
+                background: "rgba(5,7,13,0.48)",
+                boxShadow:
+                  "0 12px 28px rgba(0,0,0,0.34), 0 0 18px rgba(255,32,206,0.10)",
+                backdropFilter: "blur(2px)",
+              }}
+            >
               <div
                 style={{
-                  position:
-                    "absolute",
-
-                  right:
-                    "12px",
-
-                  bottom:
-                    hasUserNote
-                      ? "95px"
-                      : "12px",
-
-                  width:
-                    "45%",
-
-                  height:
-                    "42%",
-
-                  overflow:
-                    "hidden",
-
-                  borderRadius:
-                    "16px",
-
-                  border:
-                    "1px solid rgba(255,255,255,0.18)",
-
-                  backgroundColor:
-                    "#0A0B14",
-
-                  boxShadow:
-                    `
-                      0 14px 30px rgba(0,0,0,0.48),
-                      0 0 18px rgba(255,0,255,0.16)
-                    `,
-
-                  zIndex:
-                    3,
+                  position: "absolute",
+                  inset: "0 0 42px",
                 }}
               >
                 <MemoryMapCanvas
-                  center={
-                    data.mapBackground!.center
-                  }
-                  path={
-                    data.mapBackground!.path
-                  }
-                  memories={
-                    data.mapBackground!.memories
-                  }
-                  waypoints={
-                    data.waypoints ??
-                    []
-                  }
+                  center={data.mapBackground!.center}
+                  path={data.mapBackground!.path}
+                  memories={data.mapBackground!.memories}
+                  waypoints={data.waypoints ?? []}
+                  variant="glass"
                 />
               </div>
-            )}
-          </>
-        ) : hasMap ? (
-          <MemoryMapCanvas
-            center={
-              data.mapBackground!.center
-            }
-            path={
-              data.mapBackground!.path
-            }
-            memories={
-              data.mapBackground!.memories
-            }
-            waypoints={
-              data.waypoints ??
-              []
-            }
-          />
-        ) : (
-          <div
-            style={{
-              position:
-                "absolute",
 
-              inset:
-                0,
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: "42px",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  alignItems: "center",
+                  background: "rgba(5,7,13,0.76)",
+                  borderTop:
+                    "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <MapStat value={formattedTime} label="Tiempo" />
+                <MapStat value={formattedDistance} label="Distancia" />
+                <MapStat value={`${memoryCount}`} label="Hitos" accent />
+              </div>
+            </div>
+          )}
 
-              display:
-                "flex",
-
-              flexDirection:
-                "column",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              gap:
-                "8px",
-
-              color:
-                "rgba(255,255,255,0.42)",
-
-              fontSize:
-                "11px",
-            }}
-          >
-            <MapPinned
-              size={30}
-              strokeWidth={1.4}
-              color={MAGENTA}
-            />
-
-            Preparando visualización…
-          </div>
-        )}
-
-        <div
-          aria-hidden="true"
-          style={{
-            position:
-              "absolute",
-
-            inset:
-              0,
-
-            background:
-              hasPhoto
-                ? "linear-gradient(to top, rgba(5,5,10,0.56), transparent 54%)"
-                : "linear-gradient(to top, rgba(5,5,10,0.10), transparent 40%)",
-
-            pointerEvents:
-              "none",
-
-            zIndex:
-              2,
-          }}
-        />
-
-        {/* NOTA DEL USUARIO */}
-        {hasUserNote && (
-          <div
-            style={{
-              position:
-                "absolute",
-
-              left:
-                "12px",
-
-              right:
-                hasPhoto &&
-                hasMap
-                  ? "49%"
-                  : "12px",
-
-              bottom:
-                "12px",
-
-              zIndex:
-                4,
-
-              maxHeight:
-                "76px",
-
-              overflow:
-                "hidden",
-
-              padding:
-                "10px 11px",
-
-              borderRadius:
-                "13px",
-
-              background:
-                "rgba(7,8,15,0.82)",
-
-              border:
-                "1px solid rgba(255,255,255,0.11)",
-
-              backdropFilter:
-                "blur(10px)",
-            }}
-          >
-            <p
+          {!hasMap && (
+            <div
               style={{
-                margin:
-                  0,
-
-                color:
-                  "#FFFFFF",
-
-                fontSize:
-                  "10px",
-
-                lineHeight:
-                  1.45,
-
-                fontStyle:
-                  "italic",
-
-                fontWeight:
-                  600,
-
-                textAlign:
-                  "left",
-
-                display:
-                  "-webkit-box",
-
-                WebkitLineClamp:
-                  3,
-
-                WebkitBoxOrient:
-                  "vertical",
-
-                overflow:
-                  "hidden",
+                position: "absolute",
+                right: "14px",
+                bottom: "15px",
+                zIndex: 5,
+                display: "flex",
+                flexDirection: "column",
+                gap: "5px",
+                padding: "9px 10px",
+                borderRadius: "13px",
+                background: "rgba(5,7,13,0.62)",
+                border:
+                  "1px solid rgba(255,255,255,0.12)",
+                backdropFilter: "blur(8px)",
+                textAlign: "right",
               }}
             >
-              “{data.note?.trim()}”
-            </p>
-          </div>
-        )}
+              <strong style={{ fontSize: "11px" }}>
+                {formattedTime}
+              </strong>
+              <span
+                style={{
+                  color: "rgba(255,255,255,0.55)",
+                  fontSize: "7px",
+                  textTransform: "uppercase",
+                }}
+              >
+                {formattedDistance} · {memoryCount} hitos
+              </span>
+            </div>
+          )}
+        </section>
 
-        {/* RESUMEN SOBRE EL MAPA */}
-        <div
-          style={{
-            position:
-              "absolute",
-
-            left:
-              "12px",
-
-            top:
-              "12px",
-
-            zIndex:
-              4,
-
-            display:
-              "inline-flex",
-
-            alignItems:
-              "center",
-
-            gap:
-              "7px",
-
-            padding:
-              "7px 9px",
-
-            borderRadius:
-              "999px",
-
-            background:
-              "rgba(7,8,15,0.74)",
-
-            border:
-              "1px solid rgba(255,255,255,0.10)",
-
-            backdropFilter:
-              "blur(9px)",
-
-            color:
-              "#FFFFFF",
-
-            fontSize:
-              "8px",
-
-            fontWeight:
-              800,
-          }}
-        >
-          <span
-            aria-hidden="true"
+        {/* Controles de la app: no forman parte de la imagen exportada. */}
+        {experienceId && (
+          <section
+            data-export-ignore="true"
             style={{
-              width:
-                "7px",
-
-              height:
-                "7px",
-
-              borderRadius:
-                "50%",
-
-              backgroundColor:
-                MAGENTA,
-
-              boxShadow:
-                "0 0 9px rgba(255,0,255,0.92)",
-            }}
-          />
-
-          {routeSummary.points} puntos ·{" "}
-          {routeSummary.memories} recuerdos
-        </div>
-      </section>
-
-      {/* MÉTRICAS */}
-      <section
-        style={{
-          display:
-            "grid",
-
-          gridTemplateColumns:
-            "repeat(3, minmax(0, 1fr))",
-
-          gap:
-            "8px",
-
-          margin:
-            "12px 13px 0",
-        }}
-      >
-        <Metric
-          label="Distancia"
-          value={
-            formattedDistance
-          }
-        />
-
-        <Metric
-          label="Tiempo"
-          value={
-            formattedTime
-          }
-        />
-
-        <Metric
-          label="Hitos"
-          value={`${memoryCount}`}
-          accent
-        />
-      </section>
-
-      {/* REACCIONES */}
-      {experienceId && (
-        <section
-          style={{
-            padding:
-              "13px 13px 0",
-          }}
-        >
-          <p
-            style={{
-              margin:
-                "0 0 8px",
-
-              color:
-                "rgba(255,255,255,0.46)",
-
-              fontSize:
-                "8px",
-
-              fontWeight:
-                850,
-
-              letterSpacing:
-                "0.09em",
-
-              textTransform:
-                "uppercase",
+              padding: "14px 14px 0",
             }}
           >
-            ¿Qué te dejó esta experiencia?
-          </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginBottom: "9px",
+                color: "rgba(255,255,255,0.48)",
+                fontSize: "8px",
+                fontWeight: 850,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              <Footprints size={13} color={CYAN} />
+              ¿Qué te dejó esta experiencia?
+            </div>
 
-          <div
-            style={{
-              display:
-                "grid",
-
-              gridTemplateColumns:
-                "repeat(3, minmax(0, 1fr))",
-
-              gap:
-                "7px",
-            }}
-          >
-            {REACTIONS.map(
-              (reaction) => {
-                const Icon =
-                  reaction.icon;
-
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(3, minmax(0, 1fr))",
+                gap: "7px",
+              }}
+            >
+              {REACTIONS.map((reaction) => {
+                const Icon = reaction.icon;
                 const selected =
-                  selectedReaction ===
-                  reaction.id;
+                  selectedReaction === reaction.id;
 
                 return (
                   <button
-                    key={
-                      reaction.id
-                    }
+                    key={reaction.id}
                     type="button"
                     onClick={() =>
-                      handleReaction(
-                        reaction.id
-                      )
+                      handleReaction(reaction.id)
                     }
-                    aria-pressed={
-                      selected
-                    }
-                    title={
-                      reaction.label
-                    }
+                    aria-pressed={selected}
+                    title={reaction.label}
                     style={{
-                      minWidth:
-                        0,
-
-                      minHeight:
-                        "56px",
-
-                      padding:
-                        "8px 5px",
-
-                      display:
-                        "flex",
-
-                      flexDirection:
-                        "column",
-
-                      alignItems:
-                        "center",
-
-                      justifyContent:
-                        "center",
-
-                      gap:
-                        "5px",
-
-                      borderRadius:
-                        "14px",
-
-                      border:
-                        selected
-                          ? "1px solid rgba(255,0,255,0.62)"
-                          : "1px solid rgba(255,255,255,0.08)",
-
-                      background:
-                        selected
-                          ? "linear-gradient(145deg, rgba(255,0,255,0.22), rgba(18,19,34,0.98))"
-                          : "rgba(255,255,255,0.035)",
-
-                      color:
-                        selected
-                          ? MAGENTA_SOFT
-                          : "rgba(255,255,255,0.70)",
-
-                      boxShadow:
-                        selected
-                          ? "0 0 18px rgba(255,0,255,0.16)"
-                          : "none",
-
-                      cursor:
-                        "pointer",
+                      minWidth: 0,
+                      minHeight: "50px",
+                      padding: "7px 5px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "4px",
+                      borderRadius: "13px",
+                      border: selected
+                        ? "1px solid rgba(255,32,206,0.58)"
+                        : "1px solid rgba(255,255,255,0.08)",
+                      background: selected
+                        ? "linear-gradient(145deg, rgba(255,32,206,0.20), rgba(18,19,31,0.98))"
+                        : "rgba(255,255,255,0.035)",
+                      color: selected
+                        ? MAGENTA_SOFT
+                        : "rgba(255,255,255,0.68)",
+                      cursor: "pointer",
                     }}
                   >
                     <Icon
-                      size={18}
-                      strokeWidth={
-                        selected
-                          ? 2.2
-                          : 1.7
-                      }
+                      size={17}
+                      strokeWidth={selected ? 2.2 : 1.7}
                     />
-
                     <span
                       style={{
-                        maxWidth:
-                          "100%",
-
-                        overflow:
-                          "hidden",
-
-                        textOverflow:
-                          "ellipsis",
-
-                        color:
-                          "inherit",
-
-                        fontSize:
-                          "8px",
-
-                        fontWeight:
-                          800,
-
-                        whiteSpace:
-                          "nowrap",
+                        maxWidth: "100%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        fontSize: "8px",
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      {
-                        reaction.compactLabel
-                      }
+                      {reaction.compactLabel}
                     </span>
                   </button>
                 );
-              }
-            )}
-          </div>
-        </section>
-      )}
+              })}
+            </div>
+          </section>
+        )}
 
-      {/* ACCIONES */}
-      <footer
-        style={{
-          padding:
-            "14px 13px 11px",
-        }}
-      >
-        <div
+        <footer
+          data-export-ignore="true"
           style={{
-            display:
-              "grid",
-
-            gridTemplateColumns:
-              onDownload
+            padding: "12px 14px 14px",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: onDownload
                 ? "48px minmax(0, 1fr)"
                 : "1fr",
-
-            gap:
-              "8px",
-          }}
-        >
-          {onDownload && (
-            <button
-              type="button"
-              onClick={() => {
-                void handleDownloadClick();
-              }}
-              disabled={isDownloading}
-              aria-busy={isDownloading}
-              aria-label="Descargar imagen"
-              title="Descargar imagen"
-              style={{
-                minHeight:
-                  "46px",
-
-                display:
-                  "inline-flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                borderRadius:
-                  "14px",
-
-                border:
-                  "1px solid rgba(0,230,255,0.25)",
-
-                background:
-                  "rgba(0,230,255,0.06)",
-
-                color:
-                  CYAN,
-
-                cursor:
-                  isDownloading
-                    ? "wait"
-                    : "pointer",
-
-                opacity:
-                  isDownloading
-                    ? 0.62
-                    : 1,
-
-                boxShadow:
-                  "0 0 15px rgba(0,230,255,0.07)",
-              }}
-            >
-              <Download
-                size={19}
-                strokeWidth={2}
-              />
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={
-              onShare
-            }
-            style={{
-              minHeight:
-                "46px",
-
-              display:
-                "inline-flex",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              gap:
-                "8px",
-
-              padding:
-                "9px 18px",
-
-              border:
-                "1px solid rgba(255,255,255,0.12)",
-
-              borderRadius:
-                "14px",
-
-              background:
-                "linear-gradient(145deg, #FF3DE8, #D4008D)",
-
-              color:
-                "#FFFFFF",
-
-              fontSize:
-                "12px",
-
-              fontWeight:
-                900,
-
-              cursor:
-                "pointer",
-
-              boxShadow:
-                "0 9px 24px rgba(255,0,184,0.26)",
+              gap: "8px",
             }}
           >
-            <Share2
-              size={17}
-              strokeWidth={2.1}
-            />
+            {onDownload && (
+              <button
+                type="button"
+                onClick={() => {
+                  void handleDownloadClick();
+                }}
+                disabled={isDownloading}
+                aria-busy={isDownloading}
+                aria-label="Descargar imagen"
+                title="Descargar imagen"
+                style={{
+                  minHeight: "48px",
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "14px",
+                  border:
+                    "1px solid rgba(66,232,245,0.24)",
+                  background: "rgba(66,232,245,0.06)",
+                  color: CYAN,
+                  cursor: isDownloading ? "wait" : "pointer",
+                  opacity: isDownloading ? 0.62 : 1,
+                }}
+              >
+                <Download size={19} strokeWidth={2} />
+              </button>
+            )}
 
-            Compartir momento
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={onShare}
+              style={{
+                minHeight: "48px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "9px 18px",
+                border:
+                  "1px solid rgba(255,255,255,0.13)",
+                borderRadius: "14px",
+                background:
+                  "linear-gradient(135deg, #FF31D4 0%, #D4008D 100%)",
+                color: "#FFFFFF",
+                fontSize: "12px",
+                fontWeight: 900,
+                cursor: "pointer",
+                boxShadow:
+                  "0 10px 26px rgba(255,0,184,0.25)",
+              }}
+            >
+              <Share2 size={17} strokeWidth={2.1} />
+              Compartir momento
+            </button>
+          </div>
+        </footer>
+      </article>
+    );
+  }
+);
 
-        <p
-          style={{
-            margin:
-              "13px 0 0",
-
-            color:
-              "rgba(255,255,255,0.28)",
-
-            fontSize:
-              "7px",
-
-            fontWeight:
-              850,
-
-            letterSpacing:
-              "0.11em",
-
-            textAlign:
-              "center",
-
-            textTransform:
-              "uppercase",
-          }}
-        >
-          No visites. Pertenece. Vive la ciudad como un local.
-        </p>
-      </footer>
-    </article>
-  );
-});
-
-type MetricProps = {
-  label: string;
+type MapStatProps = {
   value: string;
+  label: string;
   accent?: boolean;
 };
 
-function Metric({
-  label,
+function MapStat({
   value,
+  label,
   accent = false,
-}: MetricProps) {
+}: MapStatProps) {
   return (
-    <div
+    <span
       style={{
-        minWidth:
-          0,
-
-        minHeight:
-          "66px",
-
-        display:
-          "flex",
-
-        flexDirection:
-          "column",
-
-        justifyContent:
-          "center",
-
-        padding:
-          "9px 7px",
-
-        borderRadius:
-          "14px",
-
-        background:
-          "rgba(255,255,255,0.038)",
-
-        border:
-          accent
-            ? "1px solid rgba(255,0,255,0.18)"
-            : "1px solid rgba(255,255,255,0.06)",
-
-        textAlign:
-          "center",
+        minWidth: 0,
+        padding: "0 3px",
+        color: accent ? MAGENTA_SOFT : "#FFFFFF",
+        textAlign: "center",
+        borderRight:
+          label !== "Hitos"
+            ? "1px solid rgba(255,255,255,0.10)"
+            : "none",
       }}
     >
-      <span
-        style={{
-          display:
-            "block",
-
-          color:
-            "rgba(255,255,255,0.38)",
-
-          fontSize:
-            "7px",
-
-          fontWeight:
-            800,
-
-          textTransform:
-            "uppercase",
-
-          letterSpacing:
-            "0.07em",
-        }}
-      >
-        {label}
-      </span>
-
       <strong
         style={{
-          display:
-            "block",
-
-          marginTop:
-            "6px",
-
-          color:
-            accent
-              ? MAGENTA_SOFT
-              : "#FFFFFF",
-
-          fontSize:
-            "13px",
-
-          fontFamily:
-            "monospace",
-
-          whiteSpace:
-            "nowrap",
-
-          textShadow:
-            accent
-              ? "0 0 9px rgba(255,0,255,0.32)"
-              : "none",
+          display: "block",
+          overflow: "hidden",
+          fontSize: "7px",
+          lineHeight: 1.15,
+          fontWeight: 850,
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
         }}
       >
         {value}
       </strong>
-    </div>
+      <small
+        style={{
+          display: "block",
+          marginTop: "3px",
+          color: "rgba(255,255,255,0.48)",
+          fontSize: "5px",
+          lineHeight: 1,
+          fontWeight: 750,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </small>
+    </span>
   );
-};
-
-MemoryCard.displayName = "MemoryCard";
+}
 
 export default MemoryCard;
