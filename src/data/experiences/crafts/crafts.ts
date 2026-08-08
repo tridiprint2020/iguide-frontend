@@ -51,8 +51,8 @@ estimatedVisitMinutes: 60
 
     description:"Muchas variedad de artesanía, la atención personalizada.",
 
-    latitude:-12.068315987790546, 
-    longitude:-75.20888155028801,
+    latitude:-12.068382032402285, 
+    longitude:-75.2092520468082,
     certificationRadiusMeters: 20,
 
     rating:6.6,

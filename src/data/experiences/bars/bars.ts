@@ -17,9 +17,9 @@ export const bars: Experience[] = [
 
     description:"uno de los mejores bares de Huancayo, variedad en vino, vodka, tequila, pisco y más... Es genial en pleno corazón de Huancayo",
 
-    latitude:-12.067936938103896, 
+    latitude:-12.068018431794457, 
 
-    longitude:-75.20939655037395,
+    longitude:-75.20950274213135,
 
     certificationRadiusMeters: 20,
 
