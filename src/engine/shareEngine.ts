@@ -160,6 +160,10 @@ export const shareEngine = {
         1500
       );
 
+      alert(
+        tx("MemoryCard guardada. Búscala en la carpeta Descargas de tu celular.")
+      );
+
       return true;
     } catch (error) {
       console.error(

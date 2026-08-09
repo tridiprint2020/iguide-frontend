@@ -6,16 +6,14 @@ import {
 
 import {
   Camera,
-  Check,
   ImagePlus,
+  Loader2,
   Route,
-  RotateCcw,
 } from "lucide-react";
 
 import {
   useJourney,
 } from "../../context/JourneyContext";
-
 import type {
   TimelineItem,
 } from "../../types/tracking/tracking";
@@ -33,256 +31,95 @@ export function CameraView() {
     savePoint,
     resumeWalking,
   } = useJourney();
-
-  const fileInputRef =
-    useRef<HTMLInputElement | null>(
-      null
-    );
-
-  const previewObjectUrlRef =
-    useRef<string | null>(
-      null
-    );
-
-  const hasAutoOpenedRef =
-    useRef(false);
-
-  const [
-    isSaving,
-    setIsSaving,
-  ] = useState(false);
-
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] =
-    useState<string | null>(
-      null
-    );
-
-  const [
-    preview,
-    setPreview,
-  ] =
-    useState<string | null>(
-      null
-    );
-
-  const [
-    photoFile,
-    setPhotoFile,
-  ] =
-    useState<File | null>(
-      null
-    );
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const hasAutoOpenedRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function openNativeCamera() {
+    if (isSaving) {
+      return;
+    }
+
     setErrorMessage(null);
     fileInputRef.current?.click();
   }
 
   useEffect(() => {
-    if (!hasAutoOpenedRef.current) {
-      hasAutoOpenedRef.current = true;
-
-      window.setTimeout(
-        openNativeCamera,
-        120
-      );
+    if (hasAutoOpenedRef.current) {
+      return;
     }
 
-    return () => {
-      if (previewObjectUrlRef.current) {
-        URL.revokeObjectURL(
-          previewObjectUrlRef.current
-        );
-        previewObjectUrlRef.current = null;
-      }
-    };
+    hasAutoOpenedRef.current = true;
+    window.setTimeout(openNativeCamera, 120);
+    // La apertura automática ocurre una sola vez al entrar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function getCurrentCoordinates(): Promise<{
     lat: number;
     lng: number;
   }> {
-    return new Promise(
-      (
-        resolve,
-        reject
-      ) => {
-        if (
-          !navigator.geolocation
-        ) {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(
+          new Error(
+            tx("Este dispositivo no permite obtener ubicación GPS.")
+          )
+        );
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        () => {
           reject(
             new Error(
-              tx("Este dispositivo no permite obtener ubicación GPS.")
+              tx("No se pudo obtener tu ubicación. Activa el GPS e inténtalo nuevamente.")
             )
           );
-
-          return;
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 8000,
+          timeout: 15000,
         }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              lat:
-                position.coords
-                  .latitude,
-
-              lng:
-                position.coords
-                  .longitude,
-            });
-          },
-
-          () => {
-            reject(
-              new Error(
-                tx("No se pudo obtener tu ubicación. Activa el GPS e inténtalo nuevamente.")
-              )
-            );
-          },
-
-          {
-            enableHighAccuracy:
-              true,
-
-            maximumAge:
-              8000,
-
-            timeout:
-              15000,
-          }
-        );
-      }
-    );
+      );
+    });
   }
 
-  function releasePreviewObjectUrl() {
-    if (!previewObjectUrlRef.current) {
-      return;
-    }
-
-    URL.revokeObjectURL(
-      previewObjectUrlRef.current
-    );
-
-    previewObjectUrlRef.current =
-      null;
-  }
-
-  async function handlePhotoSelected(
-    event:
-      React.ChangeEvent<HTMLInputElement>
-  ) {
-    const file =
-      event.target.files?.[0];
-
-    event.target.value =
-      "";
-
-    if (!file) {
-      return;
-    }
-
-    setErrorMessage(
-      null
-    );
-
-    try {
-      /*
-       * La vista previa usa un blob liviano. Convertir aquí la
-       * foto original completa a base64 duplicaba decenas de MB
-       * en Chrome Android y podía dejar la pestaña negra.
-       */
-      const photo =
-        URL.createObjectURL(
-          file
-        );
-
-      releasePreviewObjectUrl();
-
-      previewObjectUrlRef.current =
-        photo;
-
-      setPreview(
-        photo
-      );
-
-      setPhotoFile(
-        file
-      );
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : tx("No se pudo cargar la imagen.")
-      );
-    }
-  }
-
-  async function handleConfirmMemory() {
-    if (!photoFile) {
-      return;
-    }
-
-    setIsSaving(
-      true
-    );
-
-    setErrorMessage(
-      null
-    );
-
+  async function saveSelectedPhoto(file: File) {
+    setIsSaving(true);
+    setErrorMessage(null);
     let storedPhotoReference: string | null = null;
 
     try {
-      const [
-        compressedPhotoBlob,
-        coordinates,
-      ] =
-        await Promise.all([
-          compressPhotoFile(
-            photoFile
-          ),
+      const [compressedPhotoBlob, coordinates] = await Promise.all([
+        compressPhotoFile(file),
+        getCurrentCoordinates(),
+      ]);
 
-          getCurrentCoordinates(),
-        ]);
+      storedPhotoReference = await storePhotoBlob(compressedPhotoBlob);
 
-      /*
-       * El archivo vive en IndexedDB. El timeline recibe solo una
-       * referencia breve: así nunca llenamos localStorage ni dejamos
-       * la pestaña negra al volver de WhatsApp o de la galería.
-       */
-      storedPhotoReference =
-        await storePhotoBlob(
-          compressedPhotoBlob
-        );
-
-      const memoryPoint:
-        TimelineItem = {
-        id:
-          crypto.randomUUID(),
-
-        type:
-          "memory",
-
-        lat:
-          coordinates.lat,
-
-        lng:
-          coordinates.lng,
-
-        timestamp:
-          Date.now(),
-
-        photo:
-          storedPhotoReference,
+      const memoryPoint: TimelineItem = {
+        id: crypto.randomUUID(),
+        type: "memory",
+        lat: coordinates.lat,
+        lng: coordinates.lng,
+        timestamp: Date.now(),
+        photo: storedPhotoReference,
       };
 
-      savePoint(
-        memoryPoint
-      );
+      /*
+       * Android ya pidió confirmar la captura. Al regresar a I.GUIDE
+       * guardamos directamente y evitamos una segunda revisión idéntica.
+       */
+      savePoint(memoryPoint);
     } catch (error) {
       if (storedPhotoReference) {
         await deletePhoto(storedPhotoReference).catch(() => undefined);
@@ -293,387 +130,172 @@ export function CameraView() {
           ? error.message
           : tx("No se pudo guardar el recuerdo.")
       );
-
-      setIsSaving(
-        false
-      );
+    } finally {
+      setIsSaving(false);
     }
   }
 
-  function handleRepeatPhoto() {
-    releasePreviewObjectUrl();
+  function handlePhotoSelected(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
 
-    setPreview(
-      null
-    );
-
-    setPhotoFile(
-      null
-    );
-
-    setErrorMessage(
-      null
-    );
-
-    window.setTimeout(
-      openNativeCamera,
-      50
-    );
-  }
-
-  function handleReturnToRoute() {
-    releasePreviewObjectUrl();
-    resumeWalking();
+    if (file) {
+      void saveSelectedPhoto(file);
+    }
   }
 
   return (
     <div
       style={{
-        minHeight:
-          "100dvh",
-
-        height:
-          "100dvh",
-
-        display:
-          "grid",
-
-        gridTemplateRows:
-          "auto minmax(0, 1fr) auto",
-
-        boxSizing:
-          "border-box",
-
-        overflow:
-          "hidden",
-
-        backgroundColor:
-          "#080910",
-
-        color:
-          "#FFFFFF",
+        minHeight: "100dvh",
+        height: "100dvh",
+        display: "grid",
+        gridTemplateRows: "auto minmax(0, 1fr) auto",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        backgroundColor: "#080910",
+        color: "#FFFFFF",
       }}
     >
       <header
         style={{
-          minHeight:
-            "58px",
-
-          display:
-            "flex",
-
-          alignItems:
-            "center",
-
-          justifyContent:
-            "space-between",
-
-          gap:
-            "12px",
-
-          padding:
-            "8px 14px",
-
-          borderBottom:
-            "1px solid rgba(255,255,255,0.07)",
-
-          background:
-            "rgba(8,9,16,0.96)",
+          minHeight: "58px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          padding: "8px 14px",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+          background: "rgba(8,9,16,0.96)",
         }}
       >
         <button
           type="button"
-          onClick={
-            handleReturnToRoute
-          }
-          disabled={
-            isSaving
-          }
+          onClick={resumeWalking}
+          disabled={isSaving}
           style={{
-            minHeight:
-              "42px",
-
-            display:
-              "inline-flex",
-
-            alignItems:
-              "center",
-
-            gap:
-              "7px",
-
-            padding:
-              "8px 11px",
-
-            borderRadius:
-              "12px",
-
-            border:
-              "1px solid rgba(255,255,255,0.10)",
-
-            background:
-              "rgba(255,255,255,0.05)",
-
-            color:
-              "#FFFFFF",
-
-            fontWeight:
-              750,
-
-            cursor:
-              "pointer",
-
-            opacity:
-              isSaving
-                ? 0.45
-                : 1,
+            minHeight: "42px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "7px",
+            padding: "8px 11px",
+            borderRadius: "12px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(255,255,255,0.05)",
+            color: "#FFFFFF",
+            fontWeight: 750,
+            cursor: isSaving ? "wait" : "pointer",
+            opacity: isSaving ? 0.45 : 1,
           }}
         >
-          <Route
-            size={18}
-          />
-
+          <Route size={18} />
           {tx("Ruta")}
         </button>
 
         <span
           style={{
-            color:
-              "#FF3DE8",
-
-            fontSize:
-              "11px",
-
-            fontWeight:
-              900,
-
-            letterSpacing:
-              "0.10em",
-
-            textTransform:
-              "uppercase",
+            color: "#FF3DE8",
+            fontSize: "11px",
+            fontWeight: 900,
+            letterSpacing: "0.10em",
+            textTransform: "uppercase",
           }}
         >
-          {preview
-            ? tx("Revisar foto")
-            : tx("Guardar recuerdo")}
+          {isSaving ? tx("Guardando…") : tx("Guardar recuerdo")}
         </span>
       </header>
 
       <main
         style={{
-          minHeight:
-            0,
-
-          display:
-            "flex",
-
-          alignItems:
-            "center",
-
-          justifyContent:
-            "center",
-
-          padding:
-            "12px",
-
-          overflow:
-            "hidden",
+          minHeight: 0,
+          display: "grid",
+          placeItems: "center",
+          padding: "12px",
         }}
       >
         <section
           style={{
-            position:
-              "relative",
-
-            width:
-              "100%",
-
-            height:
-              "100%",
-
-            maxWidth:
-              "620px",
-
-            overflow:
-              "hidden",
-
-            borderRadius:
-              "22px",
-
-            border:
-              "1px solid rgba(255,255,255,0.08)",
-
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            maxWidth: "620px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "13px",
+            boxSizing: "border-box",
+            padding: "26px",
+            overflow: "hidden",
+            borderRadius: "22px",
+            border: "1px solid rgba(255,255,255,0.08)",
             background:
-              "#11131D",
-
-            boxShadow:
-              "inset 0 0 35px rgba(0,0,0,0.34)",
+              "radial-gradient(circle at 50% 35%, rgba(255,32,206,0.10), transparent 32%), #11131D",
+            textAlign: "center",
           }}
         >
-          {preview ? (
-            <img
-              src={
-                preview
-              }
-              alt={tx("Vista previa de la fotografía")}
-              style={{
-                width:
-                  "100%",
+          <div
+            style={{
+              width: "76px",
+              height: "76px",
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "24px",
+              color: isSaving ? "#42E8F5" : "#FF3DE8",
+              background: isSaving
+                ? "rgba(66,232,245,0.10)"
+                : "rgba(255,0,255,0.10)",
+              border: isSaving
+                ? "1px solid rgba(66,232,245,0.28)"
+                : "1px solid rgba(255,0,255,0.28)",
+            }}
+          >
+            {isSaving ? (
+              <Loader2
+                size={35}
+                style={{ animation: "iguide-camera-spin 0.9s linear infinite" }}
+              />
+            ) : (
+              <Camera size={34} strokeWidth={1.6} />
+            )}
+          </div>
 
-                height:
-                  "100%",
+          <strong style={{ fontSize: "19px" }}>
+            {isSaving
+              ? tx("Guardando foto y ubicación…")
+              : tx("Captura el momento")}
+          </strong>
 
-                display:
-                  "block",
-
-                objectFit:
-                  "contain",
-
-                objectPosition:
-                  "center",
-
-                backgroundColor:
-                  "#05060B",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                height:
-                  "100%",
-
-                display:
-                  "flex",
-
-                flexDirection:
-                  "column",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                gap:
-                  "12px",
-
-                padding:
-                  "26px",
-
-                textAlign:
-                  "center",
-              }}
-            >
-              <div
-                style={{
-                  width:
-                    "72px",
-
-                  height:
-                    "72px",
-
-                  display:
-                    "grid",
-
-                  placeItems:
-                    "center",
-
-                  borderRadius:
-                    "24px",
-
-                  color:
-                    "#FF3DE8",
-
-                  background:
-                    "rgba(255,0,255,0.10)",
-
-                  border:
-                    "1px solid rgba(255,0,255,0.28)",
-
-                  boxShadow:
-                    "0 0 26px rgba(255,0,255,0.14)",
-                }}
-              >
-                <Camera
-                  size={34}
-                  strokeWidth={
-                    1.6
-                  }
-                />
-              </div>
-
-              <strong
-                style={{
-                  fontSize:
-                    "18px",
-                }}
-              >
-                {tx("Captura el momento")}
-              </strong>
-
-              <p
-                style={{
-                  maxWidth:
-                    "300px",
-
-                  margin:
-                    0,
-
-                  color:
-                    "rgba(255,255,255,0.56)",
-
-                  fontSize:
-                    "12px",
-
-                  lineHeight:
-                    1.5,
-                }}
-              >
-                {tx("La fotografía se guardará comprimida junto con tu ubicación.")}
-              </p>
-            </div>
-          )}
+          <p
+            style={{
+              maxWidth: "320px",
+              margin: 0,
+              color: "rgba(255,255,255,0.58)",
+              fontSize: "12px",
+              lineHeight: 1.5,
+            }}
+          >
+            {isSaving
+              ? tx("Enseguida verás tu MemoryCard.")
+              : tx("Al aceptar en la cámara, I.GUIDE guardará el recuerdo directamente.")}
+          </p>
 
           {errorMessage && (
             <div
               role="alert"
               style={{
-                position:
-                  "absolute",
-
-                left:
-                  "12px",
-
-                right:
-                  "12px",
-
-                bottom:
-                  "12px",
-
-                padding:
-                  "10px 12px",
-
-                borderRadius:
-                  "12px",
-
-                border:
-                  "1px solid rgba(255,85,85,0.34)",
-
-                background:
-                  "rgba(66,8,18,0.91)",
-
-                color:
-                  "#FFD3D3",
-
-                fontSize:
-                  "11px",
-
-                lineHeight:
-                  1.4,
-
-                backdropFilter:
-                  "blur(10px)",
+                width: "100%",
+                maxWidth: "380px",
+                boxSizing: "border-box",
+                padding: "10px 12px",
+                borderRadius: "12px",
+                border: "1px solid rgba(255,85,85,0.34)",
+                background: "rgba(66,8,18,0.91)",
+                color: "#FFD3D3",
+                fontSize: "11px",
+                lineHeight: 1.4,
               }}
             >
               {errorMessage}
@@ -684,236 +306,59 @@ export function CameraView() {
 
       <footer
         style={{
-          padding:
-            "10px 14px max(14px, env(safe-area-inset-bottom))",
-
-          borderTop:
-            "1px solid rgba(255,255,255,0.07)",
-
-          background:
-            "rgba(8,9,16,0.98)",
-
-          boxShadow:
-            "0 -12px 28px rgba(0,0,0,0.30)",
+          padding: "10px 14px max(14px, env(safe-area-inset-bottom))",
+          borderTop: "1px solid rgba(255,255,255,0.07)",
+          background: "rgba(8,9,16,0.98)",
+          boxShadow: "0 -12px 28px rgba(0,0,0,0.30)",
         }}
       >
         <input
-          ref={
-            fileInputRef
-          }
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           capture="environment"
-          onChange={
-            handlePhotoSelected
-          }
-          style={{
-            display:
-              "none",
-          }}
+          onChange={handlePhotoSelected}
+          style={{ display: "none" }}
         />
 
-        {preview ? (
-          <div
-            style={{
-              display:
-                "grid",
-
-              gridTemplateColumns:
-                "minmax(0, 0.82fr) minmax(0, 1.18fr)",
-
-              gap:
-                "9px",
-
-              maxWidth:
-                "620px",
-
-              margin:
-                "0 auto",
-            }}
-          >
-            <button
-              type="button"
-              onClick={
-                handleRepeatPhoto
-              }
-              disabled={
-                isSaving
-              }
-              style={{
-                minHeight:
-                  "52px",
-
-                display:
-                  "inline-flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                gap:
-                  "7px",
-
-                borderRadius:
-                  "15px",
-
-                border:
-                  "1px solid rgba(255,255,255,0.13)",
-
-                background:
-                  "rgba(255,255,255,0.05)",
-
-                color:
-                  "#FFFFFF",
-
-                fontWeight:
-                  800,
-
-                cursor:
-                  "pointer",
-
-                opacity:
-                  isSaving
-                    ? 0.45
-                    : 1,
-              }}
-            >
-              <RotateCcw
-                size={18}
-              />
-
-              {tx("Repetir")}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                void handleConfirmMemory();
-              }}
-              disabled={
-                isSaving
-              }
-              style={{
-                minHeight:
-                  "52px",
-
-                display:
-                  "inline-flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                gap:
-                  "8px",
-
-                border:
-                  "none",
-
-                borderRadius:
-                  "15px",
-
-                background:
-                  "linear-gradient(145deg, #FF3DE8, #D4008D)",
-
-                color:
-                  "#FFFFFF",
-
-                fontWeight:
-                  900,
-
-                cursor:
-                  "pointer",
-
-                boxShadow:
-                  "0 10px 24px rgba(255,0,184,0.25)",
-
-                opacity:
-                  isSaving
-                    ? 0.55
-                    : 1,
-              }}
-            >
-              <Check
-                size={19}
-              />
-
-              {isSaving
-                ? tx("Guardando…")
-                : tx("Usar fotografía")}
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={
-              openNativeCamera
-            }
-            disabled={
-              isSaving
-            }
-            style={{
-              width:
-                "100%",
-
-              maxWidth:
-                "620px",
-
-              minHeight:
-                "54px",
-
-              margin:
-                "0 auto",
-
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              gap:
-                "9px",
-
-              border:
-                "none",
-
-              borderRadius:
-                "16px",
-
-              background:
-                "linear-gradient(145deg, #FF3DE8, #D4008D)",
-
-              color:
-                "#FFFFFF",
-
-              fontSize:
-                "14px",
-
-              fontWeight:
-                900,
-
-              cursor:
-                "pointer",
-
-              boxShadow:
-                "0 10px 26px rgba(255,0,184,0.26)",
-            }}
-          >
-            <ImagePlus
-              size={20}
-            />
-
-            {tx("Abrir cámara")}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={openNativeCamera}
+          disabled={isSaving}
+          style={{
+            width: "100%",
+            maxWidth: "620px",
+            minHeight: "54px",
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "9px",
+            border: "none",
+            borderRadius: "16px",
+            background: isSaving
+              ? "rgba(66,232,245,0.10)"
+              : "linear-gradient(145deg, #FF3DE8, #D4008D)",
+            color: "#FFFFFF",
+            fontSize: "14px",
+            fontWeight: 900,
+            cursor: isSaving ? "wait" : "pointer",
+            opacity: isSaving ? 0.66 : 1,
+            boxShadow: "0 10px 26px rgba(255,0,184,0.26)",
+          }}
+        >
+          {isSaving ? <Loader2 size={20} /> : <ImagePlus size={20} />}
+          {isSaving ? tx("Guardando…") : tx("Abrir cámara")}
+        </button>
       </footer>
+
+      <style>
+        {`
+          @keyframes iguide-camera-spin {
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 }

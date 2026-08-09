@@ -88,14 +88,14 @@ function FitRoute({
         {
           padding: [
             compact
-              ? 14
+              ? 8
               : 28,
             compact
-              ? 14
+              ? 8
               : 28,
           ],
 
-          maxZoom: 17,
+          maxZoom: compact ? 18 : 17,
 
           animate: false,
         }
@@ -106,7 +106,7 @@ function FitRoute({
 
     map.setView(
       center,
-      16,
+      compact ? 18 : 16,
       {
         animate: false,
       }
@@ -273,7 +273,7 @@ function MemoryMapCanvas({
           crossOrigin="anonymous"
           opacity={
             isGlass
-              ? 0.30
+              ? 0.40
               : variant === "full"
                 ? 0.96
                 : 1
@@ -299,7 +299,7 @@ function MemoryMapCanvas({
 
                 weight:
                   isGlass
-                    ? 7
+                    ? 4.5
                     : 9,
 
                 opacity: 0.92,
@@ -321,7 +321,7 @@ function MemoryMapCanvas({
 
                 weight:
                   isGlass
-                    ? 4
+                    ? 2.5
                     : 5,
 
                 opacity: 1,

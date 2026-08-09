@@ -5,8 +5,14 @@ import {
 
 import {
   CheckCircle2,
+  Compass,
+  House,
   Route,
 } from "lucide-react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import {
   useJourney,
@@ -39,6 +45,8 @@ export function PointSavedView() {
     journey,
     resumeWalking,
   } = useJourney();
+
+  const navigate = useNavigate();
 
   const memoryCardRef =
     useRef<HTMLElement | null>(null);
@@ -114,7 +122,7 @@ export function PointSavedView() {
     await shareEngine.copyShareText(cardData);
   }
 
-  function handleContinueJourney() {
+  function persistNote() {
     if (
       journey.experience &&
       lastMemory
@@ -125,8 +133,22 @@ export function PointSavedView() {
         note
       );
     }
+  }
 
+  function handleContinueJourney() {
+    persistNote();
     resumeWalking();
+  }
+
+  function handleExit(destination: "/" | "/explorer") {
+    persistNote();
+
+    /*
+     * La misión sigue activa y su burbuja acompañará al usuario.
+     * Al volver al Journey encontrará nuevamente la pantalla de ruta.
+     */
+    resumeWalking();
+    navigate(destination);
   }
 
   return (
@@ -152,6 +174,37 @@ export function PointSavedView() {
           gap: "14px",
         }}
       >
+        <nav
+          aria-label={tx("Salir del recuerdo")}
+          style={{
+            position: "sticky",
+            top: "max(0px, env(safe-area-inset-top))",
+            zIndex: 1200,
+            width: "min(92vw, 410px)",
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: "8px",
+            boxSizing: "border-box",
+            padding: "7px",
+            borderRadius: "16px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(8,9,16,0.92)",
+            boxShadow: "0 10px 28px rgba(0,0,0,0.34)",
+            backdropFilter: "blur(14px)",
+          }}
+        >
+          <MemoryExitButton
+            icon={House}
+            label={tx("Inicio")}
+            onClick={() => handleExit("/")}
+          />
+          <MemoryExitButton
+            icon={Compass}
+            label={tx("Explorer")}
+            onClick={() => handleExit("/explorer")}
+          />
+        </nav>
+
         <header
           style={{
             width: "100%",
@@ -346,5 +399,41 @@ export function PointSavedView() {
         onCopyLink={handleCopyText}
       />
     </div>
+  );
+}
+
+type MemoryExitButtonProps = {
+  icon: typeof House;
+  label: string;
+  onClick: () => void;
+};
+
+function MemoryExitButton({
+  icon: Icon,
+  label,
+  onClick,
+}: MemoryExitButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        minHeight: "42px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "7px",
+        borderRadius: "12px",
+        border: "1px solid rgba(66,232,245,0.18)",
+        background: "rgba(66,232,245,0.06)",
+        color: "#FFFFFF",
+        fontSize: "11px",
+        fontWeight: 850,
+        cursor: "pointer",
+      }}
+    >
+      <Icon size={16} color="#42E8F5" />
+      {label}
+    </button>
   );
 }

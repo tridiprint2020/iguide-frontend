@@ -383,22 +383,26 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
           <div
             style={{
               position: "absolute",
-              top: "14px",
-              left: "15px",
+              top: "10px",
+              left: "12px",
               zIndex: 5,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
+              width: "176px",
+              height: "96px",
+              overflow: "hidden",
+              pointerEvents: "none",
             }}
           >
             <img
               src={logo}
               alt="I.GUIDE"
               style={{
-                width: "88px",
-                height: "38px",
-                objectFit: "contain",
-                objectPosition: "left center",
+                position: "absolute",
+                left: "-27px",
+                top: "-50px",
+                width: "215px",
+                height: "194px",
+                objectFit: "fill",
+                mixBlendMode: "screen",
                 filter:
                   "drop-shadow(0 3px 10px rgba(0,0,0,0.65))",
               }}
@@ -411,7 +415,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
               position: "absolute",
               left: "16px",
               right: hasMap ? "39%" : "16px",
-              bottom: "16px",
+              bottom: "10px",
               zIndex: 5,
               textAlign: "left",
             }}
@@ -434,7 +438,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
             {data.placeLabel && (
               <p
                 style={{
-                  margin: "4px 0 0",
+                margin: "2px 0 0",
                   color: "rgba(255,255,255,0.92)",
                   fontSize: "10px",
                   fontWeight: 750,
@@ -450,7 +454,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 display: "flex",
                 flexWrap: "wrap",
                 gap: "5px 8px",
-                marginTop: "8px",
+                marginTop: "5px",
                 color: "rgba(255,255,255,0.76)",
                 fontSize: "8px",
                 fontWeight: 700,
@@ -477,12 +481,21 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 <CalendarDays size={11} strokeWidth={2} />
                 {data.date}
               </span>
+
+              <span
+                style={{
+                  color: MAGENTA_SOFT,
+                  fontWeight: 850,
+                }}
+              >
+                #IGuide #LiveLikeLocal
+              </span>
             </div>
 
             {hasUserNote && (
               <p
                 style={{
-                  margin: "10px 0 0",
+                  margin: "6px 0 0",
                   color: "#FFFFFF",
                   fontSize: "9px",
                   lineHeight: 1.42,
@@ -499,16 +512,6 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
               </p>
             )}
 
-            <p
-              style={{
-                margin: "10px 0 0",
-                color: MAGENTA_SOFT,
-                fontSize: "8px",
-                fontWeight: 850,
-              }}
-            >
-              #IGuide #LiveLikeLocal
-            </p>
           </div>
 
           {/*
@@ -540,13 +543,6 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                   inset: "0 0 36px",
                 }}
               >
-                <MemoryRouteGraphic
-                  path={data.mapBackground!.path}
-                  memories={data.mapBackground!.memories}
-                  waypoints={data.waypoints ?? []}
-                  compact
-                />
-
                 <div
                   data-export-ignore="true"
                   style={{

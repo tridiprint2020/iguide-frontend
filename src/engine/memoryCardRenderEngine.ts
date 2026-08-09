@@ -262,7 +262,7 @@ function createMapProjection(
 ): MapProjection {
   const usableWidth = Math.max(40, width - 34);
   const usableHeight = Math.max(40, height - 30);
-  let selectedZoom = 17;
+  let selectedZoom = 18;
 
   if (coordinates.length > 1) {
     for (let zoom = 18; zoom >= 12; zoom -= 1) {
@@ -320,7 +320,7 @@ async function drawStreetTiles(
   width: number,
   height: number,
   projection: MapProjection
-) {
+): Promise<boolean> {
   const firstTileX = Math.floor(projection.topLeftX / TILE_SIZE);
   const lastTileX = Math.floor(
     (projection.topLeftX + width) / TILE_SIZE
@@ -363,7 +363,7 @@ async function drawStreetTiles(
   );
 
   context.save();
-  context.globalAlpha = 0.32;
+  context.globalAlpha = 0.40;
 
   for (const tile of tiles) {
     if (!tile.loadedImage) {
@@ -380,7 +380,10 @@ async function drawStreetTiles(
   }
 
   context.restore();
+  const drewTiles = tiles.some((tile) => Boolean(tile.loadedImage));
   tiles.forEach((tile) => releaseImage(tile.loadedImage));
+
+  return drewTiles;
 }
 
 function drawMapFallback(
@@ -391,8 +394,8 @@ function drawMapFallback(
   height: number
 ) {
   context.save();
-  context.strokeStyle = "rgba(255,255,255,0.20)";
-  context.lineWidth = 8;
+  context.strokeStyle = "rgba(255,255,255,0.12)";
+  context.lineWidth = 5;
 
   for (let offset = -height; offset < width; offset += 38) {
     context.beginPath();
@@ -401,8 +404,8 @@ function drawMapFallback(
     context.stroke();
   }
 
-  context.strokeStyle = "rgba(90,125,135,0.20)";
-  context.lineWidth = 2;
+  context.strokeStyle = "rgba(90,125,135,0.12)";
+  context.lineWidth = 1;
   for (let row = 22; row < height; row += 40) {
     context.beginPath();
     context.moveTo(x, y + row);
@@ -468,9 +471,7 @@ async function drawRoutePanel(
   /* Solo 8% de blanco: la foto sigue siendo la protagonista. */
   context.fillStyle = "rgba(255,255,255,0.08)";
   context.fillRect(panelX, panelY, panelWidth, mapHeight);
-  drawMapFallback(context, panelX, panelY, panelWidth, mapHeight);
-
-  await drawStreetTiles(
+  const hasStreetTiles = await drawStreetTiles(
     context,
     panelX,
     panelY,
@@ -478,6 +479,10 @@ async function drawRoutePanel(
     mapHeight,
     projection
   );
+
+  if (!hasStreetTiles) {
+    drawMapFallback(context, panelX, panelY, panelWidth, mapHeight);
+  }
 
   const project = (coordinate: Coordinate) => {
     const point = projection.project(coordinate);
@@ -503,12 +508,12 @@ async function drawRoutePanel(
       }
     });
     context.strokeStyle = "rgba(255,255,255,0.94)";
-    context.lineWidth = 10;
+    context.lineWidth = 6;
     context.lineCap = "round";
     context.lineJoin = "round";
     context.stroke();
     context.strokeStyle = MAGENTA;
-    context.lineWidth = 5;
+    context.lineWidth = 3.5;
     context.stroke();
   }
 
@@ -684,9 +689,21 @@ export async function renderMemoryCardBlob(
     context.fillStyle = shade;
     context.fillRect(0, 0, WIDTH, HEIGHT);
 
-    const logoWidth = 216;
-    const logoHeight = logoWidth * (logo.height / logo.width);
-    context.drawImage(logo, 34, 22, logoWidth, logoHeight);
+    /* Recorte del archivo maestro: logo grande, sin el marco negro. */
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.drawImage(
+      logo,
+      70,
+      130,
+      540,
+      360,
+      34,
+      22,
+      310,
+      206
+    );
+    context.restore();
 
     const hasMap = Boolean(data.mapBackground || data.path?.length);
     const textWidth = hasMap ? 500 : WIDTH - 96;
@@ -695,34 +712,43 @@ export async function renderMemoryCardBlob(
     context.shadowBlur = 16;
     context.fillStyle = "#FFFFFF";
     context.font = "900 52px Arial, sans-serif";
+    const titleLines =
+      context.measureText(data.title).width <= textWidth ? 1 : 2;
+    const hasNote = Boolean(data.note?.trim());
+    const titleLastBaseline = hasNote ? 856 : 900;
+    const titleStartY =
+      titleLastBaseline - (titleLines - 1) * 52;
     const nextY = drawWrappedText(
       context,
       data.title,
       46,
-      790,
+      titleStartY,
       textWidth,
-      56,
+      52,
       2
     );
+    const lastTitleBaseline = nextY - 52;
 
     context.font = "700 22px Arial, sans-serif";
     context.fillStyle = "rgba(255,255,255,0.94)";
-    context.fillText(data.placeLabel, 46, nextY + 3);
+    const placeLabelY = lastTitleBaseline + 32;
+    context.fillText(data.placeLabel, 46, placeLabelY);
 
     context.font = "700 17px Arial, sans-serif";
     context.fillStyle = "rgba(255,255,255,0.82)";
-    context.fillText(`${data.city}   •   ${data.date}`, 46, nextY + 39);
+    const metadataY = hasNote ? placeLabelY + 83 : placeLabelY + 31;
+    context.fillText(`${data.city}   •   ${data.date}`, 46, metadataY);
 
-    if (data.note?.trim()) {
+    if (hasNote) {
       context.font = "italic 650 17px Arial, sans-serif";
       context.fillStyle = "#FFFFFF";
       drawWrappedText(
         context,
-        `“${data.note.trim()}”`,
+        `“${data.note!.trim()}”`,
         46,
-        nextY + 75,
+        placeLabelY + 29,
         textWidth,
-        25,
+        22,
         2
       );
     }
@@ -730,7 +756,7 @@ export async function renderMemoryCardBlob(
     context.shadowBlur = 9;
     context.font = "850 16px Arial, sans-serif";
     context.fillStyle = MAGENTA;
-    context.fillText("#IGuide #LiveLikeLocal", 46, HEIGHT - 36);
+    context.fillText("#IGuide #LiveLikeLocal", 46, metadataY + 27);
     context.shadowBlur = 0;
 
     if (hasMap) {
