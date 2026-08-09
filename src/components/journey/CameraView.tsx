@@ -28,6 +28,7 @@ import { tx } from "../../i18n";
 
 export function CameraView() {
   const {
+    journey,
     savePoint,
     resumeWalking,
   } = useJourney();
@@ -60,8 +61,30 @@ export function CameraView() {
     lat: number;
     lng: number;
   }> {
+    const latestJourneyPoint =
+      [...journey.timeline]
+        .reverse()
+        .find(
+          (item) =>
+            Number.isFinite(item.lat) &&
+            Number.isFinite(item.lng)
+        );
+
+    const fallbackCoordinates =
+      latestJourneyPoint
+        ? {
+            lat: latestJourneyPoint.lat,
+            lng: latestJourneyPoint.lng,
+          }
+        : null;
+
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
+        if (fallbackCoordinates) {
+          resolve(fallbackCoordinates);
+          return;
+        }
+
         reject(
           new Error(
             tx("Este dispositivo no permite obtener ubicación GPS.")
@@ -78,6 +101,16 @@ export function CameraView() {
           });
         },
         () => {
+          /*
+           * Android puede suspender la lectura GPS al abrir su cámara
+           * nativa. La misión ya conserva una ubicación válida; usarla
+           * evita perder la fotografía o encerrar al usuario en negro.
+           */
+          if (fallbackCoordinates) {
+            resolve(fallbackCoordinates);
+            return;
+          }
+
           reject(
             new Error(
               tx("No se pudo obtener tu ubicación. Activa el GPS e inténtalo nuevamente.")
@@ -86,8 +119,8 @@ export function CameraView() {
         },
         {
           enableHighAccuracy: true,
-          maximumAge: 8000,
-          timeout: 15000,
+          maximumAge: 60000,
+          timeout: 8000,
         }
       );
     });
