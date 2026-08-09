@@ -711,7 +711,7 @@ export async function renderMemoryCardBlob(
       540,
       360,
       28,
-      8,
+      20,
       154,
       103
     );
@@ -727,13 +727,13 @@ export async function renderMemoryCardBlob(
     const titleLines =
       context.measureText(data.title).width <= textWidth ? 1 : 2;
     const hasNote = Boolean(data.note?.trim());
-    const titleLastBaseline = hasNote ? 856 : 900;
+    const titleLastBaseline = hasNote ? 896 : 940;
     const titleStartY =
       titleLastBaseline - (titleLines - 1) * 52;
     const nextY = drawWrappedText(
       context,
       data.title,
-      46,
+      16,
       titleStartY,
       textWidth,
       52,
@@ -744,7 +744,7 @@ export async function renderMemoryCardBlob(
     context.font = "700 22px Arial, sans-serif";
     context.fillStyle = "rgba(255,255,255,0.94)";
     const placeLabelY = lastTitleBaseline + 32;
-    context.fillText(data.placeLabel, 46, placeLabelY);
+    context.fillText(data.placeLabel, 16, placeLabelY);
 
     context.font = "700 17px Arial, sans-serif";
     context.fillStyle = "rgba(255,255,255,0.82)";

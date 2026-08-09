@@ -383,8 +383,8 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
           <div
             style={{
               position: "absolute",
-              top: "0px",
-              left: "8px",
+              top: "5px",
+              left: "10px",
               zIndex: 5,
               width: "92px",
               height: "51px",
@@ -412,9 +412,9 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
           <div
             style={{
               position: "absolute",
-              left: "16px",
+              left: "5px",
               right: hasMap ? "39%" : "16px",
-              bottom: "10px",
+              bottom: "-10px",
               zIndex: 5,
               textAlign: "left",
             }}
