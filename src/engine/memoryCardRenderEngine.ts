@@ -710,10 +710,10 @@ export async function renderMemoryCardBlob(
       130,
       540,
       360,
-      34,
-      4,
-      268,
-      179
+      30,
+      0,
+      214,
+      143
     );
     context.restore();
 

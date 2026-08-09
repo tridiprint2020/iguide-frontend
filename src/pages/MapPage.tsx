@@ -683,7 +683,8 @@ function MapPage() {
       (position) => {
         const point = saveReturnPoint(
           position.coords.latitude,
-          position.coords.longitude
+          position.coords.longitude,
+          tx("Mi hotel / punto de regreso")
         );
 
         setReturnPoint(point);

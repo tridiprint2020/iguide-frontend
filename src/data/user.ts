@@ -12,6 +12,8 @@ const defaultUser: UserProfile = {
 
   firstVisit: true,
 
+  returnPointOnboardingComplete: false,
+
   travelMode: "couple",
 
   interests: [
@@ -66,6 +68,15 @@ function normalizeUserProfile(
   return {
     ...fallback,
     ...rawProfile,
+
+    /*
+     * Los perfiles creados antes de este onboarding no deben recibir
+     * retroactivamente una pregunta diseñada solo para usuarios nuevos.
+     */
+    returnPointOnboardingComplete:
+      typeof rawProfile.returnPointOnboardingComplete === "boolean"
+        ? rawProfile.returnPointOnboardingComplete
+        : rawProfile.firstVisit === false,
 
     interests:
       Array.isArray(

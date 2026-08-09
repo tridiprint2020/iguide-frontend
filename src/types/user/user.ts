@@ -18,6 +18,8 @@ export interface UserProfile {
 
   firstVisit: boolean;
 
+  returnPointOnboardingComplete: boolean;
+
   travelMode:
     | "solo"
     | "couple"

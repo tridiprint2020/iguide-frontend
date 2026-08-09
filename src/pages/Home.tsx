@@ -10,10 +10,13 @@ import LanguageToggle from "../components/LanguageToggle";
 import {
   NameCaptureModal,
 } from "../components/NameCaptureModal";
+import ReturnPointOnboardingModal from "../components/ReturnPointOnboardingModal";
 
 import {
   loadUserProfile,
+  saveUserProfile,
 } from "../data/user";
+import { loadReturnPoint } from "../engine/returnPointEngine";
 
 import type {
   UserProfile,
@@ -41,6 +44,16 @@ function Home() {
       profile.firstVisit
   );
 
+  const [
+    showReturnPointModal,
+    setShowReturnPointModal,
+  ] = useState(
+    () =>
+      !profile.firstVisit &&
+      !profile.returnPointOnboardingComplete &&
+      !loadReturnPoint()
+  );
+
   function handleProfileUpdated(
     updatedProfile:
       UserProfile
@@ -52,6 +65,25 @@ function Home() {
     setShowNameModal(
       false
     );
+
+    if (
+      !updatedProfile.returnPointOnboardingComplete &&
+      !loadReturnPoint()
+    ) {
+      setShowReturnPointModal(true);
+    }
+  }
+
+  function handleReturnPointOnboardingComplete() {
+    const currentProfile = loadUserProfile();
+    const updatedProfile: UserProfile = {
+      ...currentProfile,
+      returnPointOnboardingComplete: true,
+    };
+
+    saveUserProfile(updatedProfile);
+    setProfile(updatedProfile);
+    setShowReturnPointModal(false);
   }
 
   return (
@@ -82,7 +114,7 @@ function Home() {
       <BrandMark />
 
       {/* Durante la bienvenida el selector vive dentro de su tarjeta. */}
-      {!showNameModal && <LanguageToggle />}
+      {!showNameModal && !showReturnPointModal && <LanguageToggle />}
 
       <main
         style={{
@@ -123,6 +155,12 @@ function Home() {
           onProfileUpdated={
             handleProfileUpdated
           }
+        />
+      )}
+
+      {showReturnPointModal && !showNameModal && (
+        <ReturnPointOnboardingModal
+          onComplete={handleReturnPointOnboardingComplete}
         />
       )}
     </div>

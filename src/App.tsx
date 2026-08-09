@@ -18,6 +18,7 @@ import Hospes from "./pages/Hospes";
 import MapPage from "./pages/MapPage";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
 import {
   MainContainer,
 } from "./pages/MainContainer";
@@ -166,6 +167,11 @@ function App() {
               replace
             />
           }
+        />
+
+        <Route
+          path="*"
+          element={<NotFound />}
         />
       </Routes>
     </>

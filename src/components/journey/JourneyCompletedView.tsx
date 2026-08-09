@@ -5,8 +5,11 @@ import {
 } from "react";
 
 import {
+  FlipHorizontal2,
   ImagePlus,
+  Loader2,
   PencilLine,
+  RotateCw,
 } from "lucide-react";
 
 import {
@@ -29,7 +32,11 @@ import {
 } from "../../engine/mediaStorage";
 import {
   compressPhotoFile,
+  type PhotoTransformation,
 } from "../../engine/photoProcessing";
+import {
+  transformMemoryPhoto,
+} from "../../engine/memoryPhotoEditor";
 
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
@@ -89,6 +96,11 @@ export default function JourneyCompletedView() {
     setCardFeedback,
   ] = useState<string | null>(null);
 
+  const [
+    photoAction,
+    setPhotoAction,
+  ] = useState<PhotoTransformation | null>(null);
+
   const activeExperience =
     journey.experience as
       | Experience
@@ -116,6 +128,13 @@ export default function JourneyCompletedView() {
 
   const lastNote =
     stats?.lastNote ?? "";
+
+  const lastMemoryWithPhoto = [...cardTimeline]
+    .reverse()
+    .find(
+      (item) =>
+        item.type === "memory" && Boolean(item.photo)
+    );
 
   const [
     editableNote,
@@ -327,6 +346,45 @@ export default function JourneyCompletedView() {
     refreshCardTimeline();
     setIsEditingCard(false);
     setCardFeedback(tx("Cambios guardados en tu MemoryCard."));
+  }
+
+  async function handlePhotoTransformation(
+    transformation: PhotoTransformation
+  ) {
+    if (
+      !activeExperience ||
+      !lastMemoryWithPhoto?.photo ||
+      photoAction
+    ) {
+      return;
+    }
+
+    setPhotoAction(transformation);
+    setCardFeedback(null);
+
+    try {
+      const updatedTrack = await transformMemoryPhoto(
+        activeExperience.experienceId,
+        lastMemoryWithPhoto.id,
+        lastMemoryWithPhoto.photo,
+        transformation
+      );
+
+      setCardTimeline(updatedTrack.timeline);
+      setCardFeedback(
+        transformation === "flip-horizontal"
+          ? tx("Espejo corregido. La MemoryCard ya usa la nueva orientación.")
+          : tx("Fotografía girada. La MemoryCard ya está actualizada.")
+      );
+    } catch (error) {
+      setCardFeedback(
+        error instanceof Error
+          ? error.message
+          : tx("No se pudo ajustar la fotografía.")
+      );
+    } finally {
+      setPhotoAction(null);
+    }
   }
 
   async function handleDownload() {
@@ -554,6 +612,84 @@ export default function JourneyCompletedView() {
               {tx("Editar texto")}
             </button>
           </div>
+
+          {lastMemoryWithPhoto?.photo && (
+            <div
+              aria-label={tx("Ajustar fotografía")}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: "8px",
+                marginTop: "8px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  void handlePhotoTransformation("flip-horizontal")
+                }
+                disabled={Boolean(photoAction)}
+                style={{
+                  minHeight: "42px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "7px",
+                  borderRadius: "13px",
+                  border: "1px solid rgba(66,232,245,0.22)",
+                  background: "rgba(66,232,245,0.06)",
+                  color: "#FFFFFF",
+                  fontWeight: 850,
+                  fontSize: "10px",
+                  cursor: photoAction ? "wait" : "pointer",
+                  opacity:
+                    photoAction && photoAction !== "flip-horizontal"
+                      ? 0.48
+                      : 1,
+                }}
+              >
+                {photoAction === "flip-horizontal" ? (
+                  <Loader2 size={16} />
+                ) : (
+                  <FlipHorizontal2 size={16} color="#42E8F5" />
+                )}
+                {tx("Corregir espejo")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void handlePhotoTransformation("rotate-clockwise")
+                }
+                disabled={Boolean(photoAction)}
+                style={{
+                  minHeight: "42px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "7px",
+                  borderRadius: "13px",
+                  border: "1px solid rgba(66,232,245,0.22)",
+                  background: "rgba(66,232,245,0.06)",
+                  color: "#FFFFFF",
+                  fontWeight: 850,
+                  fontSize: "10px",
+                  cursor: photoAction ? "wait" : "pointer",
+                  opacity:
+                    photoAction && photoAction !== "rotate-clockwise"
+                      ? 0.48
+                      : 1,
+                }}
+              >
+                {photoAction === "rotate-clockwise" ? (
+                  <Loader2 size={16} />
+                ) : (
+                  <RotateCw size={16} color="#42E8F5" />
+                )}
+                {tx("Girar fotografía")}
+              </button>
+            </div>
+          )}
 
           {isEditingCard && (
             <div style={{ marginTop: "10px" }}>

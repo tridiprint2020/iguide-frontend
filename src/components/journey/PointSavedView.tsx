@@ -6,8 +6,11 @@ import {
 import {
   CheckCircle2,
   Compass,
+  FlipHorizontal2,
   House,
+  Loader2,
   Route,
+  RotateCw,
 } from "lucide-react";
 
 import {
@@ -38,6 +41,12 @@ import {
   loadTrack,
   updateMemoryNote,
 } from "../../engine/trackingEngine";
+import {
+  transformMemoryPhoto,
+} from "../../engine/memoryPhotoEditor";
+import type {
+  PhotoTransformation,
+} from "../../engine/photoProcessing";
 import { tx } from "../../i18n";
 
 export function PointSavedView() {
@@ -54,9 +63,17 @@ export function PointSavedView() {
   const [shareOpen, setShareOpen] =
     useState(false);
 
-  const track = journey.experience
-    ? loadTrack(journey.experience.experienceId)
-    : null;
+  const [track, setTrack] = useState(() =>
+    journey.experience
+      ? loadTrack(journey.experience.experienceId)
+      : null
+  );
+
+  const [photoAction, setPhotoAction] =
+    useState<PhotoTransformation | null>(null);
+
+  const [photoFeedback, setPhotoFeedback] =
+    useState<string | null>(null);
 
   const memories =
     track?.timeline.filter(
@@ -120,6 +137,45 @@ export function PointSavedView() {
     }
 
     await shareEngine.copyShareText(cardData);
+  }
+
+  async function handlePhotoTransformation(
+    transformation: PhotoTransformation
+  ) {
+    if (
+      !journey.experience ||
+      !lastMemory?.photo ||
+      photoAction
+    ) {
+      return;
+    }
+
+    setPhotoAction(transformation);
+    setPhotoFeedback(null);
+
+    try {
+      const updatedTrack = await transformMemoryPhoto(
+        journey.experience.experienceId,
+        lastMemory.id,
+        lastMemory.photo,
+        transformation
+      );
+
+      setTrack(updatedTrack);
+      setPhotoFeedback(
+        transformation === "flip-horizontal"
+          ? tx("Espejo corregido. La MemoryCard ya usa la nueva orientación.")
+          : tx("Fotografía girada. La MemoryCard ya está actualizada.")
+      );
+    } catch (error) {
+      setPhotoFeedback(
+        error instanceof Error
+          ? error.message
+          : tx("No se pudo ajustar la fotografía.")
+      );
+    } finally {
+      setPhotoAction(null);
+    }
   }
 
   function persistNote() {
@@ -297,6 +353,62 @@ export function PointSavedView() {
           </div>
         )}
 
+        {lastMemory?.photo && (
+          <section
+            aria-label={tx("Ajustar fotografía")}
+            style={{
+              width: "min(92vw, 410px)",
+              boxSizing: "border-box",
+              padding: "10px",
+              borderRadius: "16px",
+              border: "1px solid rgba(255,255,255,0.09)",
+              background: "rgba(255,255,255,0.035)",
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: "8px",
+              }}
+            >
+              <PhotoAdjustmentButton
+                icon={FlipHorizontal2}
+                label={tx("Corregir espejo")}
+                busy={photoAction === "flip-horizontal"}
+                disabled={Boolean(photoAction)}
+                onClick={() =>
+                  void handlePhotoTransformation("flip-horizontal")
+                }
+              />
+              <PhotoAdjustmentButton
+                icon={RotateCw}
+                label={tx("Girar fotografía")}
+                busy={photoAction === "rotate-clockwise"}
+                disabled={Boolean(photoAction)}
+                onClick={() =>
+                  void handlePhotoTransformation("rotate-clockwise")
+                }
+              />
+            </div>
+
+            {photoFeedback && (
+              <p
+                role="status"
+                style={{
+                  margin: "8px 2px 0",
+                  color: "rgba(255,255,255,0.72)",
+                  fontSize: "9px",
+                  lineHeight: 1.4,
+                  textAlign: "left",
+                }}
+              >
+                {photoFeedback}
+              </p>
+            )}
+          </section>
+        )}
+
         <section
           style={{
             width: "min(92vw, 410px)",
@@ -399,6 +511,52 @@ export function PointSavedView() {
         onCopyLink={handleCopyText}
       />
     </div>
+  );
+}
+
+type PhotoAdjustmentButtonProps = {
+  icon: typeof FlipHorizontal2;
+  label: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+};
+
+function PhotoAdjustmentButton({
+  icon: Icon,
+  label,
+  busy,
+  disabled,
+  onClick,
+}: PhotoAdjustmentButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        minHeight: "42px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "7px",
+        borderRadius: "12px",
+        border: "1px solid rgba(66,232,245,0.20)",
+        background: "rgba(66,232,245,0.06)",
+        color: "#FFFFFF",
+        fontSize: "10px",
+        fontWeight: 850,
+        cursor: disabled ? "wait" : "pointer",
+        opacity: disabled && !busy ? 0.48 : 1,
+      }}
+    >
+      {busy ? (
+        <Loader2 size={16} />
+      ) : (
+        <Icon size={16} color="#42E8F5" />
+      )}
+      {label}
+    </button>
   );
 }
 
