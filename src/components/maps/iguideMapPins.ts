@@ -73,6 +73,8 @@ export function createIguidePin(
   const color =
     isAbort
       ? ORANGE
+      : isMemory
+        ? CYAN
       : isHome
         ? CYAN
       : MAGENTA;

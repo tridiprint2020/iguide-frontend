@@ -131,18 +131,41 @@ function MemoryMapCanvas({
   const isGlass =
     variant === "glass";
 
-  const isDark =
-    variant === "glass";
-
-  const routeSegments =
+  const rawRouteSegments =
     waypoints.length > 0
       ? getTimelineRouteSegments(
           waypoints
         )
       : [path];
 
-  const fitPath =
-    routeSegments.flat();
+  /*
+   * Una MemoryCard intermedia termina visualmente en su recuerdo
+   * celeste, sin inventar una llegada magenta. En el recorrido
+   * completo la línea continúa normalmente por ambos lados.
+   */
+  const lastWaypoint =
+    waypoints[waypoints.length - 1];
+
+  const routeSegments =
+    lastWaypoint?.type === "memory" &&
+    rawRouteSegments.length > 0
+      ? rawRouteSegments.map((segment, index) =>
+          index === rawRouteSegments.length - 1
+            ? [
+                ...segment,
+                [lastWaypoint.lat, lastWaypoint.lng] as [number, number],
+              ]
+            : segment
+        )
+      : rawRouteSegments;
+
+  const fitPath = [
+    ...routeSegments.flat(),
+    ...memories.map(
+      (memory) =>
+        [memory.lat, memory.lng] as [number, number]
+    ),
+  ];
 
   const startNode =
     waypoints.find(
@@ -169,9 +192,6 @@ function MemoryMapCanvas({
   const fallbackStart =
     path[0];
 
-  const fallbackEnd =
-    path[path.length - 1];
-
   const startPosition:
     [number, number] | null =
     startNode
@@ -193,7 +213,7 @@ function MemoryMapCanvas({
             abortNode.lat,
             abortNode.lng,
           ]
-        : fallbackEnd ?? null;
+        : null;
 
   const isAbandoned =
     Boolean(
@@ -216,7 +236,7 @@ function MemoryMapCanvas({
 
         backgroundColor:
           isGlass
-            ? "rgba(5,7,13,0.24)"
+            ? "rgba(255,255,255,0.05)"
             : "#F4F3F0",
       }}
     >
@@ -224,9 +244,7 @@ function MemoryMapCanvas({
         className={
           isGlass
             ? "iguide-memory-map iguide-memory-map--glass"
-            : isDark
-              ? "iguide-memory-map iguide-memory-map--dark"
-              : "iguide-memory-map"
+            : "iguide-memory-map"
         }
         center={center}
         zoom={16}
@@ -249,13 +267,13 @@ function MemoryMapCanvas({
         }}
       >
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
+          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+          maxZoom={20}
           crossOrigin="anonymous"
           opacity={
             isGlass
-              ? 0.72
+              ? 0.30
               : variant === "full"
                 ? 0.96
                 : 1
@@ -277,20 +295,14 @@ function MemoryMapCanvas({
             <Polyline
               positions={segment}
               pathOptions={{
-                color:
-                  isDark
-                    ? "#160216"
-                    : "#FFFFFF",
+                color: "#FFFFFF",
 
                 weight:
                   isGlass
                     ? 7
                     : 9,
 
-                opacity:
-                  isDark
-                    ? 0.82
-                    : 0.92,
+                opacity: 0.92,
 
                 lineCap:
                   "round",
@@ -354,7 +366,7 @@ function MemoryMapCanvas({
           />
         )}
 
-        {/* RECUERDOS: MAGENTA PEQUEÑO */}
+        {/* RECUERDOS: CELESTE PEQUEÑO */}
         {memories.map(
           (
             memory,
@@ -384,8 +396,7 @@ function MemoryMapCanvas({
 
                 weight: 2,
 
-                fillColor:
-                  Theme.Colors.primary,
+                fillColor: "#42E8F5",
 
                 fillOpacity: 1,
               }}
@@ -497,13 +508,9 @@ function MemoryMapCanvas({
           padding: "2px 4px",
           borderRadius: "5px",
           background:
-            isDark
-              ? "rgba(4,6,10,0.48)"
-              : "rgba(255,255,255,0.74)",
+            "rgba(255,255,255,0.58)",
           color:
-            isDark
-              ? "rgba(255,255,255,0.56)"
-              : "rgba(0,0,0,0.55)",
+            "rgba(0,0,0,0.55)",
           fontSize: "5px",
           lineHeight: 1.2,
           fontWeight: 650,
@@ -520,11 +527,7 @@ function MemoryMapCanvas({
           }
 
           .iguide-memory-map--glass .leaflet-tile-pane {
-            filter: grayscale(0.9) brightness(0.56) contrast(1.22) saturate(0.5);
-          }
-
-          .iguide-memory-map--dark .leaflet-tile-pane {
-            filter: grayscale(0.72) brightness(0.64) contrast(1.18) saturate(0.62);
+            filter: grayscale(0.18) contrast(1.04) saturate(0.82);
           }
         `}
       </style>

@@ -19,6 +19,7 @@ const en: Record<string, string> = {
   "Cancelar": "Cancel",
   "Guardar": "Save",
   "Compartir": "Share",
+  "Compartir recorrido": "Share route",
   "Descargar": "Download",
   "Ver detalles": "View details",
   "Iniciar misión": "Start mission",

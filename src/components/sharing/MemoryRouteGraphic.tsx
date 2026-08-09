@@ -32,10 +32,26 @@ function MemoryRouteGraphic({
   compact = false,
 }: Props) {
   const model = useMemo(() => {
-    const routeSegments =
+    const rawRouteSegments =
       waypoints.length > 0
         ? getTimelineRouteSegments(waypoints)
         : [path];
+
+    const lastWaypoint =
+      waypoints[waypoints.length - 1];
+
+    const routeSegments =
+      lastWaypoint?.type === "memory" &&
+      rawRouteSegments.length > 0
+        ? rawRouteSegments.map((segment, index) =>
+            index === rawRouteSegments.length - 1
+              ? [
+                  ...segment,
+                  [lastWaypoint.lat, lastWaypoint.lng] as [number, number],
+                ]
+              : segment
+          )
+        : rawRouteSegments;
 
     const routeCoordinates = routeSegments.flat();
     const allCoordinates = [
@@ -77,8 +93,16 @@ function MemoryRouteGraphic({
     const start = routeCoordinates[0]
       ? project(routeCoordinates[0])
       : null;
-    const end = routeCoordinates[routeCoordinates.length - 1]
-      ? project(routeCoordinates[routeCoordinates.length - 1])
+    const terminalWaypoint = [...waypoints]
+      .reverse()
+      .find(
+        (point) =>
+          point.type === "finish" ||
+          point.type === "abort"
+      );
+
+    const end = terminalWaypoint
+      ? project([terminalWaypoint.lat, terminalWaypoint.lng])
       : null;
 
     return {
@@ -104,7 +128,9 @@ function MemoryRouteGraphic({
         inset: 0,
         overflow: "hidden",
         background:
-          "linear-gradient(145deg, #F8FBFC 0%, #E7F1F3 52%, #F6F2F8 100%)",
+          compact
+            ? "rgba(255,255,255,0.05)"
+            : "linear-gradient(145deg, #F8FBFC 0%, #E7F1F3 52%, #F6F2F8 100%)",
       }}
     >
       <svg
@@ -146,22 +172,24 @@ function MemoryRouteGraphic({
           </filter>
         </defs>
 
-        <rect width={WIDTH} height={HEIGHT} fill="url(#iguide-route-grid)" />
+        <g opacity={compact ? 0.20 : 1}>
+          <rect width={WIDTH} height={HEIGHT} fill="url(#iguide-route-grid)" />
 
-        <path
-          d="M -15 315 C 58 285 94 333 171 292 S 280 234 346 259"
-          fill="none"
-          stroke="#CBE6EC"
-          strokeWidth="20"
-          opacity="0.9"
-        />
-        <path
-          d="M 12 72 C 94 118 119 83 185 116 S 268 169 338 133"
-          fill="none"
-          stroke="#FFFFFF"
-          strokeWidth="12"
-          opacity="0.88"
-        />
+          <path
+            d="M -15 315 C 58 285 94 333 171 292 S 280 234 346 259"
+            fill="none"
+            stroke="#CBE6EC"
+            strokeWidth="20"
+            opacity="0.9"
+          />
+          <path
+            d="M 12 72 C 94 118 119 83 185 116 S 268 169 338 133"
+            fill="none"
+            stroke="#FFFFFF"
+            strokeWidth="12"
+            opacity="0.88"
+          />
+        </g>
 
         {model.segments.map((segment, index) => {
           const points = segment
@@ -220,7 +248,7 @@ function MemoryRouteGraphic({
             cx={memory.x}
             cy={memory.y}
             r={compact ? 4 : 6}
-            fill="#FF20CE"
+            fill="#42E8F5"
             stroke="#FFFFFF"
             strokeWidth="2"
           />

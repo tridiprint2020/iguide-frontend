@@ -10,6 +10,10 @@ import {
 } from "react-router-dom";
 
 import {
+  Share2,
+} from "lucide-react";
+
+import {
   MapContainer,
   Marker,
   Polyline,
@@ -385,6 +389,20 @@ function MapView({ track }: Props) {
       return bundles;
     }, [track]);
 
+  const latestTrackBundle =
+    useMemo(
+      () =>
+        trackBundles.reduce<TrackBundle | null>(
+          (latest, candidate) =>
+            !latest ||
+            candidate.track.startedAt > latest.track.startedAt
+              ? candidate
+              : latest,
+          null
+        ),
+      [trackBundles]
+    );
+
   const activePath =
     track?.timeline.filter(
       (item) =>
@@ -473,6 +491,19 @@ function MapView({ track }: Props) {
         experience,
         expeditionTrack,
         item
+      )
+    );
+  }
+
+  function openLatestJourneyCard() {
+    if (!latestTrackBundle) {
+      return;
+    }
+
+    setSelectedCard(
+      MemoryCardEngine.build(
+        latestTrackBundle.experience,
+        latestTrackBundle.track
       )
     );
   }
@@ -814,6 +845,7 @@ function MapView({ track }: Props) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexWrap: "wrap",
             gap: "10px",
             marginTop: "12px",
             marginBottom: 0,
@@ -839,36 +871,70 @@ function MapView({ track }: Props) {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              setShowQhapaqNan(
-                (current) => !current
-              )
-            }
-            aria-pressed={showQhapaqNan}
+          <div
             style={{
-              minHeight: "38px",
-              padding: "7px 11px",
-              borderRadius: "11px",
-              border: showQhapaqNan
-                ? `1px solid ${ORANGE}`
-                : "1px solid rgba(255,255,255,0.12)",
-              backgroundColor: showQhapaqNan
-                ? "rgba(255,138,0,0.15)"
-                : "rgba(255,255,255,0.05)",
-              color: showQhapaqNan
-                ? ORANGE
-                : Theme.Colors.text,
-              fontSize: "11px",
-              fontWeight: 800,
-              cursor: "pointer",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "7px",
             }}
           >
-            {showQhapaqNan
-              ? tx("Ocultar Qhapaq Ñan")
-              : tx("Activar Qhapaq Ñan")}
-          </button>
+            {latestTrackBundle && (
+              <button
+                type="button"
+                onClick={openLatestJourneyCard}
+                style={{
+                  minHeight: "38px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  padding: "7px 11px",
+                  borderRadius: "11px",
+                  border: "1px solid rgba(66,232,245,0.34)",
+                  background:
+                    "linear-gradient(145deg, rgba(66,232,245,0.14), rgba(255,32,206,0.10))",
+                  color: "#42E8F5",
+                  fontSize: "11px",
+                  fontWeight: 850,
+                  cursor: "pointer",
+                }}
+              >
+                <Share2 size={15} />
+                {tx("Compartir recorrido")}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowQhapaqNan(
+                  (current) => !current
+                )
+              }
+              aria-pressed={showQhapaqNan}
+              style={{
+                minHeight: "38px",
+                padding: "7px 11px",
+                borderRadius: "11px",
+                border: showQhapaqNan
+                  ? `1px solid ${ORANGE}`
+                  : "1px solid rgba(255,255,255,0.12)",
+                backgroundColor: showQhapaqNan
+                  ? "rgba(255,138,0,0.15)"
+                  : "rgba(255,255,255,0.05)",
+                color: showQhapaqNan
+                  ? ORANGE
+                  : Theme.Colors.text,
+                fontSize: "11px",
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              {showQhapaqNan
+                ? tx("Ocultar Qhapaq Ñan")
+                : tx("Activar Qhapaq Ñan")}
+            </button>
+          </div>
         </header>
 
 

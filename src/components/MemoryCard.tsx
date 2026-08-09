@@ -52,17 +52,8 @@ type ReactionOption = {
     | typeof Repeat2;
 };
 
-type StatusStyle = {
-  label: string;
-  color: string;
-  background: string;
-  border: string;
-};
-
-const MAGENTA = "#FF20CE";
 const MAGENTA_SOFT = "#FF65DF";
 const CYAN = "#42E8F5";
-const ORANGE = "#FF9A3D";
 
 const AUTOMATIC_NOTES = [
   "guardando la esencia del momento",
@@ -131,43 +122,6 @@ function formatDuration(totalSeconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
-function getJourneyStatus(
-  data: MemoryCardData
-): StatusStyle {
-  const waypoints = data.waypoints ?? [];
-  const hasFinish = waypoints.some(
-    (point) => point.type === "finish"
-  );
-  const hasAbort = waypoints.some(
-    (point) => point.type === "abort"
-  );
-
-  if (hasFinish) {
-    return {
-      label: tx("Misión completada"),
-      color: MAGENTA_SOFT,
-      background: "rgba(38,9,32,0.68)",
-      border: "rgba(255,32,206,0.42)",
-    };
-  }
-
-  if (hasAbort) {
-    return {
-      label: tx("Ruta conservada"),
-      color: ORANGE,
-      background: "rgba(40,24,8,0.68)",
-      border: "rgba(255,154,61,0.42)",
-    };
-  }
-
-  return {
-    label: tx("Ruta registrada"),
-    color: CYAN,
-    background: "rgba(5,30,34,0.68)",
-    border: "rgba(66,232,245,0.36)",
-  };
-}
-
 function getExperienceId(
   data: MemoryCardData
 ): string | null {
@@ -192,7 +146,6 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
     const hasPhoto = Boolean(photoUrl);
     const hasMap = Boolean(data.mapBackground);
     const hasUserNote = isUserNote(data.note);
-    const status = getJourneyStatus(data);
     const experienceId = getExperienceId(data);
 
     const [
@@ -206,6 +159,11 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
     const [
       isDownloading,
       setIsDownloading,
+    ] = useState(false);
+
+    const [
+      isSharing,
+      setIsSharing,
     ] = useState(false);
 
     const selectedReaction =
@@ -222,7 +180,12 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
       data.stats.durationSeconds
     );
     const memoryCount = data.stats.totalMemories;
-    const pointCount = data.waypoints?.length ?? 0;
+    const isWholeJourney =
+      data.waypoints?.some(
+        (point) =>
+          point.type === "finish" ||
+          point.type === "abort"
+      ) ?? false;
 
     function handleReaction(
       reaction: FavoriteReaction
@@ -249,6 +212,20 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
         await onDownload();
       } finally {
         setIsDownloading(false);
+      }
+    }
+
+    async function handleShareClick() {
+      if (isSharing) {
+        return;
+      }
+
+      setIsSharing(true);
+
+      try {
+        await onShare();
+      } finally {
+        setIsSharing(false);
       }
     }
 
@@ -286,18 +263,39 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
           }}
         >
           {hasPhoto ? (
-            <img
-              src={photoUrl}
-              alt={tx("Recuerdo de {{title}}", { title: data.title })}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                display: "block",
-                objectFit: "cover",
-              }}
-            />
+            <>
+              {/* Fondo suave para llenar 4:5 sin recortar fotos horizontales. */}
+              <img
+                src={photoUrl}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: "-24px",
+                  width: "calc(100% + 48px)",
+                  height: "calc(100% + 48px)",
+                  display: "block",
+                  objectFit: "cover",
+                  filter: "blur(18px) brightness(0.62) saturate(0.92)",
+                  transform: "scale(1.04)",
+                }}
+              />
+
+              <img
+                src={photoUrl}
+                alt={tx("Recuerdo de {{title}}", { title: data.title })}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  display: "block",
+                  objectFit: "contain",
+                  objectPosition: "center",
+                  filter: "drop-shadow(0 6px 22px rgba(0,0,0,0.42))",
+                }}
+              />
+            </>
           ) : requestedPhoto && photoLoading ? (
             <div
               style={{
@@ -407,82 +405,12 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
             />
           </div>
 
-          <div
-            style={{
-              position: "absolute",
-              top: "16px",
-              right: "14px",
-              zIndex: 5,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              minHeight: "28px",
-              padding: "4px 9px",
-              borderRadius: "999px",
-              color: status.color,
-              background: status.background,
-              border: `1px solid ${status.border}`,
-              backdropFilter: "blur(10px)",
-              fontSize: "7px",
-              fontWeight: 900,
-              letterSpacing: "0.075em",
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                backgroundColor: status.color,
-                boxShadow: `0 0 8px ${status.color}`,
-              }}
-            />
-            {status.label}
-          </div>
-
-          <div
-            style={{
-              position: "absolute",
-              left: "15px",
-              top: "63px",
-              zIndex: 5,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "7px",
-              padding: "6px 9px",
-              borderRadius: "999px",
-              color: "rgba(255,255,255,0.90)",
-              background: "rgba(5,6,12,0.52)",
-              border:
-                "1px solid rgba(255,255,255,0.10)",
-              backdropFilter: "blur(8px)",
-              fontSize: "8px",
-              fontWeight: 800,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: "7px",
-                height: "7px",
-                borderRadius: "50%",
-                backgroundColor: MAGENTA,
-                boxShadow:
-                  "0 0 10px rgba(255,32,206,0.95)",
-              }}
-            />
-            {tx("{{points}} puntos · {{memories}} recuerdos", { points: pointCount, memories: memoryCount })}
-          </div>
-
           {/* Texto inferior: ocupa solo el lado izquierdo del mapa. */}
           <div
             style={{
               position: "absolute",
               left: "16px",
-              right: hasMap ? "48%" : "16px",
+              right: hasMap ? "39%" : "16px",
               bottom: "16px",
               zIndex: 5,
               textAlign: "left",
@@ -595,22 +523,21 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 right: "10px",
                 bottom: "10px",
                 zIndex: 4,
-                width: "43%",
-                height: "36%",
+                width: "35%",
+                height: "30%",
                 overflow: "hidden",
                 borderRadius: "15px",
                 border:
-                  "1px solid rgba(255,255,255,0.26)",
-                background: "rgba(5,7,13,0.28)",
+                  "1px solid rgba(255,255,255,0.38)",
+                background: "rgba(255,255,255,0.05)",
                 boxShadow:
-                  "0 12px 28px rgba(0,0,0,0.34), 0 0 18px rgba(255,32,206,0.10)",
-                backdropFilter: "blur(2px)",
+                  "0 8px 20px rgba(0,0,0,0.20), 0 0 14px rgba(255,255,255,0.08)",
               }}
             >
               <div
                 style={{
                   position: "absolute",
-                  inset: "0 0 42px",
+                  inset: "0 0 36px",
                 }}
               >
                 <MemoryRouteGraphic
@@ -643,14 +570,13 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  height: "42px",
+                  height: "36px",
                   display: "grid",
                   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                   alignItems: "center",
-                  background: "rgba(5,7,13,0.76)",
+                  background: "rgba(5,7,13,0.48)",
                   borderTop:
                     "1px solid rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(8px)",
                 }}
               >
                 <MapStat value={formattedTime} label={tx("Tiempo")} />
@@ -831,7 +757,11 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
 
             <button
               type="button"
-              onClick={onShare}
+              onClick={() => {
+                void handleShareClick();
+              }}
+              disabled={isSharing}
+              aria-busy={isSharing}
               style={{
                 minHeight: "48px",
                 display: "inline-flex",
@@ -847,13 +777,18 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
                 color: "#FFFFFF",
                 fontSize: "12px",
                 fontWeight: 900,
-                cursor: "pointer",
+                cursor: isSharing ? "wait" : "pointer",
+                opacity: isSharing ? 0.70 : 1,
                 boxShadow:
                   "0 10px 26px rgba(255,0,184,0.25)",
               }}
             >
               <Share2 size={17} strokeWidth={2.1} />
-              {tx("Compartir momento")}
+              {isSharing
+                ? tx("Preparando…")
+                : isWholeJourney
+                  ? tx("Compartir recorrido")
+                  : tx("Compartir momento")}
             </button>
           </div>
         </footer>

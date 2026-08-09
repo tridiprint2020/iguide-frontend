@@ -89,6 +89,7 @@ function MemoryPreviewModal({
       experienceContext
         ?.experienceId,
     mapBackground:
+      memoryData.mapBackground ??
       mapContext,
   };
 

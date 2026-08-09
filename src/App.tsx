@@ -27,7 +27,6 @@ import {
 } from "./components/journey/WalkingView";
 
 import ActiveJourneyBubble from "./components/journey/ActiveJourneyBubble";
-import LanguageToggle from "./components/LanguageToggle";
 
 import {
   useJourney,
@@ -110,7 +109,6 @@ function App() {
 
   return (
     <>
-      <LanguageToggle />
       <JourneyUiCoordinator />
 
       <Routes>

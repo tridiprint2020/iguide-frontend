@@ -5,6 +5,7 @@ import {
 import Sidebar from "../components/Sidebar";
 import BrandMark from "../components/BrandMark";
 import HomeLayout from "../components/HomeLayout";
+import LanguageToggle from "../components/LanguageToggle";
 
 import {
   NameCaptureModal,
@@ -79,6 +80,9 @@ function Home() {
       <Sidebar />
 
       <BrandMark />
+
+      {/* El selector pertenece al menú de inicio, no a las demás rutas. */}
+      <LanguageToggle />
 
       <main
         style={{

@@ -37,6 +37,7 @@ import {
   PartyPopper,
   RotateCcw,
   Search,
+  Share2,
   Sparkles,
   Utensils,
   X,
@@ -171,6 +172,7 @@ const DEFAULT_CENTER: [number, number] = [
 ];
 
 const MAGENTA = "#FF00FF";
+const CYAN = "#42E8F5";
 
 type HistoricalMemory = {
   experience: Experience;
@@ -536,6 +538,37 @@ function MapPage() {
       return results;
     }, [activeCatalog, showMemories]);
 
+  const latestJourney =
+    useMemo<{
+      experience: Experience;
+      track: ExpeditionTrack;
+    } | null>(() => {
+      let latest: {
+        experience: Experience;
+        track: ExpeditionTrack;
+      } | null = null;
+
+      for (const experience of activeCatalog) {
+        const sessions = loadAllTrackSessions(
+          experience.experienceId
+        );
+
+        for (const session of sessions) {
+          if (
+            session.timeline.length > 0 &&
+            (!latest || session.startedAt > latest.track.startedAt)
+          ) {
+            latest = {
+              experience,
+              track: session,
+            };
+          }
+        }
+      }
+
+      return latest;
+    }, [activeCatalog]);
+
   const selectedTrack =
     selectedExperience
       ? loadTrack(
@@ -726,6 +759,23 @@ function MapPage() {
     );
 
     setActiveMemory(cardData);
+    setShareOpen(true);
+  }
+
+  function openLatestJourneyCard() {
+    if (!latestJourney) {
+      return;
+    }
+
+    setSelectedExperience(
+      latestJourney.experience
+    );
+    setActiveMemory(
+      MemoryCardEngine.build(
+        latestJourney.experience,
+        latestJourney.track
+      )
+    );
     setShareOpen(true);
   }
 
@@ -1235,6 +1285,15 @@ function MapPage() {
             )
           }
         />
+
+        {latestJourney && (
+          <QuickFilterButton
+            active={false}
+            icon={Share2}
+            label={tx("Compartir recorrido")}
+            onClick={openLatestJourneyCard}
+          />
+        )}
       </section>
 
       <section
@@ -1659,7 +1718,7 @@ function MapPage() {
                   pathOptions={{
                     color: "#FFFFFF",
                     weight: 2,
-                    fillColor: MAGENTA,
+                    fillColor: CYAN,
                     fillOpacity: 1,
                   }}
                 >

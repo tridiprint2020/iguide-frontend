@@ -72,6 +72,9 @@ export const MemoryCardEngine = {
       options?.note?.trim();
 
     return {
+      experienceId:
+        experience.experienceId,
+
       title:
         experience.title,
 
@@ -171,6 +174,9 @@ export const MemoryCardEngine = {
       );
 
     return {
+      experienceId:
+        experience.experienceId,
+
       title:
         experience.title,
 
