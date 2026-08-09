@@ -9,6 +9,11 @@ import {
 } from "react-router-dom";
 
 import {
+  Compass,
+  House,
+} from "lucide-react";
+
+import {
   useJourney,
 } from "../../context/JourneyContext";
 
@@ -154,9 +159,11 @@ export default function JourneyAbortedView() {
     );
   }
 
-  function handleOpenExplorer() {
+  function handleExit(
+    destination: "/" | "/explorer"
+  ) {
     resetToHome();
-    navigate("/explorer");
+    navigate(destination);
   }
 
   return (
@@ -178,6 +185,36 @@ export default function JourneyAbortedView() {
           margin: "0 auto",
         }}
       >
+        <nav
+          aria-label={tx("Salir del recorrido interrumpido")}
+          style={{
+            position: "sticky",
+            top: "max(0px, env(safe-area-inset-top))",
+            zIndex: 1200,
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: "8px",
+            marginBottom: "14px",
+            padding: "7px",
+            borderRadius: "16px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(8,9,16,0.92)",
+            boxShadow: "0 10px 28px rgba(0,0,0,0.34)",
+            backdropFilter: "blur(14px)",
+          }}
+        >
+          <ExitButton
+            icon={House}
+            label={tx("Inicio")}
+            onClick={() => handleExit("/")}
+          />
+          <ExitButton
+            icon={Compass}
+            label={tx("Explorer")}
+            onClick={() => handleExit("/explorer")}
+          />
+        </nav>
+
         <div
           style={{
             color: "#FFB15C",
@@ -263,24 +300,6 @@ export default function JourneyAbortedView() {
           />
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenExplorer}
-          style={{
-            width: "100%",
-            minHeight: "52px",
-            marginTop: "20px",
-            borderRadius: "15px",
-            border:
-              "1px solid rgba(255,255,255,0.12)",
-            background: "#151515",
-            color: "#FFFFFF",
-            fontWeight: 800,
-            cursor: "pointer",
-          }}
-        >
-          {tx("Ver recorrido guardado en Explorer")} →
-        </button>
       </main>
 
       <ShareDrawer
@@ -299,6 +318,42 @@ export default function JourneyAbortedView() {
         }}
       />
     </div>
+  );
+}
+
+type ExitButtonProps = {
+  icon: typeof House;
+  label: string;
+  onClick: () => void;
+};
+
+function ExitButton({
+  icon: Icon,
+  label,
+  onClick,
+}: ExitButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        minHeight: "42px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "7px",
+        borderRadius: "12px",
+        border: "1px solid rgba(66,232,245,0.18)",
+        background: "rgba(66,232,245,0.06)",
+        color: "#FFFFFF",
+        fontSize: "11px",
+        fontWeight: 850,
+        cursor: "pointer",
+      }}
+    >
+      <Icon size={16} color="#42E8F5" />
+      {label}
+    </button>
   );
 }
 

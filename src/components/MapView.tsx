@@ -49,6 +49,10 @@ import {
 } from "../engine/shareEngine";
 
 import {
+  loadReturnPoint,
+} from "../engine/returnPointEngine";
+
+import {
   useJourney,
 } from "../context/JourneyContext";
 
@@ -274,6 +278,12 @@ function MapView({ track }: Props) {
     useState(false);
   const [user, setUser] =
     useState(() => loadUserProfile());
+
+  const returnPoint =
+    useMemo(
+      () => loadReturnPoint(),
+      []
+    );
 
   useEffect(() => {
     function syncUser() {
@@ -581,6 +591,44 @@ function MapView({ track }: Props) {
   <UserLocationLayer
     initialZoom={15}
   />
+
+  {returnPoint && (
+    <Marker
+      position={[
+        returnPoint.lat,
+        returnPoint.lng,
+      ]}
+      zIndexOffset={900}
+      icon={createIguidePin(
+        "home",
+        tx("Mi hotel / punto de regreso")
+      )}
+    >
+      <Popup
+        minWidth={210}
+        className="iguide-premium-popup"
+      >
+        <div
+          style={{
+            padding: "5px",
+            color: "#161616",
+            textAlign: "center",
+          }}
+        >
+          <strong>{tx("Mi punto de regreso")}</strong>
+          <p
+            style={{
+              margin: "5px 0 0",
+              color: "#666666",
+              fontSize: "11px",
+            }}
+          >
+            {tx("Esta casita queda guardada en este celular.")}
+          </p>
+        </div>
+      </Popup>
+    </Marker>
+  )}
 
   <QhapaqNanLayer
     visible={showQhapaqNan}

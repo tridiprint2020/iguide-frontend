@@ -74,6 +74,7 @@ const en: Record<string, string> = {
   "MemoryCard guardada. Búscala en la carpeta Descargas de tu celular.": "MemoryCard saved. Find it in your phone's Downloads folder.",
   "Junto a {{title}}": "Next to {{title}}",
   "Salir del recuerdo": "Leave memory",
+  "Salir del recorrido interrumpido": "Leave interrupted route",
   "Guardando foto y ubicación…": "Saving photo and location…",
   "Enseguida verás tu MemoryCard.": "Your MemoryCard will appear shortly.",
   "Al aceptar en la cámara, I.GUIDE guardará el recuerdo directamente.": "After accepting in the camera, I.GUIDE will save the memory directly.",
