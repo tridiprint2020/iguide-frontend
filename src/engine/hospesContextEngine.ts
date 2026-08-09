@@ -384,6 +384,9 @@ export function getHospesMessage(
       let weatherObservation =
         "";
 
+      const nearRainRisk =
+        (weather?.precipitationProbabilityNext3Hours ?? 0) >= 40;
+
       if (weather) {
         switch (
           weather.condition
@@ -407,7 +410,9 @@ export function getHospesMessage(
 
           case "cloudy":
             weatherObservation =
-              isNight
+              nearRainRisk
+                ? ` ${tx("El cielo está nublado y hay posibilidad de lluvia pronto, así que elegí una experiencia bajo techo.")}`
+                : isNight
                 ? ` ${tx("La noche está nublada, así que prioricé una experiencia urbana y accesible.")}`
                 : ` ${tx("El cielo está nublado, una condición cómoda para recorrer la ciudad.")}`;
             break;
@@ -429,7 +434,8 @@ export function getHospesMessage(
         weather?.condition ===
           "drizzle" ||
         weather?.condition ===
-          "snow";
+          "snow" ||
+        nearRainRisk;
 
       const recommendationWarning =
         unsafeOutdoorWeather &&

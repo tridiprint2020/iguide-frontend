@@ -20,6 +20,12 @@ export interface WeatherStatus {
   city: string;
 
   isHighMountainSafe: boolean;
+
+  precipitationMm?: number;
+
+  precipitationProbabilityNext3Hours?: number;
+
+  windSpeedKmh?: number;
 }
 
 export interface WeatherVisual {

@@ -14,6 +14,10 @@ type RecommendationContext = {
 function isOutdoorExperience(
   experience: Experience
 ): boolean {
+  if (experience.environment) {
+    return experience.environment === "outdoor";
+  }
+
   const searchableText = [
     experience.type,
     experience.title,
@@ -42,6 +46,13 @@ function isOutdoorExperience(
 function isIndoorFriendly(
   experience: Experience
 ): boolean {
+  if (experience.environment) {
+    return (
+      experience.environment === "indoor" ||
+      experience.environment === "mixed"
+    );
+  }
+
   return [
     "restaurant",
     "cafe",
@@ -87,7 +98,8 @@ export function selectHomeExperience({
   const hasBadWeather =
     weather.condition === "rain" ||
     weather.condition === "drizzle" ||
-    weather.condition === "snow";
+    weather.condition === "snow" ||
+    (weather.precipitationProbabilityNext3Hours ?? 0) >= 40;
 
   let candidates =
     activeExperiences;
@@ -97,7 +109,9 @@ export function selectHomeExperience({
       candidates.filter(
         (experience) =>
           isIndoorFriendly(experience) &&
-          !isOutdoorExperience(experience)
+          !isOutdoorExperience(experience) &&
+          experience.weatherSensitivity !== "high" &&
+          !experience.avoidWhenWet
       );
   }
 

@@ -11,6 +11,16 @@ export type VenueSubtype =
   | "icecream" | "snack" | "fastfood" | "buffet" | "pub"
   | "karaoke" | "peña" | "roofbar" | "cocktail" | "craftbeer" | "pizza";
 
+export type ExperienceEnvironment =
+  | "indoor"
+  | "outdoor"
+  | "mixed";
+
+export type WeatherSensitivity =
+  | "low"
+  | "medium"
+  | "high";
+
 export interface AffinityScores {
   firstTimeVisitor: number;
   family: number;
@@ -39,6 +49,10 @@ export interface BaseExperience {
   arrivalLatitude?: number;
   arrivalLongitude?: number;
   manualCertificationRadiusMeters?: number;
+  environment?: ExperienceEnvironment;
+  weatherSensitivity?: WeatherSensitivity;
+  avoidWhenWet?: boolean;
+  terrain?: "urban" | "paved" | "trail" | "clay" | "mountain";
   
   // 🚀 EVOLUCIÓN ARQUITECTÓNICA: Cualquier experiencia puede responder a múltiples perfiles o intereses
   interests?: Interest[]; 

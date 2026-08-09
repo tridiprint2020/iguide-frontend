@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Theme } from "../styles/theme";
 import { loadUserProfile } from "../data/user";
 import { useWeather } from "../context/WeatherContext";
@@ -24,26 +24,13 @@ export default function Hospes() {
     drizzle: tx("Llovizna"),
     snow: tx("Nieve"),
   }[weather.condition] ?? weather.condition;
-
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-
-    setMessages([
-      getHospesMessage(
-        user,
-        weather
-      ),
-    ]);
-  }, [
-    isLoading,
-    user.name,
-    weather.temperature,
-    weather.condition,
-    weather.city,
-    weather.isHighMountainSafe,
-  ]);
+  const contextualMessage =
+    isLoading
+      ? null
+      : getHospesMessage(
+          user,
+          weather
+        );
 
   function sendMessage() {
     if (!input.trim()) return;
@@ -126,6 +113,18 @@ export default function Hospes() {
           gap: Theme.Space.md,
         }}
       >
+        {contextualMessage && (
+          <div
+            style={{
+              background: "#ffffff10",
+              padding: "14px",
+              borderRadius: Theme.Radius.medium,
+            }}
+          >
+            {contextualMessage}
+          </div>
+        )}
+
         {messages.map((msg, index) => (
           <div
             key={index}

@@ -20,9 +20,14 @@ function getIndoorSuggestion(profile: UserProfile): Experience | null {
 
 export function getHospesDecision(profile: UserProfile, weather: WeatherStatus): HospesDecision {
   const timeContext = getCurrentTimeContext();
+  const hasRainRisk =
+    weather.condition === "drizzle" ||
+    weather.condition === "rain" ||
+    weather.condition === "snow" ||
+    (weather.precipitationProbabilityNext3Hours ?? 0) >= 40;
   
   // Manejo inteligente del clima lluvioso
-  if (weather.condition === "drizzle" || weather.condition === "rain") {
+  if (hasRainRisk) {
     const indoorSuggestion = getIndoorSuggestion(profile);
 
     if (indoorSuggestion) {

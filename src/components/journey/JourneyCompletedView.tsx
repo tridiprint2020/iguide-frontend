@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import {
+  Camera,
   Crop,
   FlipHorizontal2,
   ImagePlus,
@@ -77,6 +78,9 @@ export default function JourneyCompletedView() {
     );
 
   const photoInputRef =
+    useRef<HTMLInputElement | null>(null);
+
+  const cameraInputRef =
     useRef<HTMLInputElement | null>(null);
 
   const [
@@ -585,6 +589,15 @@ export default function JourneyCompletedView() {
             style={{ display: "none" }}
           />
 
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="user"
+            onChange={handleCardPhotoSelected}
+            style={{ display: "none" }}
+          />
+
           <div
             style={{
               display: "grid",
@@ -724,7 +737,6 @@ export default function JourneyCompletedView() {
                 onClick={() => setCropEditorOpen(true)}
                 disabled={Boolean(photoAction)}
                 style={{
-                  gridColumn: "1 / -1",
                   minHeight: "42px",
                   display: "inline-flex",
                   alignItems: "center",
@@ -741,6 +753,36 @@ export default function JourneyCompletedView() {
               >
                 <Crop size={16} color="#42E8F5" />
                 {tx("Ajustar encuadre")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={Boolean(photoAction) || isSavingPhoto}
+                style={{
+                  minHeight: "42px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "7px",
+                  borderRadius: "13px",
+                  border: "1px solid rgba(66,232,245,0.22)",
+                  background: "rgba(66,232,245,0.06)",
+                  color: "#FFFFFF",
+                  fontWeight: 850,
+                  fontSize: "10px",
+                  cursor:
+                    photoAction || isSavingPhoto
+                      ? "wait"
+                      : "pointer",
+                }}
+              >
+                {isSavingPhoto ? (
+                  <Loader2 size={16} />
+                ) : (
+                  <Camera size={16} color="#42E8F5" />
+                )}
+                {tx("Volver a tomar foto")}
               </button>
             </div>
           )}

@@ -14,4 +14,10 @@ export const currentWeather: WeatherStatus = {
   city: "Huancayo",
 
   isHighMountainSafe: false,
+
+  precipitationMm: 0,
+
+  precipitationProbabilityNext3Hours: 55,
+
+  windSpeedKmh: 0,
 };

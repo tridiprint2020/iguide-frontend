@@ -47,7 +47,10 @@ function buildShareText(
       : tx("{{count}} recuerdos", { count: memoryCount });
 
   const sections = [
-    tx("Completé {{title}} en {{city}} con I.GUIDE.", { title: cardData.title, city: cardData.city }),
+    tx("Estoy descubriendo {{title}} en {{city}} con I.GUIDE.", {
+      title: cardData.title,
+      city: cardData.city,
+    }),
     note
       ? `“${note}”`
       : null,

@@ -431,6 +431,152 @@ function drawDot(
   context.stroke();
 }
 
+function drawCompassRose(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number
+) {
+  context.save();
+  context.translate(centerX, centerY);
+  context.shadowColor = "rgba(0,0,0,0.42)";
+  context.shadowBlur = 12;
+
+  context.beginPath();
+  for (let index = 0; index < 16; index += 1) {
+    const angle = -Math.PI / 2 + (index * Math.PI) / 8;
+    const pointRadius = index % 2 === 0 ? radius : radius * 0.27;
+    const x = Math.cos(angle) * pointRadius;
+    const y = Math.sin(angle) * pointRadius;
+
+    if (index === 0) {
+      context.moveTo(x, y);
+    } else {
+      context.lineTo(x, y);
+    }
+  }
+  context.closePath();
+  context.fillStyle = "rgba(255,255,255,0.96)";
+  context.fill();
+  context.strokeStyle = "rgba(12,18,26,0.88)";
+  context.lineWidth = 2;
+  context.stroke();
+
+  context.beginPath();
+  context.moveTo(0, -radius);
+  context.lineTo(radius * 0.16, 0);
+  context.lineTo(0, radius * 0.18);
+  context.closePath();
+  context.fillStyle = MAGENTA;
+  context.fill();
+
+  context.beginPath();
+  context.arc(0, 0, radius * 0.13, 0, Math.PI * 2);
+  context.fillStyle = MAGENTA;
+  context.fill();
+  context.restore();
+}
+
+async function drawFullRouteBackground(
+  context: CanvasRenderingContext2D,
+  data: MemoryCardData
+) {
+  const model = buildRouteModel(data);
+  const fallbackCenter =
+    data.mapBackground?.center ??
+    [data.lat ?? 0, data.lng ?? 0];
+  const allCoordinates = [
+    ...model.coordinates,
+    ...model.memories.map(
+      (memory) => [memory.lat, memory.lng] as Coordinate
+    ),
+    ...(model.start ? [model.start] : []),
+    ...(model.end ? [model.end] : []),
+  ];
+  const projection = createMapProjection(
+    allCoordinates.length > 0
+      ? allCoordinates
+      : [fallbackCenter],
+    WIDTH,
+    HEIGHT
+  );
+
+  const background = context.createLinearGradient(0, 0, WIDTH, HEIGHT);
+  background.addColorStop(0, "#F8FBFC");
+  background.addColorStop(0.55, "#E5EFF1");
+  background.addColorStop(1, "#F3EAF3");
+  context.fillStyle = background;
+  context.fillRect(0, 0, WIDTH, HEIGHT);
+
+  const hasStreetTiles = await drawStreetTiles(
+    context,
+    0,
+    0,
+    WIDTH,
+    HEIGHT,
+    projection
+  );
+
+  if (!hasStreetTiles) {
+    drawMapFallback(context, 0, 0, WIDTH, HEIGHT);
+  }
+
+  const project = (coordinate: Coordinate) =>
+    projection.project(coordinate);
+
+  for (const segment of model.segments) {
+    if (segment.length < 2) {
+      continue;
+    }
+
+    const projected = segment.map(project);
+    context.beginPath();
+    projected.forEach((point, index) => {
+      if (index === 0) {
+        context.moveTo(point.x, point.y);
+      } else {
+        context.lineTo(point.x, point.y);
+      }
+    });
+    context.strokeStyle = "rgba(255,255,255,0.98)";
+    context.lineWidth = 14;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.stroke();
+    context.strokeStyle = MAGENTA;
+    context.lineWidth = 8;
+    context.stroke();
+  }
+
+  if (model.start) {
+    drawDot(context, project(model.start), 17, MAGENTA);
+  }
+
+  model.memories.forEach((memory) => {
+    drawDot(context, project([memory.lat, memory.lng]), 10, CYAN);
+  });
+
+  if (model.end) {
+    drawDot(
+      context,
+      project(model.end),
+      19,
+      model.abandoned ? ORANGE : MAGENTA
+    );
+  }
+
+  drawCompassRose(context, WIDTH - 67, 68, 34);
+
+  context.fillStyle = "rgba(0,0,0,0.50)";
+  context.font = "600 10px Arial, sans-serif";
+  context.textAlign = "right";
+  context.fillText(
+    "© OpenStreetMap · © CARTO",
+    WIDTH - 18,
+    HEIGHT - 12
+  );
+}
+
 async function drawRoutePanel(
   context: CanvasRenderingContext2D,
   data: MemoryCardData
@@ -683,6 +829,8 @@ export async function renderMemoryCardBlob(
   try {
     if (photo) {
       drawPhotoPreservingFrame(context, photo);
+    } else if (data.mapBackground || data.path?.length) {
+      await drawFullRouteBackground(context, data);
     } else {
       const background = context.createLinearGradient(0, 0, WIDTH, HEIGHT);
       background.addColorStop(0, "#F8FBFC");
@@ -771,7 +919,7 @@ export async function renderMemoryCardBlob(
     context.fillText("#IGuide #LiveLikeLocal", 46, metadataY + 27);
     context.shadowBlur = 0;
 
-    if (hasMap) {
+    if (photo && hasMap) {
       await drawRoutePanel(context, data);
     }
 

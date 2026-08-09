@@ -1,6 +1,8 @@
 import type { WeatherStatus } from "./weatherEngine";
 
 type OpenMeteoCurrent = {
+  time: string;
+
   temperature_2m: number;
 
   precipitation: number;
@@ -20,7 +22,39 @@ type OpenMeteoCurrent = {
 
 type OpenMeteoResponse = {
   current?: OpenMeteoCurrent;
+
+  hourly?: {
+    time: string[];
+    precipitation_probability: number[];
+  };
 };
+
+function getUpcomingRainProbability(
+  data: OpenMeteoResponse
+): number {
+  const times = data.hourly?.time ?? [];
+  const probabilities =
+    data.hourly?.precipitation_probability ?? [];
+  const currentTime = data.current?.time;
+
+  if (!currentTime || times.length === 0) {
+    return 0;
+  }
+
+  const currentHour = currentTime.slice(0, 13);
+  const startIndex = times.findIndex(
+    (time) => time.slice(0, 13) >= currentHour
+  );
+
+  if (startIndex < 0) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    ...probabilities.slice(startIndex, startIndex + 3)
+  );
+}
 
 const HUANCAYO_COORDINATES = {
   latitude: -12.06513,
@@ -100,6 +134,10 @@ export async function fetchCurrentWeather(): Promise<WeatherStatus> {
         "is_day",
       ].join(","),
 
+      hourly: "precipitation_probability",
+
+      forecast_days: "2",
+
       timezone:
         "America/Lima",
     });
@@ -129,6 +167,14 @@ export async function fetchCurrentWeather(): Promise<WeatherStatus> {
       data.current.weather_code
     );
 
+  const precipitationProbabilityNext3Hours =
+    getUpcomingRainProbability(data);
+
+  const hasNearRainRisk =
+    precipitationProbabilityNext3Hours >= 40 ||
+    data.current.precipitation > 0 ||
+    data.current.rain > 0;
+
   return {
     temperature:
       Math.round(
@@ -141,7 +187,16 @@ export async function fetchCurrentWeather(): Promise<WeatherStatus> {
     city: "Huancayo",
 
     isHighMountainSafe:
-      condition === "sunny" ||
-      condition === "cloudy",
+      (condition === "sunny" || condition === "cloudy") &&
+      !hasNearRainRisk &&
+      data.current.wind_speed_10m < 35,
+
+    precipitationMm:
+      data.current.precipitation,
+
+    precipitationProbabilityNext3Hours,
+
+    windSpeedKmh:
+      data.current.wind_speed_10m,
   };
 }
