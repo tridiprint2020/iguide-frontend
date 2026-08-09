@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import {
+  Crop,
   FlipHorizontal2,
   ImagePlus,
   Loader2,
@@ -35,11 +36,13 @@ import {
   type PhotoTransformation,
 } from "../../engine/photoProcessing";
 import {
+  replaceMemoryPhotoBlob,
   transformMemoryPhoto,
 } from "../../engine/memoryPhotoEditor";
 
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
+import PhotoCropEditor from "../sharing/PhotoCropEditor";
 import {
   shareEngine,
 } from "../../engine/shareEngine";
@@ -100,6 +103,11 @@ export default function JourneyCompletedView() {
     photoAction,
     setPhotoAction,
   ] = useState<PhotoTransformation | null>(null);
+
+  const [
+    cropEditorOpen,
+    setCropEditorOpen,
+  ] = useState(false);
 
   const activeExperience =
     journey.experience as
@@ -385,6 +393,28 @@ export default function JourneyCompletedView() {
     } finally {
       setPhotoAction(null);
     }
+  }
+
+  async function handleCroppedPhoto(croppedPhoto: Blob) {
+    if (
+      !activeExperience ||
+      !lastMemoryWithPhoto?.photo
+    ) {
+      return;
+    }
+
+    const updatedTrack = await replaceMemoryPhotoBlob(
+      activeExperience.experienceId,
+      lastMemoryWithPhoto.id,
+      lastMemoryWithPhoto.photo,
+      croppedPhoto
+    );
+
+    setCardTimeline(updatedTrack.timeline);
+    setCardFeedback(
+      tx("Encuadre guardado. La MemoryCard ya muestra tu composición.")
+    );
+    setCropEditorOpen(false);
   }
 
   async function handleDownload() {
@@ -688,6 +718,30 @@ export default function JourneyCompletedView() {
                 )}
                 {tx("Girar fotografía")}
               </button>
+
+              <button
+                type="button"
+                onClick={() => setCropEditorOpen(true)}
+                disabled={Boolean(photoAction)}
+                style={{
+                  gridColumn: "1 / -1",
+                  minHeight: "42px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "7px",
+                  borderRadius: "13px",
+                  border: "1px solid rgba(66,232,245,0.22)",
+                  background: "rgba(66,232,245,0.06)",
+                  color: "#FFFFFF",
+                  fontWeight: 850,
+                  fontSize: "10px",
+                  cursor: photoAction ? "wait" : "pointer",
+                }}
+              >
+                <Crop size={16} color="#42E8F5" />
+                {tx("Ajustar encuadre")}
+              </button>
             </div>
           )}
 
@@ -856,6 +910,14 @@ export default function JourneyCompletedView() {
           handleCopyLink
         }
       />
+
+      {cropEditorOpen && lastMemoryWithPhoto?.photo && (
+        <PhotoCropEditor
+          photoReference={lastMemoryWithPhoto.photo}
+          onCancel={() => setCropEditorOpen(false)}
+          onApply={handleCroppedPhoto}
+        />
+      )}
     </div>
   );
 }

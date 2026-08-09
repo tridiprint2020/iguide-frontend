@@ -15,6 +15,29 @@ import type {
 } from "../types/tracking/tracking";
 import { tx } from "../i18n";
 
+export async function replaceMemoryPhotoBlob(
+  experienceId: string,
+  memoryId: string,
+  previousPhotoReference: string,
+  nextPhotoBlob: Blob
+): Promise<ExpeditionTrack> {
+  const nextReference = await storePhotoBlob(nextPhotoBlob);
+  const updatedTrack = updateMemoryPhoto(
+    experienceId,
+    memoryId,
+    nextReference
+  );
+
+  if (!updatedTrack) {
+    await deletePhoto(nextReference).catch(() => undefined);
+    throw new Error(tx("No se pudo actualizar la fotografía."));
+  }
+
+  await deletePhoto(previousPhotoReference).catch(() => undefined);
+
+  return updatedTrack;
+}
+
 export async function transformMemoryPhoto(
   experienceId: string,
   memoryId: string,
@@ -31,20 +54,10 @@ export async function transformMemoryPhoto(
     originalBlob,
     transformation
   );
-  const nextReference = await storePhotoBlob(transformedBlob);
-  const updatedTrack = updateMemoryPhoto(
+  return replaceMemoryPhotoBlob(
     experienceId,
     memoryId,
-    nextReference
+    photoReference,
+    transformedBlob
   );
-
-  if (!updatedTrack) {
-    await deletePhoto(nextReference).catch(() => undefined);
-    throw new Error(tx("No se pudo actualizar la fotografía."));
-  }
-
-  /* La nueva referencia ya es la fuente de verdad; liberamos el Blob viejo. */
-  await deletePhoto(photoReference).catch(() => undefined);
-
-  return updatedTrack;
 }

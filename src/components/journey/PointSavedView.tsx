@@ -6,6 +6,7 @@ import {
 import {
   CheckCircle2,
   Compass,
+  Crop,
   FlipHorizontal2,
   House,
   Loader2,
@@ -23,6 +24,7 @@ import {
 
 import MemoryCard from "../MemoryCard";
 import ShareDrawer from "../sharing/ShareDrawer";
+import PhotoCropEditor from "../sharing/PhotoCropEditor";
 import HospesBanner from "../hospes/HospesBanner";
 
 import {
@@ -42,6 +44,7 @@ import {
   updateMemoryNote,
 } from "../../engine/trackingEngine";
 import {
+  replaceMemoryPhotoBlob,
   transformMemoryPhoto,
 } from "../../engine/memoryPhotoEditor";
 import type {
@@ -74,6 +77,9 @@ export function PointSavedView() {
 
   const [photoFeedback, setPhotoFeedback] =
     useState<string | null>(null);
+
+  const [cropEditorOpen, setCropEditorOpen] =
+    useState(false);
 
   const memories =
     track?.timeline.filter(
@@ -176,6 +182,28 @@ export function PointSavedView() {
     } finally {
       setPhotoAction(null);
     }
+  }
+
+  async function handleCroppedPhoto(croppedPhoto: Blob) {
+    if (
+      !journey.experience ||
+      !lastMemory?.photo
+    ) {
+      return;
+    }
+
+    const updatedTrack = await replaceMemoryPhotoBlob(
+      journey.experience.experienceId,
+      lastMemory.id,
+      lastMemory.photo,
+      croppedPhoto
+    );
+
+    setTrack(updatedTrack);
+    setPhotoFeedback(
+      tx("Encuadre guardado. La MemoryCard ya muestra tu composición.")
+    );
+    setCropEditorOpen(false);
   }
 
   function persistNote() {
@@ -390,6 +418,14 @@ export function PointSavedView() {
                   void handlePhotoTransformation("rotate-clockwise")
                 }
               />
+              <PhotoAdjustmentButton
+                icon={Crop}
+                label={tx("Ajustar encuadre")}
+                busy={false}
+                disabled={Boolean(photoAction)}
+                wide
+                onClick={() => setCropEditorOpen(true)}
+              />
             </div>
 
             {photoFeedback && (
@@ -510,6 +546,14 @@ export function PointSavedView() {
         onDownload={handleDownloadMemory}
         onCopyLink={handleCopyText}
       />
+
+      {cropEditorOpen && lastMemory?.photo && (
+        <PhotoCropEditor
+          photoReference={lastMemory.photo}
+          onCancel={() => setCropEditorOpen(false)}
+          onApply={handleCroppedPhoto}
+        />
+      )}
     </div>
   );
 }
@@ -519,6 +563,7 @@ type PhotoAdjustmentButtonProps = {
   label: string;
   busy: boolean;
   disabled: boolean;
+  wide?: boolean;
   onClick: () => void;
 };
 
@@ -527,6 +572,7 @@ function PhotoAdjustmentButton({
   label,
   busy,
   disabled,
+  wide = false,
   onClick,
 }: PhotoAdjustmentButtonProps) {
   return (
@@ -548,6 +594,7 @@ function PhotoAdjustmentButton({
         fontWeight: 850,
         cursor: disabled ? "wait" : "pointer",
         opacity: disabled && !busy ? 0.48 : 1,
+        gridColumn: wide ? "1 / -1" : undefined,
       }}
     >
       {busy ? (

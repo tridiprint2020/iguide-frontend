@@ -383,11 +383,11 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
           <div
             style={{
               position: "absolute",
-              top: "-4px",
+              top: "0px",
               left: "8px",
               zIndex: 5,
-              width: "102px",
-              height: "56px",
+              width: "92px",
+              height: "51px",
               overflow: "hidden",
               pointerEvents: "none",
             }}
@@ -397,10 +397,10 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
               alt="I.GUIDE"
               style={{
                 position: "absolute",
-                left: "-11px",
-                top: "-25px",
-                width: "122px",
-                height: "110px",
+                left: "-10px",
+                top: "-22px",
+                width: "110px",
+                height: "99px",
                 objectFit: "fill",
                 filter:
                   "drop-shadow(0 3px 10px rgba(0,0,0,0.65))",
