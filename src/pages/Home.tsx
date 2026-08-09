@@ -81,8 +81,8 @@ function Home() {
 
       <BrandMark />
 
-      {/* El selector pertenece al menú de inicio, no a las demás rutas. */}
-      <LanguageToggle />
+      {/* Durante la bienvenida el selector vive dentro de su tarjeta. */}
+      {!showNameModal && <LanguageToggle />}
 
       <main
         style={{

@@ -40,13 +40,18 @@ function buildShareText(
 ): string {
   const note =
     cardData.note?.trim();
+  const memoryCount = cardData.stats.totalMemories;
+  const memorySummary =
+    memoryCount === 1
+      ? tx("1 recuerdo")
+      : tx("{{count}} recuerdos", { count: memoryCount });
 
   const sections = [
     tx("Completé {{title}} en {{city}} con I.GUIDE.", { title: cardData.title, city: cardData.city }),
     note
       ? `“${note}”`
       : null,
-    tx("{{distance}} km · {{count}} recuerdo(s)", { distance: cardData.stats.totalDistanceKm.toFixed(2), count: cardData.stats.totalMemories }),
+    `${cardData.stats.totalDistanceKm.toFixed(2)} km · ${memorySummary}`,
     tx("No visites. Pertenece. Vive la ciudad como un local."),
     "#IGuide #LiveLikeLocal #FeelTheCity",
   ];

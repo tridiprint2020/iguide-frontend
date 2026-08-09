@@ -22,6 +22,8 @@ import {
 
 import logoIG from "../assets/branding/logo-dark-bg.png";
 import { tx } from "../i18n";
+import { useTranslation } from "react-i18next";
+import LanguageToggle from "./LanguageToggle";
 
 interface NameCaptureModalProps {
   onClose: () => void;
@@ -35,12 +37,13 @@ export function NameCaptureModal({
   onClose,
   onProfileUpdated,
 }: NameCaptureModalProps) {
+  /* Suscribe toda la bienvenida al cambio ES/EN. */
+  useTranslation();
+
   const [
     nameInput,
     setNameInput,
-  ] = useState(
-    tx("Explorador")
-  );
+  ] = useState("");
 
   const [
     isSaving,
@@ -174,6 +177,8 @@ export function NameCaptureModal({
           color: "#FFFFFF",
         }}
       >
+        <LanguageToggle variant="welcome" />
+
         <div
           aria-hidden="true"
           style={{
@@ -414,7 +419,6 @@ export function NameCaptureModal({
               event.currentTarget
                 .select()
             }
-            autoFocus
             autoComplete="name"
             maxLength={30}
             placeholder={tx("Explorador")}

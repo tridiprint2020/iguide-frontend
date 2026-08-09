@@ -21,7 +21,11 @@ function getInitialLanguage(): AppLanguage {
       LANGUAGE_STORAGE_KEY
     );
 
-  return storedLanguage === "en"
+  if (storedLanguage === "en" || storedLanguage === "es") {
+    return storedLanguage;
+  }
+
+  return navigator.language.toLowerCase().startsWith("en")
     ? "en"
     : "es";
 }

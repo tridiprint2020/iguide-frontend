@@ -13,6 +13,7 @@ import {
   isStoredPhotoReference,
   loadPhotoBlob,
 } from "./mediaStorage";
+import { tx } from "../i18n";
 
 const WIDTH = 864;
 const HEIGHT = 1080;
@@ -543,9 +544,18 @@ async function drawRoutePanel(
   );
 
   const stats = [
-    [formatDuration(data.stats.durationSeconds), "TIEMPO"],
-    [`${data.stats.totalDistanceKm.toFixed(2)} km`, "DISTANCIA"],
-    [String(data.stats.totalMemories), "HITOS"],
+    [
+      formatDuration(data.stats.durationSeconds),
+      tx("Tiempo").toUpperCase(),
+    ],
+    [
+      `${data.stats.totalDistanceKm.toFixed(2)} km`,
+      tx("Distancia").toUpperCase(),
+    ],
+    [
+      String(data.stats.totalMemories),
+      tx("Hitos").toUpperCase(),
+    ],
   ];
 
   stats.forEach(([value, label], index) => {
@@ -689,9 +699,11 @@ export async function renderMemoryCardBlob(
     context.fillStyle = shade;
     context.fillRect(0, 0, WIDTH, HEIGHT);
 
-    /* Recorte del archivo maestro: logo grande, sin el marco negro. */
+    /* Logo sólido y compacto: conserva contraste aun sobre fotos claras. */
     context.save();
-    context.globalCompositeOperation = "screen";
+    context.shadowColor = "rgba(0,0,0,0.72)";
+    context.shadowBlur = 13;
+    context.shadowOffsetY = 2;
     context.drawImage(
       logo,
       70,
@@ -699,9 +711,9 @@ export async function renderMemoryCardBlob(
       540,
       360,
       34,
-      22,
-      310,
-      206
+      4,
+      268,
+      179
     );
     context.restore();
 

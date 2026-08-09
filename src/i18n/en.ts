@@ -412,6 +412,8 @@ const en: Record<string, string> = {
   "Llegada certificada en {{title}}.": "Arrival certified at {{title}}.",
   "Completé {{title}} en {{city}} con I.GUIDE.": "I completed {{title}} in {{city}} with I.GUIDE.",
   "{{distance}} km · {{count}} recuerdo(s)": "{{distance}} km · {{count}} memory/memories",
+  "1 recuerdo": "1 memory",
+  "{{count}} recuerdos": "{{count}} memories",
   "No visites. Pertenece. Vive la ciudad como un local.": "Do not just visit. Belong. Live the city like a local.",
   "No se pudo crear la imagen de la MemoryCard.": "The MemoryCard image could not be created.",
   "Descripción copiada. Ya puedes pegarla en tu red favorita.": "Caption copied. You can now paste it into your favorite social network.",

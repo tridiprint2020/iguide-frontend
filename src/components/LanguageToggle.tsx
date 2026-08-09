@@ -6,7 +6,13 @@ import {
   tx,
 } from "../i18n";
 
-function LanguageToggle() {
+type LanguageToggleProps = {
+  variant?: "sidebar" | "welcome";
+};
+
+function LanguageToggle({
+  variant = "sidebar",
+}: LanguageToggleProps) {
   const {
     i18n,
   } = useTranslation();
@@ -32,6 +38,7 @@ function LanguageToggle() {
       : tx(
           "Cambiar idioma a inglés"
         );
+  const isWelcome = variant === "welcome";
 
   return (
     <button
@@ -45,18 +52,22 @@ function LanguageToggle() {
       }
       title={accessibleLabel}
       style={{
-        position: "fixed",
-        left: "7px",
-        bottom: "max(18px, env(safe-area-inset-bottom))",
-        zIndex: 110000,
-        width: "50px",
-        minHeight: "84px",
+        position: isWelcome ? "absolute" : "fixed",
+        left: isWelcome ? undefined : "7px",
+        right: isWelcome ? "12px" : undefined,
+        top: isWelcome ? "12px" : undefined,
+        bottom: isWelcome
+          ? undefined
+          : "max(18px, env(safe-area-inset-bottom))",
+        zIndex: isWelcome ? 4 : 110000,
+        width: isWelcome ? "auto" : "50px",
+        minHeight: isWelcome ? "40px" : "84px",
         boxSizing: "border-box",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: "4px",
-        borderRadius: "17px",
+        borderRadius: isWelcome ? "14px" : "17px",
         border:
           "1px solid rgba(255,255,255,0.18)",
         background:
@@ -72,9 +83,9 @@ function LanguageToggle() {
         aria-hidden="true"
         style={{
           display: "inline-flex",
-          flexDirection: "column",
+          flexDirection: isWelcome ? "row" : "column",
           alignItems: "center",
-          gap: "3px",
+          gap: isWelcome ? "2px" : "3px",
           width: "100%",
           fontSize: "9px",
           fontWeight: 900,
@@ -83,8 +94,8 @@ function LanguageToggle() {
       >
         <span
           style={{
-            width: "40px",
-            minHeight: "34px",
+            width: isWelcome ? "46px" : "40px",
+            minHeight: isWelcome ? "30px" : "34px",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -109,8 +120,8 @@ function LanguageToggle() {
           style={{
             color:
               "rgba(255,255,255,0.50)",
-            width: "24px",
-            height: "1px",
+            width: isWelcome ? "1px" : "24px",
+            height: isWelcome ? "24px" : "1px",
             overflow: "hidden",
             background:
               "rgba(255,255,255,0.16)",
@@ -121,8 +132,8 @@ function LanguageToggle() {
 
         <span
           style={{
-            width: "40px",
-            minHeight: "34px",
+            width: isWelcome ? "46px" : "40px",
+            minHeight: isWelcome ? "30px" : "34px",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
