@@ -1,5 +1,5 @@
 import type { Experience } from "../../../types/experience/experience";
-import placeholder from "../../../assets/optimized/logo-iguide.webp";
+import placeholder from "../../../assets/branding/logo-light-bg.png";
 export const expeditions: Experience[] = [
   {
     experienceId: "EXP-0001",

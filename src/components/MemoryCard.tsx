@@ -22,7 +22,7 @@ import {
 import MemoryMapCanvas from "./sharing/MemoryMapCanvas";
 import MemoryRouteGraphic from "./sharing/MemoryRouteGraphic";
 
-import logo from "../assets/optimized/logoig.webp";
+import logo from "../assets/branding/logo-dark-bg.png";
 
 import type {
   FavoriteReaction,

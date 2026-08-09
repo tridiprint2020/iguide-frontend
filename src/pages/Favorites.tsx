@@ -39,7 +39,7 @@ import type {
 import ExperienceCard from "../components/ExperienceCard";
 import Sidebar from "../components/Sidebar";
 
-import logoIG from "../assets/optimized/logo-iguide.webp";
+import logoIG from "../assets/branding/logo-dark-bg.png";
 
 import {
   Theme,

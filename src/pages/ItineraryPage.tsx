@@ -30,7 +30,7 @@ import type {
   ItineraryAnswers,
 } from "../types/itinerary";
 
-import logoIG from "../assets/optimized/logoig.webp";
+import logoIG from "../assets/branding/logo-dark-bg.png";
 
 import {
   Theme,

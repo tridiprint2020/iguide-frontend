@@ -36,7 +36,7 @@ import type {
   UserProfile,
 } from "../types/user/user";
 
-import logoIG from "../assets/optimized/logoig.webp";
+import logoIG from "../assets/branding/logo-dark-bg.png";
 import type {
   HospesMessage,
 } from "../types/hospes";

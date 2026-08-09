@@ -76,7 +76,7 @@ import {
   Theme,
 } from "../styles/theme";
 
-import logoIG from "../assets/optimized/logoig.webp";
+import logoIG from "../assets/branding/logo-dark-bg.png";
 
 import UserLocationLayer from "../components/maps/UserLocationLayer";
 import ExperienceMapCard from "../components/maps/ExperienceMapCard";

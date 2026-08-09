@@ -58,7 +58,7 @@ import type {
   MemoryCardData,
 } from "../types/memoryCard";
 
-import logoIG from "../assets/optimized/logoig.webp";
+import logoIG from "../assets/branding/logo-dark-bg.png";
 import { tx } from "../i18n";
 
 const CYAN = "#39E7FF";
