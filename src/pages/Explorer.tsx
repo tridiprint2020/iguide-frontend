@@ -15,6 +15,10 @@ import {
 } from "../engine/recommendationEngine";
 
 import {
+  selectHomeExperience,
+} from "../engine/homeRecommendationEngine";
+
+import {
   getHospesMessage,
 } from "../engine/hospesContextEngine";
 
@@ -25,6 +29,10 @@ import {
 import {
   useJourney,
 } from "../context/JourneyContext";
+
+import {
+  useWeather,
+} from "../context/WeatherContext";
 
 import MapView from "../components/MapView";
 
@@ -77,13 +85,23 @@ function Explorer() {
     startWalking,
   } = useJourney();
 
+  const {
+    weather,
+  } = useWeather();
+
   const recommendations =
     getRecommendations({
       profile: user,
     });
 
   const suggestedExperience =
-    recommendations[0] ?? null;
+    selectHomeExperience({
+      experiences:
+        recommendations.length > 0
+          ? recommendations
+          : catalog,
+      weather,
+    });
 
   const visitedCount =
     new Set(
@@ -161,11 +179,14 @@ const hospesBannerMessage:
 
   function handlePrimaryAction() {
     if (suggestedExperience) {
-      startWalking(
-        suggestedExperience
-      );
+      const started =
+        startWalking(
+          suggestedExperience
+        );
 
-      navigate("/journey");
+      if (started) {
+        navigate("/journey");
+      }
       return;
     }
 

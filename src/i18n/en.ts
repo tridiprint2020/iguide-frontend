@@ -85,6 +85,8 @@ const en: Record<string, string> = {
   "No se pudo preparar la imagen. Inténtalo nuevamente.": "The image could not be prepared. Please try again.",
   "Compartir": "Share",
   "Compartir recorrido": "Share route",
+  "Volver a la misión": "Return to mission",
+  "El recorrido todavía está esperando el primer punto GPS.": "The route is still waiting for its first GPS point.",
   "Estoy descubriendo {{title}} en {{city}} con I.GUIDE.": "I am discovering {{title}} in {{city}} with I.GUIDE.",
   "MemoryCard guardada. Búscala en la carpeta Descargas de tu celular.": "MemoryCard saved. Find it in your phone's Downloads folder.",
   "Junto a {{title}}": "Next to {{title}}",

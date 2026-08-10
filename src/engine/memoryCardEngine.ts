@@ -47,6 +47,7 @@ export const MemoryCardEngine = {
     options?: {
       note?: string;
       photo?: string;
+      includePhoto?: boolean;
       lat?: number;
       lng?: number;
     }
@@ -89,8 +90,10 @@ export const MemoryCardEngine = {
         ),
 
       photo:
-        options?.photo ??
-        stats.lastPhoto,
+        options?.includePhoto === false
+          ? undefined
+          : options?.photo ??
+            stats.lastPhoto,
 
       /*
        * No se inventa una nota.

@@ -13,7 +13,16 @@ import {
 
 import {
   getJourneyStats,
+  loadTrack,
 } from "../../engine/trackingEngine";
+
+import {
+  MemoryCardEngine,
+} from "../../engine/memoryCardEngine";
+
+import type {
+  MemoryCardData,
+} from "../../types/memoryCard";
 
 import JourneyCompletedView from "./JourneyCompletedView";
 import JourneyAbortedView from "./JourneyAbortedView";
@@ -26,6 +35,7 @@ import {
 
 import HospesBanner from "../hospes/HospesBanner";
 import ExpeditionMap from "../ExpeditionMap";
+import MemoryCardModal from "../sharing/MemoryCardModal";
 
 import {
   getHospesMessage,
@@ -107,6 +117,20 @@ export function WalkingView() {
   const [
     arrivalMessage,
     setArrivalMessage,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    routeCard,
+    setRouteCard,
+  ] = useState<MemoryCardData | null>(
+    null
+  );
+
+  const [
+    routeShareMessage,
+    setRouteShareMessage,
   ] = useState<string | null>(
     null
   );
@@ -277,6 +301,48 @@ export function WalkingView() {
     }
 
     abandonJourney();
+  }
+
+  function handleShareRoute() {
+    setRouteShareMessage(null);
+
+    const experience =
+      journey.experience;
+
+    if (!experience) {
+      return;
+    }
+
+    const track = loadTrack(
+      experience.experienceId
+    );
+
+    if (
+      !track ||
+      track.timeline.length === 0
+    ) {
+      setRouteShareMessage(
+        tx("El recorrido todavía está esperando el primer punto GPS.")
+      );
+      return;
+    }
+
+    const lastPoint =
+      track.timeline[
+        track.timeline.length - 1
+      ];
+
+    setRouteCard(
+      MemoryCardEngine.build(
+        experience,
+        track,
+        {
+          includePhoto: false,
+          lat: lastPoint.lat,
+          lng: lastPoint.lng,
+        }
+      )
+    );
   }
 
   async function handleConfirmArrival() {
@@ -601,6 +667,28 @@ export function WalkingView() {
 
           <button
             type="button"
+            onClick={handleShareRoute}
+            style={primaryButtonStyle}
+          >
+            {tx("Compartir recorrido")}
+          </button>
+
+          {routeShareMessage && (
+            <p
+              role="status"
+              style={{
+                margin: "-8px 4px 0",
+                color: "#FFB15C",
+                fontSize: "11px",
+                textAlign: "center",
+              }}
+            >
+              {routeShareMessage}
+            </p>
+          )}
+
+          <button
+            type="button"
             onClick={
               handleReturnToExperience
             }
@@ -632,6 +720,15 @@ export function WalkingView() {
             {tx("Abandonar misión")}
           </button>
         </main>
+
+        <MemoryCardModal
+          open={routeCard !== null}
+          data={routeCard}
+          onClose={() =>
+            setRouteCard(null)
+          }
+          closeLabel={tx("Volver a la misión")}
+        />
       </div>
     );
   }

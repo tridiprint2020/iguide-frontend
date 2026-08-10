@@ -18,6 +18,7 @@ type Props = {
   open: boolean;
   data: MemoryCardData | null;
   onClose: () => void;
+  closeLabel?: string;
   onShare?: (
     data: MemoryCardData
   ) => void;
@@ -27,6 +28,7 @@ export default function MemoryCardModal({
   open,
   data,
   onClose,
+  closeLabel,
   onShare,
 }: Props) {
   const memoryCardRef =
@@ -243,7 +245,7 @@ export default function MemoryCardModal({
               "pointer",
           }}
         >
-          {tx("Volver al mapa")}
+          {closeLabel ?? tx("Volver al mapa")}
         </button>
       </section>
     </div>,
