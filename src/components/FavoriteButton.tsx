@@ -16,6 +16,10 @@ import {
   Theme,
 } from "../styles/theme";
 import { tx } from "../i18n";
+import {
+  sensoryFeedbackEngine,
+} from "../engine/sensoryFeedbackEngine";
+import "./FavoriteButton.css";
 
 type Props = {
   experienceId:
@@ -48,6 +52,11 @@ function FavoriteButton({
         experienceId
       )
   );
+
+  const [
+    feedbackVersion,
+    setFeedbackVersion,
+  ] = useState(0);
 
   useEffect(() => {
     function syncFavorite() {
@@ -93,6 +102,13 @@ function FavoriteButton({
     setSelected(
       isNowFavorite
     );
+
+    if (isNowFavorite) {
+      setFeedbackVersion(
+        (current) => current + 1
+      );
+      sensoryFeedbackEngine.favorite();
+    }
 
     onChange?.(
       isNowFavorite
@@ -183,6 +199,13 @@ function FavoriteButton({
       }}
     >
       <Heart
+        key={feedbackVersion}
+        className={
+          selected &&
+          feedbackVersion > 0
+            ? "iguide-favorite-heart--selected"
+            : undefined
+        }
         size={
           compact
             ? 20
@@ -207,6 +230,7 @@ function FavoriteButton({
             : tx("Guardar")}
         </span>
       )}
+
     </button>
   );
 }

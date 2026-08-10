@@ -273,6 +273,13 @@ export function WalkingView() {
       estimatedWalkingMinutes,
     ]);
 
+  const noriState =
+    journey.startedAt === null
+      ? "locating"
+      : journey.timeline.length <= 1
+        ? "mission-start"
+        : "idle";
+
   function handleGoHome() {
     navigate("/");
   }
@@ -513,6 +520,7 @@ export function WalkingView() {
             message={
               hospesBannerMessage
             }
+            noriState={noriState}
           />
 
           <section

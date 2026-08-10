@@ -14,6 +14,8 @@ import {
   Sparkles,
   Star,
   UserRound,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 import {
@@ -45,6 +47,9 @@ import type {
   UserProfile,
 } from "../types/user/user";
 import { tx } from "../i18n";
+import {
+  sensoryFeedbackEngine,
+} from "../engine/sensoryFeedbackEngine";
 
 function Profile() {
   const navigate =
@@ -74,6 +79,13 @@ function Profile() {
     setReturnPointFeedback,
   ] = useState<string | null>(
     null
+  );
+
+  const [
+    sensoryFeedbackEnabled,
+    setSensoryFeedbackEnabled,
+  ] = useState(
+    () => sensoryFeedbackEngine.isEnabled()
   );
 
   useEffect(() => {
@@ -221,6 +233,23 @@ function Profile() {
       "_blank",
       "noopener,noreferrer"
     );
+  }
+
+  function toggleSensoryFeedback() {
+    const nextEnabled =
+      !sensoryFeedbackEnabled;
+
+    sensoryFeedbackEngine.setEnabled(
+      nextEnabled
+    );
+    setSensoryFeedbackEnabled(
+      nextEnabled
+    );
+
+    if (nextEnabled) {
+      sensoryFeedbackEngine.prepare();
+      sensoryFeedbackEngine.memorySaved();
+    }
   }
 
   return (
@@ -603,6 +632,104 @@ function Profile() {
             </p>
           )}
         </section>
+
+        {/* RESPUESTA SENSORIAL */}
+        <button
+          type="button"
+          onClick={toggleSensoryFeedback}
+          aria-pressed={sensoryFeedbackEnabled}
+          style={{
+            width: "100%",
+            marginBottom: "18px",
+            padding: "13px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "11px",
+            borderRadius: "18px",
+            border:
+              sensoryFeedbackEnabled
+                ? "1px solid rgba(255,61,232,0.25)"
+                : "1px solid rgba(255,255,255,0.08)",
+            background:
+              sensoryFeedbackEnabled
+                ? "linear-gradient(145deg, rgba(255,61,232,0.09), rgba(66,232,245,0.05))"
+                : "rgba(255,255,255,0.035)",
+            color: "#FFFFFF",
+            textAlign: "left",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: "40px",
+              height: "40px",
+              flex: "0 0 auto",
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "13px",
+              color:
+                sensoryFeedbackEnabled
+                  ? "#42E8F5"
+                  : "rgba(255,255,255,0.48)",
+              background:
+                sensoryFeedbackEnabled
+                  ? "rgba(66,232,245,0.09)"
+                  : "rgba(255,255,255,0.05)",
+            }}
+          >
+            {sensoryFeedbackEnabled ? (
+              <Volume2 size={20} />
+            ) : (
+              <VolumeX size={20} />
+            )}
+          </span>
+
+          <span
+            style={{
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            <strong
+              style={{
+                display: "block",
+                fontSize: "13px",
+              }}
+            >
+              {tx("Sonidos y vibración")}
+            </strong>
+
+            <span
+              style={{
+                display: "block",
+                marginTop: "3px",
+                color:
+                  Theme.Colors.textSoft,
+                fontSize: "10px",
+                lineHeight: 1.35,
+              }}
+            >
+              {tx("Respuesta sutil al iniciar, guardar una foto y llegar.")}
+            </span>
+          </span>
+
+          <strong
+            style={{
+              color:
+                sensoryFeedbackEnabled
+                  ? "#FF3DE8"
+                  : "rgba(255,255,255,0.42)",
+              fontSize: "10px",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+            }}
+          >
+            {sensoryFeedbackEnabled
+              ? tx("Activados")
+              : tx("Desactivados")}
+          </strong>
+        </button>
 
         {/* ÍNDICE DE LOCALIDAD */}
         <div

@@ -28,6 +28,7 @@ import {
 } from "../engine/trackingEngine";
 
 import { locationTracker } from "../engine/locationTracker";
+import { sensoryFeedbackEngine } from "../engine/sensoryFeedbackEngine";
 import { tx } from "../i18n";
 
 interface JourneyContextType {
@@ -389,6 +390,8 @@ export function JourneyProvider({
           longitude
         );
 
+      sensoryFeedbackEngine.missionStart();
+
       /*
        * Ahora sí hacemos persistente
        * la misión activa.
@@ -471,6 +474,8 @@ export function JourneyProvider({
 }
 
   function openCamera() {
+    sensoryFeedbackEngine.prepare();
+
     setJourney((prev) => ({
       ...prev,
       state: "CAMERA_OPEN",
@@ -733,6 +738,7 @@ function confirmArrival(): Promise<CompletionResult> {
                 .experienceId
             );
 
+            sensoryFeedbackEngine.arrival();
             completeJourney();
           }
 

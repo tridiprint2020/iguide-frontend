@@ -8,6 +8,10 @@ import {
   catalog,
 } from "../data/catalog";
 
+import {
+  sensoryFeedbackEngine,
+} from "./sensoryFeedbackEngine";
+
 const MIN_DISTANCE_METERS = 8;
 const MAX_ACCEPTABLE_ACCURACY_METERS = 45;
 const MIN_TIME_BETWEEN_POINTS_MS = 4000;
@@ -24,12 +28,6 @@ const HIGH_ACCURACY_OPTIONS: PositionOptions = {
   maximumAge: 3000,
   timeout: 15000,
 };
-
-type WebkitWindow =
-  typeof window & {
-    webkitAudioContext?:
-      typeof AudioContext;
-  };
 
 function getDistanceMeters(
   lat1: number,
@@ -104,221 +102,13 @@ export class LocationTracker {
   private lastArrivalCandidateAt =
     0;
 
-  private audioContext:
-    | AudioContext
-    | null = null;
-
   /**
    * Debe llamarse desde un clic real del usuario.
    * Android/Chrome bloquea el audio si el contexto
    * se crea por primera vez desde una lectura GPS.
    */
   prepareFeedback(): void {
-    try {
-      const AudioContextClass =
-        window.AudioContext ??
-        (
-          window as WebkitWindow
-        ).webkitAudioContext;
-
-      if (!AudioContextClass) {
-        return;
-      }
-
-      if (
-        !this.audioContext ||
-        this.audioContext.state ===
-          "closed"
-      ) {
-        this.audioContext =
-          new AudioContextClass();
-      }
-
-      if (
-        this.audioContext.state ===
-        "suspended"
-      ) {
-        void this.audioContext.resume();
-      }
-
-      /*
-       * Pulso silencioso para desbloquear
-       * el canal de audio durante el gesto.
-       */
-      const oscillator =
-        this.audioContext.createOscillator();
-
-      const gain =
-        this.audioContext.createGain();
-
-      gain.gain.value =
-        0.00001;
-
-      oscillator.connect(gain);
-      gain.connect(
-        this.audioContext.destination
-      );
-
-      oscillator.start();
-      oscillator.stop(
-        this.audioContext.currentTime +
-          0.01
-      );
-    } catch (error) {
-      console.info(
-        "El dispositivo no permitió preparar el sonido:",
-        error
-      );
-    }
-  }
-
-  private playArrivalFeedback(): void {
-    if (
-      "vibrate" in navigator
-    ) {
-      navigator.vibrate([
-        180,
-        90,
-        220,
-        90,
-        320,
-      ]);
-    }
-
-    try {
-      const AudioContextClass =
-        window.AudioContext ??
-        (
-          window as WebkitWindow
-        ).webkitAudioContext;
-
-      if (!AudioContextClass) {
-        return;
-      }
-
-      if (
-        !this.audioContext ||
-        this.audioContext.state ===
-          "closed"
-      ) {
-        this.audioContext =
-          new AudioContextClass();
-      }
-
-      const audioContext =
-        this.audioContext;
-
-      const playTone = (
-        frequency: number,
-        startsAt: number,
-        duration: number
-      ) => {
-        const oscillator =
-          audioContext.createOscillator();
-
-        const gain =
-          audioContext.createGain();
-
-        oscillator.type =
-          "sine";
-
-        oscillator.frequency.setValueAtTime(
-          frequency,
-          startsAt
-        );
-
-        gain.gain.setValueAtTime(
-          0.0001,
-          startsAt
-        );
-
-        gain.gain.exponentialRampToValueAtTime(
-          0.28,
-          startsAt + 0.025
-        );
-
-        gain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          startsAt +
-            duration
-        );
-
-        oscillator.connect(gain);
-        gain.connect(
-          audioContext.destination
-        );
-
-        oscillator.start(
-          startsAt
-        );
-
-        oscillator.stop(
-          startsAt +
-            duration +
-            0.02
-        );
-      };
-
-      const startAt =
-        audioContext.currentTime +
-        0.03;
-
-      if (
-        audioContext.state ===
-        "suspended"
-      ) {
-        void audioContext
-          .resume()
-          .then(() => {
-            const resumedAt =
-              audioContext.currentTime +
-              0.03;
-
-            playTone(
-              659.25,
-              resumedAt,
-              0.20
-            );
-
-            playTone(
-              783.99,
-              resumedAt + 0.20,
-              0.22
-            );
-
-            playTone(
-              987.77,
-              resumedAt + 0.42,
-              0.34
-            );
-          });
-
-        return;
-      }
-
-      playTone(
-        659.25,
-        startAt,
-        0.20
-      );
-
-      playTone(
-        783.99,
-        startAt + 0.20,
-        0.22
-      );
-
-      playTone(
-        987.77,
-        startAt + 0.42,
-        0.34
-      );
-    } catch (error) {
-      console.info(
-        "No se pudo reproducir el sonido de llegada:",
-        error
-      );
-    }
+    sensoryFeedbackEngine.prepare();
   }
 
   start(
@@ -577,7 +367,7 @@ export class LocationTracker {
                 longitude
               );
 
-              this.playArrivalFeedback();
+              sensoryFeedbackEngine.arrival();
               this.stop();
               completeJourneyContext();
 

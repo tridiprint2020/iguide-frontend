@@ -1,7 +1,5 @@
 import {
   ArrowRight,
-  Compass,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 
@@ -9,7 +7,10 @@ import type {
   HospesMessage,
 } from "../../types/hospes";
 
-import NeonIcon from "../ui/NeonIcon";
+import NoriCompass from "../nori/NoriCompass";
+import type {
+  NoriMotionState,
+} from "../nori/NoriCompass";
 
 import {
   tx,
@@ -32,6 +33,8 @@ type Props = {
   progress?: ProgressData;
 
   onProgressClick?: () => void;
+
+  noriState?: NoriMotionState;
 };
 
 function clamp(
@@ -50,6 +53,7 @@ export default function HospesBanner({
   onAction,
   progress,
   onProgressClick,
+  noriState = "idle",
 }: Props) {
   const canShowAction =
     Boolean(message.action) &&
@@ -146,7 +150,6 @@ export default function HospesBanner({
         }}
       >
         <div
-          aria-hidden="true"
           style={{
             position: "relative",
 
@@ -158,28 +161,10 @@ export default function HospesBanner({
             justifyContent: "center",
           }}
         >
-          <NeonIcon
-            icon={Compass}
-            tone="magenta"
-            size={31}
-            strokeWidth={1.35}
-            framed
-          />
-
-          <Sparkles
-            aria-hidden="true"
-            size={13}
-            strokeWidth={1.7}
-            color="#00E6FF"
-            style={{
-              position: "absolute",
-
-              top: "-1px",
-              right: "-2px",
-
-              filter:
-                "drop-shadow(0 0 7px rgba(0,230,255,0.92))",
-            }}
+          <NoriCompass
+            state={noriState}
+            size={54}
+            label={tx("NORI · brújula de I.GUIDE")}
           />
         </div>
 

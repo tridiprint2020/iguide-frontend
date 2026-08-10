@@ -24,6 +24,9 @@ import {
 import {
   compressPhotoFile,
 } from "../../engine/photoProcessing";
+import {
+  sensoryFeedbackEngine,
+} from "../../engine/sensoryFeedbackEngine";
 import { tx } from "../../i18n";
 
 export function CameraView() {
@@ -35,6 +38,7 @@ export function CameraView() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hasAutoOpenedRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFlashing, setIsFlashing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function openNativeCamera() {
@@ -175,6 +179,14 @@ export function CameraView() {
     event.target.value = "";
 
     if (file) {
+      setIsFlashing(true);
+      sensoryFeedbackEngine.shutter();
+
+      window.setTimeout(
+        () => setIsFlashing(false),
+        280
+      );
+
       void saveSelectedPhoto(file);
     }
   }
@@ -192,6 +204,13 @@ export function CameraView() {
         color: "#FFFFFF",
       }}
     >
+      {isFlashing && (
+        <div
+          className="iguide-camera-flash"
+          aria-hidden="true"
+        />
+      )}
+
       <header
         style={{
           minHeight: "58px",
@@ -389,6 +408,27 @@ export function CameraView() {
         {`
           @keyframes iguide-camera-spin {
             to { transform: rotate(360deg); }
+          }
+
+          .iguide-camera-flash {
+            position: fixed;
+            z-index: 99999;
+            inset: 0;
+            pointer-events: none;
+            background: #FFFFFF;
+            animation: iguide-camera-flash 280ms ease-out both;
+          }
+
+          @keyframes iguide-camera-flash {
+            0% { opacity: 0; }
+            14% { opacity: 0.94; }
+            100% { opacity: 0; }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .iguide-camera-flash {
+              animation-duration: 80ms;
+            }
           }
         `}
       </style>

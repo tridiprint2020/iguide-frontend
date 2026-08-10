@@ -484,6 +484,7 @@ export default function JourneyCompletedView() {
           message={
             hospesBannerMessage
           }
+          noriState="arrival"
         />
 
         <h1

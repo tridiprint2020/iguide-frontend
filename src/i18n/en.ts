@@ -4,6 +4,11 @@
  * allowing the whole interface to share one central dictionary.
  */
 const en: Record<string, string> = {
+  "NORI · brújula de I.GUIDE": "NORI · I.GUIDE compass",
+  "Sonidos y vibración": "Sounds and vibration",
+  "Respuesta sutil al iniciar, guardar una foto y llegar.": "Subtle feedback when starting, saving a photo and arriving.",
+  "Activados": "On",
+  "Desactivados": "Off",
   "Cambiar idioma a inglés": "Switch language to English",
   "Cambiar idioma a español": "Switch language to Spanish",
   "Navegación principal": "Main navigation",

@@ -1,0 +1,127 @@
+.nori-compass {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #42e8f5;
+  filter: drop-shadow(0 0 9px rgba(66, 232, 245, 0.18));
+  isolation: isolate;
+}
+
+.nori-compass__svg {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.nori-compass__needle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.nori-compass__ring,
+.nori-compass__north {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.nori-compass__pulse {
+  position: absolute;
+  z-index: 1;
+  inset: 8%;
+  border: 1.5px solid rgba(255, 61, 232, 0.76);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nori-compass--locating .nori-compass__needle {
+  animation: nori-locating 1.55s cubic-bezier(0.45, 0, 0.35, 1) infinite;
+}
+
+.nori-compass--locating .nori-compass__ring {
+  animation: nori-ring-locating 1.55s ease-in-out infinite;
+}
+
+.nori-compass--mission-start .nori-compass__needle {
+  animation: nori-point 0.85s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.nori-compass--mission-start .nori-compass__pulse,
+.nori-compass--arrival .nori-compass__pulse {
+  animation: nori-pulse 0.78s ease-out 0.12s both;
+}
+
+.nori-compass--memory-saved .nori-compass__svg {
+  animation: nori-memory-saved 0.58s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.nori-compass--memory-saved .nori-compass__north {
+  animation: nori-north-flash 0.72s ease-out both;
+}
+
+.nori-compass--arrival .nori-compass__svg {
+  animation: nori-arrival 0.72s cubic-bezier(0.15, 0.86, 0.25, 1.2) both;
+}
+
+.nori-compass--error .nori-compass__needle {
+  animation: nori-error 0.52s ease-in-out 2;
+}
+
+@keyframes nori-locating {
+  0% { transform: rotate(-34deg); }
+  48% { transform: rotate(205deg); }
+  72% { transform: rotate(328deg); }
+  100% { transform: rotate(326deg); }
+}
+
+@keyframes nori-ring-locating {
+  0%, 100% { opacity: 0.48; transform: rotate(0); }
+  50% { opacity: 0.95; transform: rotate(24deg); }
+}
+
+@keyframes nori-point {
+  0% { transform: rotate(-95deg) scale(0.86); }
+  62% { transform: rotate(8deg) scale(1.08); }
+  100% { transform: rotate(0) scale(1); }
+}
+
+@keyframes nori-pulse {
+  0% { opacity: 0.92; transform: scale(0.72); }
+  100% { opacity: 0; transform: scale(1.48); }
+}
+
+@keyframes nori-memory-saved {
+  0% { transform: scale(0.82); filter: brightness(1); }
+  52% { transform: scale(1.09); filter: brightness(1.45); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes nori-north-flash {
+  0%, 100% { transform: scale(1); fill: #42e8f5; }
+  45% { transform: scale(1.7); fill: #ff3de8; }
+}
+
+@keyframes nori-arrival {
+  0% { transform: translateY(0) scale(0.88); }
+  42% { transform: translateY(-6px) scale(1.08); }
+  68% { transform: translateY(1px) scale(0.98); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes nori-error {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(-18deg); }
+  70% { transform: rotate(18deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nori-compass *,
+  .nori-compass::before,
+  .nori-compass::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -51,6 +52,9 @@ import type {
   PhotoTransformation,
 } from "../../engine/photoProcessing";
 import { tx } from "../../i18n";
+import {
+  sensoryFeedbackEngine,
+} from "../../engine/sensoryFeedbackEngine";
 
 export function PointSavedView() {
   const {
@@ -59,6 +63,18 @@ export function PointSavedView() {
   } = useJourney();
 
   const navigate = useNavigate();
+
+  const hasPlayedFeedbackRef =
+    useRef(false);
+
+  useEffect(() => {
+    if (hasPlayedFeedbackRef.current) {
+      return;
+    }
+
+    hasPlayedFeedbackRef.current = true;
+    sensoryFeedbackEngine.memorySaved();
+  }, []);
 
   const memoryCardRef =
     useRef<HTMLElement | null>(null);
@@ -349,7 +365,10 @@ export function PointSavedView() {
         </header>
 
         <div style={{ width: "100%" }}>
-          <HospesBanner message={hospesBannerMessage} />
+          <HospesBanner
+            message={hospesBannerMessage}
+            noriState="memory-saved"
+          />
         </div>
 
         {cardData ? (
