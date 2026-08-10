@@ -3,6 +3,9 @@ import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
 } from "react-router-dom";
+import {
+  Analytics,
+} from "@vercel/analytics/react";
 
 import App from "./App";
 import { JourneyProvider } from "./context/JourneyContext";
@@ -19,6 +22,7 @@ ReactDOM.createRoot(
       <WeatherProvider>
         <JourneyProvider>
           <App />
+          <Analytics />
         </JourneyProvider>
       </WeatherProvider>
     </BrowserRouter>
