@@ -916,7 +916,7 @@ export async function renderMemoryCardBlob(
     context.shadowBlur = 9;
     context.font = "850 16px Arial, sans-serif";
     context.fillStyle = MAGENTA;
-    context.fillText("#IGuide #LiveLikeLocal", 46, metadataY + 27);
+    context.fillText("#IGuide #LiveLikeLocal", 26, metadataY + 27);
     context.shadowBlur = 0;
 
     if (photo && hasMap) {
