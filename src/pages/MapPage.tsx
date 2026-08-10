@@ -32,7 +32,6 @@ import {
   Landmark,
   MapPinned,
   Music2,
-  Navigation,
   Palette,
   PartyPopper,
   RotateCcw,
@@ -70,7 +69,6 @@ import {
 } from "../engine/memoryCardEngine";
 import {
   loadReturnPoint,
-  saveReturnPoint,
 } from "../engine/returnPointEngine";
 
 import {
@@ -243,6 +241,8 @@ function MapPage() {
   const [searchParams] = useSearchParams();
   const foodNearbyMode =
     searchParams.get("nearby") === "food";
+  const focusReturnPointMode =
+    searchParams.get("return") === "1";
   const {
     journey,
     startWalking,
@@ -281,17 +281,14 @@ function MapPage() {
   const [searchQuery, setSearchQuery] =
     useState("");
 
-  const [returnPoint, setReturnPoint] =
+  const [returnPoint] =
     useState(() => loadReturnPoint());
-
-  const [savingReturnPoint, setSavingReturnPoint] =
-    useState(false);
-
-  const [returnPointFeedback, setReturnPointFeedback] =
-    useState<string | null>(null);
 
   const mapRef =
     useRef<LeafletMap | null>(null);
+
+  const mapSectionRef =
+    useRef<HTMLElement | null>(null);
 
   const markerRefs = useRef(
     new Map<
@@ -360,23 +357,83 @@ function MapPage() {
   function toggleFilter(
     type: ExperienceType
   ) {
-    setActiveFilters(
-      (currentFilters) => {
+    const isRemoving =
+      activeFilters.includes(type);
+
+    const nextFilters = isRemoving
+      ? activeFilters.filter(
+          (activeType) =>
+            activeType !== type
+        )
+      : [
+          ...activeFilters,
+          type,
+        ];
+
+    setActiveFilters(nextFilters);
+
+    if (!isRemoving) {
+      const matchingExperiences =
+        activeCatalog.filter(
+          (experience) =>
+            nextFilters.includes(
+              experience.type
+            )
+        );
+
+      window.setTimeout(() => {
+        const map = mapRef.current;
+
         if (
-          currentFilters.includes(type)
+          map &&
+          matchingExperiences.length === 1
         ) {
-          return currentFilters.filter(
-            (activeType) =>
-              activeType !== type
+          map.flyTo(
+            [
+              matchingExperiences[0]
+                .latitude,
+              matchingExperiences[0]
+                .longitude,
+            ],
+            17,
+            {
+              animate: true,
+              duration: 0.45,
+            }
+          );
+        } else if (
+          map &&
+          matchingExperiences.length > 1
+        ) {
+          map.fitBounds(
+            matchingExperiences.map(
+              (experience) =>
+                [
+                  experience.latitude,
+                  experience.longitude,
+                ] as [number, number]
+            ),
+            {
+              padding: [28, 28],
+              maxZoom: 16,
+              animate: true,
+            }
           );
         }
 
-        return [
-          ...currentFilters,
-          type,
-        ];
-      }
-    );
+        if (
+          window.matchMedia(
+            "(max-width: 700px)"
+          ).matches
+        ) {
+          mapSectionRef.current
+            ?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+        }
+      }, 90);
+    }
   }
 
   function clearFilters() {
@@ -668,54 +725,6 @@ function MapPage() {
     }
   }
 
-  function handleSaveReturnPoint() {
-    if (!navigator.geolocation || savingReturnPoint) {
-      setReturnPointFeedback(
-        tx("Este dispositivo no permite obtener tu ubicación.")
-      );
-      return;
-    }
-
-    setSavingReturnPoint(true);
-    setReturnPointFeedback(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const point = saveReturnPoint(
-          position.coords.latitude,
-          position.coords.longitude,
-          tx("Mi hotel / punto de regreso")
-        );
-
-        setReturnPoint(point);
-        setSavingReturnPoint(false);
-        setReturnPointFeedback(
-          tx("Punto de regreso guardado. La casita permanecerá en tu mapa.")
-        );
-
-        mapRef.current?.flyTo(
-          [point.lat, point.lng],
-          18,
-          {
-            animate: true,
-            duration: 0.55,
-          }
-        );
-      },
-      () => {
-        setSavingReturnPoint(false);
-        setReturnPointFeedback(
-          tx("No pude leer tu ubicación. Activa el GPS y vuelve a intentarlo.")
-        );
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 5000,
-        timeout: 15000,
-      }
-    );
-  }
-
   function focusReturnPoint() {
     if (!returnPoint) {
       return;
@@ -731,17 +740,44 @@ function MapPage() {
     );
   }
 
-  function openReturnDirections() {
-    if (!returnPoint) {
+  useEffect(() => {
+    if (
+      !focusReturnPointMode ||
+      !returnPoint
+    ) {
       return;
     }
 
-    window.open(
-      `https://www.google.com/maps/dir/?api=1&destination=${returnPoint.lat},${returnPoint.lng}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
-  }
+    const focusTimer =
+      window.setTimeout(() => {
+        mapRef.current?.flyTo(
+          [
+            returnPoint.lat,
+            returnPoint.lng,
+          ],
+          18,
+          {
+            animate: true,
+            duration: 0.55,
+          }
+        );
+
+        mapSectionRef.current
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+      }, 220);
+
+    return () => {
+      window.clearTimeout(
+        focusTimer
+      );
+    };
+  }, [
+    focusReturnPointMode,
+    returnPoint,
+  ]);
 
   function openHistoricalMemory(
     historicalMemory:
@@ -910,153 +946,113 @@ function MapPage() {
           width: "100%",
           maxWidth: "760px",
           boxSizing: "border-box",
-          margin: "0 auto 12px",
-          padding: "12px",
-          borderRadius: "17px",
+          margin: "0 auto 9px",
+          padding: "8px 9px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          borderRadius: "14px",
           border: "1px solid rgba(66,232,245,0.18)",
           background:
             "linear-gradient(145deg, rgba(66,232,245,0.08), rgba(255,32,206,0.05))",
         }}
       >
-        <div
+        <span
+          aria-hidden="true"
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "9px",
+            width: "32px",
+            height: "32px",
+            flex: "0 0 auto",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: "11px",
+            color: "#42E8F5",
+            background: "rgba(66,232,245,0.10)",
+            border: "1px solid rgba(66,232,245,0.24)",
           }}
         >
-          <span
-            aria-hidden="true"
+          <House size={17} />
+        </span>
+
+        <div
+          style={{
+            minWidth: 0,
+            flex: 1,
+            textAlign: "left",
+          }}
+        >
+          <strong
             style={{
-              width: "38px",
-              height: "38px",
-              flex: "0 0 auto",
-              display: "grid",
-              placeItems: "center",
-              borderRadius: "13px",
-              color: "#42E8F5",
-              background: "rgba(66,232,245,0.10)",
-              border: "1px solid rgba(66,232,245,0.24)",
+              display: "block",
+              overflow: "hidden",
+              fontSize: "10px",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            <House size={20} />
-          </span>
+            {returnPoint
+              ? tx("Tu punto de regreso está guardado")
+              : tx("Guarda tu punto de regreso desde Perfil")}
+          </strong>
 
-          <div style={{ minWidth: 0 }}>
-            <strong
-              style={{
-                display: "block",
-                fontSize: "12px",
-              }}
-            >
-              {returnPoint
-                ? tx("Tu punto de regreso está guardado")
-                : tx("Guarda tu hotel o punto de partida")}
-            </strong>
-            <span
-              style={{
-                display: "block",
-                marginTop: "2px",
-                color: "rgba(255,255,255,0.58)",
-                fontSize: "9px",
-                lineHeight: 1.35,
-              }}
-            >
-              {tx("Si olvidas el nombre o te pierdes, la casita te ayudará a volver.")}
-            </span>
-          </div>
+          <span
+            style={{
+              display: "block",
+              marginTop: "1px",
+              overflow: "hidden",
+              color: "rgba(255,255,255,0.56)",
+              fontSize: "8px",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {tx("Puedes cambiar este punto después desde Perfil.")}
+          </span>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: returnPoint
-              ? "repeat(3, minmax(0, 1fr))"
-              : "1fr",
-            gap: "7px",
-            marginTop: "10px",
-          }}
-        >
+        {returnPoint && (
           <button
             type="button"
-            onClick={handleSaveReturnPoint}
-            disabled={savingReturnPoint}
+            onClick={focusReturnPoint}
             style={{
-              minHeight: "40px",
-              border: "none",
-              borderRadius: "11px",
-              background: returnPoint
-                ? "rgba(255,255,255,0.08)"
-                : "#42E8F5",
-              color: returnPoint ? "#FFFFFF" : "#061013",
-              fontSize: "10px",
-              fontWeight: 850,
-              cursor: savingReturnPoint ? "wait" : "pointer",
-            }}
-          >
-            {savingReturnPoint
-              ? tx("Guardando…")
-              : returnPoint
-                ? tx("Actualizar")
-                : tx("Guardar mi ubicación actual")}
-          </button>
-
-          {returnPoint && (
-            <>
-              <button
-                type="button"
-                onClick={focusReturnPoint}
-                style={{
-                  minHeight: "40px",
-                  borderRadius: "11px",
-                  border: "1px solid rgba(66,232,245,0.22)",
-                  background: "rgba(66,232,245,0.06)",
-                  color: "#42E8F5",
-                  fontSize: "10px",
-                  fontWeight: 850,
-                  cursor: "pointer",
-                }}
-              >
-                {tx("Ver casita")}
-              </button>
-
-              <button
-                type="button"
-                onClick={openReturnDirections}
-                style={{
-                  minHeight: "40px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "5px",
-                  border: "none",
-                  borderRadius: "11px",
-                  background: "#FF20CE",
-                  color: "#FFFFFF",
-                  fontSize: "10px",
-                  fontWeight: 850,
-                  cursor: "pointer",
-                }}
-              >
-                <Navigation size={13} />
-                {tx("Cómo volver")}
-              </button>
-            </>
-          )}
-        </div>
-
-        {returnPointFeedback && (
-          <p
-            role="status"
-            style={{
-              margin: "8px 0 0",
-              color: "rgba(255,255,255,0.68)",
+              minHeight: "34px",
+              flex: "0 0 auto",
+              padding: "6px 8px",
+              borderRadius: "10px",
+              border: "1px solid rgba(66,232,245,0.22)",
+              background: "rgba(66,232,245,0.06)",
+              color: "#42E8F5",
               fontSize: "9px",
+              fontWeight: 800,
+              cursor: "pointer",
             }}
           >
-            {returnPointFeedback}
-          </p>
+            {tx("Ver casita")}
+          </button>
         )}
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/perfil")
+          }
+          style={{
+            minHeight: "34px",
+            flex: "0 0 auto",
+            padding: "6px 8px",
+            borderRadius: "10px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(255,255,255,0.05)",
+            color: "#FFFFFF",
+            fontSize: "9px",
+            fontWeight: 800,
+            cursor: "pointer",
+          }}
+        >
+          {returnPoint
+            ? tx("Editar en Perfil")
+            : tx("Configurar en Perfil")}
+        </button>
       </section>
 
       <section
@@ -1247,17 +1243,20 @@ function MapPage() {
         aria-label={tx("Filtros rápidos del mapa")}
         style={{
           maxWidth: "1080px",
-          margin: "0 auto 10px",
+          margin: "0 auto 7px",
           display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          gap: "8px",
+          flexWrap: "nowrap",
+          justifyContent: "flex-start",
+          gap: "6px",
+          overflowX: "auto",
+          padding: "1px 1px 3px",
+          scrollbarWidth: "none",
         }}
       >
         <QuickFilterButton
           active={onlyUnvisited}
           icon={Sparkles}
-          label={tx("Por descubrir")}
+          label={tx("Descubrir")}
           onClick={() =>
             setOnlyUnvisited(
               (current) => !current
@@ -1268,7 +1267,7 @@ function MapPage() {
         <QuickFilterButton
           active={onlyFavorites}
           icon={Heart}
-          label={tx("Mis favoritos")}
+          label={tx("Favoritos")}
           onClick={() =>
             setOnlyFavorites(
               (current) => !current
@@ -1279,7 +1278,7 @@ function MapPage() {
         <QuickFilterButton
           active={showMemories}
           icon={Images}
-          label={tx("Mis recuerdos")}
+          label={tx("Recuerdos")}
           onClick={() =>
             setShowMemories(
               (current) => !current
@@ -1291,7 +1290,7 @@ function MapPage() {
           <QuickFilterButton
             active={false}
             icon={Share2}
-            label={tx("Compartir recorrido")}
+            label={tx("Compartir")}
             onClick={openLatestJourneyCard}
           />
         )}
@@ -1301,15 +1300,17 @@ function MapPage() {
         aria-label={tx("Categorías del mapa")}
         style={{
           maxWidth: "1080px",
-          margin: "0 auto 14px",
+          margin: "0 auto 7px",
         }}
       >
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(132px, 1fr))",
-            gap: "9px",
+            display: "flex",
+            flexWrap: "nowrap",
+            gap: "7px",
+            overflowX: "auto",
+            padding: "1px 1px 4px",
+            scrollbarWidth: "none",
           }}
         >
           {TYPE_FILTERS.map(
@@ -1336,8 +1337,9 @@ function MapPage() {
                   aria-pressed={isActive}
                   disabled={count === 0}
                   style={{
-                    minHeight: "48px",
-                    padding: "9px 10px",
+                    minHeight: "40px",
+                    flex: "0 0 auto",
+                    padding: "7px 10px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent:
@@ -1357,6 +1359,7 @@ function MapPage() {
                         : 1,
                     fontSize: "12px",
                     fontWeight: 750,
+                    whiteSpace: "nowrap",
                     cursor:
                       count === 0
                         ? "not-allowed"
@@ -1501,7 +1504,7 @@ function MapPage() {
       <div
         style={{
           maxWidth: "1240px",
-          margin: "0 auto 8px",
+          margin: "0 auto 6px",
           display: "flex",
           justifyContent:
             "space-between",
@@ -1512,7 +1515,7 @@ function MapPage() {
         }}
       >
         <span>
-          {tx("El mapa se centra en tu GPS mostrando aproximadamente 200 m alrededor.")}
+          {tx("Los lugares solicitados se muestran como pines en el mapa.")}
         </span>
 
         <span>
@@ -1530,6 +1533,7 @@ function MapPage() {
       </div>
 
       <section
+        ref={mapSectionRef}
         style={{
           position: "relative",
           width: "100%",
@@ -1871,10 +1875,11 @@ function QuickFilterButton({
       aria-pressed={active}
       style={{
         minHeight: "38px",
-        padding: "7px 11px",
+        flex: "0 0 auto",
+        padding: "6px 8px",
         display: "inline-flex",
         alignItems: "center",
-        gap: "7px",
+        gap: "4px",
         borderRadius: "999px",
         border: active
           ? "1px solid rgba(255,61,232,0.48)"
@@ -1890,11 +1895,12 @@ function QuickFilterButton({
           : "none",
         fontSize: "11px",
         fontWeight: 750,
+        whiteSpace: "nowrap",
         cursor: "pointer",
       }}
     >
       <Icon
-        size={15}
+        size={14}
         strokeWidth={2.1}
       />
       {label}

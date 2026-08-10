@@ -84,7 +84,7 @@ function ReturnPointOnboardingModal({
         display: "grid",
         placeItems: "center",
         boxSizing: "border-box",
-        padding: "22px",
+        padding: "16px",
         overflowY: "auto",
         background: "rgba(3,4,12,0.90)",
         backdropFilter: "blur(14px)",
@@ -95,8 +95,8 @@ function ReturnPointOnboardingModal({
           width: "100%",
           maxWidth: "410px",
           boxSizing: "border-box",
-          padding: "28px 24px 24px",
-          borderRadius: "28px",
+          padding: "20px 18px 18px",
+          borderRadius: "24px",
           border: "1px solid rgba(66,232,245,0.28)",
           background:
             "radial-gradient(circle at 90% 8%, rgba(66,232,245,0.15), transparent 34%), radial-gradient(circle at 10% 100%, rgba(255,61,232,0.14), transparent 34%), linear-gradient(145deg, rgba(24,25,47,0.99), rgba(8,9,18,0.99))",
@@ -110,21 +110,21 @@ function ReturnPointOnboardingModal({
           aria-hidden="true"
           style={{
             position: "relative",
-            width: "74px",
-            height: "74px",
+            width: "60px",
+            height: "60px",
             display: "grid",
             placeItems: "center",
-            margin: "0 auto 18px",
-            borderRadius: "24px",
+            margin: "0 auto 12px",
+            borderRadius: "20px",
             border: "1px solid rgba(66,232,245,0.34)",
             background: "rgba(66,232,245,0.09)",
             color: "#42E8F5",
           }}
         >
-          {saved ? <CheckCircle2 size={36} /> : <House size={35} />}
+          {saved ? <CheckCircle2 size={31} /> : <House size={30} />}
           {!saved && (
             <MapPin
-              size={17}
+              size={15}
               color="#FF3DE8"
               style={{ position: "absolute", right: "6px", top: "6px" }}
             />
@@ -146,8 +146,8 @@ function ReturnPointOnboardingModal({
         <h2
           id="return-point-title"
           style={{
-            margin: "8px 0 12px",
-            fontSize: "26px",
+            margin: "6px 0 9px",
+            fontSize: "22px",
             lineHeight: 1.12,
             letterSpacing: "-0.035em",
           }}
@@ -159,7 +159,7 @@ function ReturnPointOnboardingModal({
 
         <p
           style={{
-            margin: "0 auto 22px",
+            margin: "0 auto 16px",
             maxWidth: "320px",
             color: "rgba(255,255,255,0.68)",
             fontSize: "12px",
@@ -167,8 +167,8 @@ function ReturnPointOnboardingModal({
           }}
         >
           {saved
-            ? tx("La casita permanecerá en tu mapa para ayudarte a regresar.")
-            : tx("Puede ser tu hotel, alojamiento o lugar de partida. Si te pierdes o olvidas el nombre, I.GUIDE te ayudará a volver.")}
+            ? tx("La casita permanecerá en tu mapa. Podrás cambiarla después desde Perfil.")
+            : tx("Puede ser tu hotel, alojamiento o lugar de partida. Después podrás cambiarlo desde Perfil.")}
         </p>
 
         {errorMessage && (
@@ -202,7 +202,7 @@ function ReturnPointOnboardingModal({
               onClick={handleSaveCurrentLocation}
               disabled={isSaving}
               style={{
-                minHeight: "52px",
+                minHeight: "46px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -226,7 +226,7 @@ function ReturnPointOnboardingModal({
               onClick={onComplete}
               disabled={isSaving}
               style={{
-                minHeight: "52px",
+                minHeight: "46px",
                 borderRadius: "15px",
                 border: "1px solid rgba(255,255,255,0.12)",
                 background: "rgba(255,255,255,0.05)",

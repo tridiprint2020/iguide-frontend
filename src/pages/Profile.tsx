@@ -8,7 +8,9 @@ import {
   Award,
   Heart,
   House,
+  Loader2,
   MapPin,
+  Navigation,
   Sparkles,
   Star,
   UserRound,
@@ -25,6 +27,11 @@ import {
 import {
   catalog,
 } from "../data/catalog";
+
+import {
+  loadReturnPoint,
+  saveReturnPoint,
+} from "../engine/returnPointEngine";
 
 import LocalityIndexCard from "../components/profile/LocalityIndexCard";
 
@@ -50,10 +57,33 @@ function Profile() {
     () => loadUserProfile()
   );
 
+  const [
+    returnPoint,
+    setReturnPoint,
+  ] = useState(
+    () => loadReturnPoint()
+  );
+
+  const [
+    savingReturnPoint,
+    setSavingReturnPoint,
+  ] = useState(false);
+
+  const [
+    returnPointFeedback,
+    setReturnPointFeedback,
+  ] = useState<string | null>(
+    null
+  );
+
   useEffect(() => {
     function refreshProfile() {
       setProfile(
         loadUserProfile()
+      );
+
+      setReturnPoint(
+        loadReturnPoint()
       );
     }
 
@@ -138,6 +168,60 @@ function Profile() {
   const displayName =
     profile.name?.trim() ||
     tx("Explorador");
+
+  function handleSaveReturnPoint() {
+    if (
+      !navigator.geolocation ||
+      savingReturnPoint
+    ) {
+      setReturnPointFeedback(
+        tx("Este dispositivo no permite obtener tu ubicación.")
+      );
+      return;
+    }
+
+    setSavingReturnPoint(true);
+    setReturnPointFeedback(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const point = saveReturnPoint(
+          position.coords.latitude,
+          position.coords.longitude,
+          tx("Mi hotel / punto de regreso")
+        );
+
+        setReturnPoint(point);
+        setSavingReturnPoint(false);
+        setReturnPointFeedback(
+          tx("Punto de regreso guardado. La casita permanecerá en tu mapa.")
+        );
+      },
+      () => {
+        setSavingReturnPoint(false);
+        setReturnPointFeedback(
+          tx("No pude leer tu ubicación. Activa el GPS y vuelve a intentarlo.")
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      }
+    );
+  }
+
+  function openReturnDirections() {
+    if (!returnPoint) {
+      return;
+    }
+
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${returnPoint.lat},${returnPoint.lng}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
 
   return (
     <main
@@ -362,6 +446,162 @@ function Profile() {
               {profile.experience} XP
             </p>
           </div>
+        </section>
+
+        {/* PUNTO DE REGRESO */}
+        <section
+          style={{
+            marginBottom: "18px",
+            padding: "16px",
+            borderRadius: "20px",
+            border:
+              "1px solid rgba(66,232,245,0.20)",
+            background:
+              "linear-gradient(145deg, rgba(66,232,245,0.09), rgba(255,255,255,0.035))",
+            textAlign: "left",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "11px",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: "42px",
+                height: "42px",
+                flex: "0 0 auto",
+                display: "grid",
+                placeItems: "center",
+                borderRadius: "14px",
+                border:
+                  "1px solid rgba(66,232,245,0.26)",
+                background:
+                  "rgba(66,232,245,0.09)",
+                color: "#42E8F5",
+              }}
+            >
+              <House size={21} />
+            </span>
+
+            <div style={{ minWidth: 0 }}>
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#FFFFFF",
+                  fontSize: "15px",
+                }}
+              >
+                {tx("Mi punto de regreso")}
+              </h2>
+
+              <p
+                style={{
+                  margin: "3px 0 0",
+                  color:
+                    Theme.Colors.textSoft,
+                  fontSize: "10px",
+                  lineHeight: 1.4,
+                }}
+              >
+                {returnPoint
+                  ? tx("Tu punto está guardado. Puedes actualizarlo cuando cambies de hotel o lugar de partida.")
+                  : tx("Guarda aquí tu hotel, alojamiento o lugar de partida para poder regresar.")}
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                returnPoint
+                  ? "repeat(3, minmax(0, 1fr))"
+                  : "1fr",
+              gap: "7px",
+              marginTop: "12px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleSaveReturnPoint}
+              disabled={savingReturnPoint}
+              style={{
+                minHeight: "42px",
+                border: "none",
+                borderRadius: "12px",
+                background: returnPoint
+                  ? "rgba(255,255,255,0.08)"
+                  : "#42E8F5",
+                color: returnPoint
+                  ? "#FFFFFF"
+                  : "#061013",
+                fontSize: "10px",
+                fontWeight: 850,
+                cursor: savingReturnPoint
+                  ? "wait"
+                  : "pointer",
+              }}
+            >
+              {savingReturnPoint ? (
+                <Loader2 size={16} />
+              ) : returnPoint ? (
+                tx("Actualizar")
+              ) : (
+                tx("Guardar mi ubicación actual")
+              )}
+            </button>
+
+            {returnPoint && (
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/mapa?return=1")
+                  }
+                  style={returnPointButtonStyle}
+                >
+                  {tx("Ver casita")}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openReturnDirections}
+                  style={{
+                    ...returnPointButtonStyle,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent:
+                      "center",
+                    gap: "5px",
+                    border: "none",
+                    background: "#FF20CE",
+                    color: "#FFFFFF",
+                  }}
+                >
+                  <Navigation size={13} />
+                  {tx("Cómo volver")}
+                </button>
+              </>
+            )}
+          </div>
+
+          {returnPointFeedback && (
+            <p
+              role="status"
+              style={{
+                margin: "9px 0 0",
+                color:
+                  "rgba(255,255,255,0.70)",
+                fontSize: "10px",
+              }}
+            >
+              {returnPointFeedback}
+            </p>
+          )}
         </section>
 
         {/* ÍNDICE DE LOCALIDAD */}
@@ -641,6 +881,19 @@ function Profile() {
 
 type StatIcon =
   typeof MapPin;
+
+const returnPointButtonStyle = {
+  minHeight: "42px",
+  borderRadius: "12px",
+  border:
+    "1px solid rgba(66,232,245,0.22)",
+  background:
+    "rgba(66,232,245,0.06)",
+  color: "#42E8F5",
+  fontSize: "10px",
+  fontWeight: 850,
+  cursor: "pointer",
+} as const;
 
 type StatCardProps = {
   icon: StatIcon;
