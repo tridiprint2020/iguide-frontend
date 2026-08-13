@@ -6,6 +6,15 @@ export type ExperienceType =
   | "expedition" | "restaurant" | "cafe" | "bar" | "nightclub"
   | "hotel" | "museum" | "festival" | "craft" | "event";
 
+export type PlaceCategory =
+  | ExperienceType
+  | "icecream_shop";
+
+export type ListingStatus =
+  | "editorial"
+  | "pilot_partner"
+  | "sponsored";
+
 export type VenueSubtype =
 
   | "icecream" | "snack" | "fastfood" | "buffet" | "pub"
@@ -53,6 +62,13 @@ export interface BaseExperience {
   weatherSensitivity?: WeatherSensitivity;
   avoidWhenWet?: boolean;
   terrain?: "urban" | "paved" | "trail" | "clay" | "mountain";
+
+  /**
+   * La categoría del lugar y su relación comercial son datos
+   * independientes. Si placeCategory no está definido, la UI usa type.
+   */
+  placeCategory?: PlaceCategory;
+  listingStatus?: ListingStatus;
   
   // 🚀 EVOLUCIÓN ARQUITECTÓNICA: Cualquier experiencia puede responder a múltiples perfiles o intereses
   interests?: Interest[]; 

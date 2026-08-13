@@ -35,6 +35,9 @@ import {
   useMediaUrl,
 } from "../hooks/useMediaUrl";
 import { tx } from "../i18n";
+import {
+  getMemoryCardDescriptor,
+} from "../engine/experiencePresentation";
 
 type Props = {
   data: MemoryCardData;
@@ -54,6 +57,7 @@ type ReactionOption = {
 
 const MAGENTA_SOFT = "#FF65DF";
 const CYAN = "#42E8F5";
+const ORANGE = "#FF9A3D";
 
 const AUTOMATIC_NOTES = [
   "guardando la esencia del momento",
@@ -147,6 +151,16 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
     const hasMap = Boolean(data.mapBackground);
     const hasUserNote = isUserNote(data.note);
     const experienceId = getExperienceId(data);
+    const placeDescriptor =
+      getMemoryCardDescriptor(
+        data.placeCategory,
+        data.listingStatus
+      );
+    const showPlaceLabel = Boolean(
+      data.placeLabel?.trim() &&
+      data.placeLabel.trim().toLocaleLowerCase() !==
+        data.title.trim().toLocaleLowerCase()
+    );
 
     const [
       reactionSelection,
@@ -434,7 +448,27 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
               {data.title}
             </h2>
 
-            {data.placeLabel && (
+            <p
+              style={{
+                margin: "5px 0 0",
+                color:
+                  data.listingStatus === "sponsored"
+                    ? ORANGE
+                    : data.listingStatus === "pilot_partner"
+                      ? MAGENTA_SOFT
+                      : CYAN,
+                fontSize: "clamp(9px, 2.2vw, 11px)",
+                fontWeight: 900,
+                lineHeight: 1.2,
+                letterSpacing: "0.055em",
+                textTransform: "uppercase",
+                textShadow: "0 2px 12px rgba(0,0,0,0.92)",
+              }}
+            >
+              {placeDescriptor}
+            </p>
+
+            {showPlaceLabel && (
               <p
                 style={{
                 margin: "2px 0 0",

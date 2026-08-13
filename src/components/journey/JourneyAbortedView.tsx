@@ -91,6 +91,12 @@ export default function JourneyAbortedView() {
     title:
       experience?.title ??
       tx("Ruta guardada"),
+    placeCategory:
+      experience?.placeCategory ??
+      experience?.type,
+    listingStatus:
+      experience?.listingStatus ??
+      "editorial",
     placeLabel:
       experience?.title ??
       tx("Recorrido interrumpido"),

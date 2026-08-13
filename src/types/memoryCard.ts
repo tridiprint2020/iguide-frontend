@@ -10,6 +10,11 @@ import type {
   JourneyStats,
 } from "../engine/trackingEngine";
 
+import type {
+  ListingStatus,
+  PlaceCategory,
+} from "./experience/experience";
+
 /**
  * Datos necesarios para construir, mostrar,
  * compartir y descargar una MemoryCard I.GUIDE.
@@ -22,6 +27,8 @@ export interface MemoryCardData {
   experienceId?: string;
 
   title: string;
+  placeCategory?: PlaceCategory;
+  listingStatus?: ListingStatus;
   placeLabel: string;
   city: string;
   date: string;

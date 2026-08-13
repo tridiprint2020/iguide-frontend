@@ -79,6 +79,14 @@ export const MemoryCardEngine = {
       title:
         experience.title,
 
+      placeCategory:
+        experience.placeCategory ??
+        experience.type,
+
+      listingStatus:
+        experience.listingStatus ??
+        "editorial",
+
       city:
         experience.city,
 
@@ -182,6 +190,14 @@ export const MemoryCardEngine = {
 
       title:
         experience.title,
+
+      placeCategory:
+        experience.placeCategory ??
+        experience.type,
+
+      listingStatus:
+        experience.listingStatus ??
+        "editorial",
 
       city:
         experience.city,
