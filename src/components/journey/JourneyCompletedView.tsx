@@ -171,6 +171,14 @@ export default function JourneyCompletedView() {
       activeExperience?.title ??
       tx("Destino"),
 
+    placeCategory:
+      activeExperience?.placeCategory ??
+      activeExperience?.type,
+
+    listingStatus:
+      activeExperience?.listingStatus ??
+      "editorial" as const,
+
     placeLabel:
       activeExperience?.title ??
       tx("Lugar visitado"),

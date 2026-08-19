@@ -88,6 +88,14 @@ function MemoryPreviewModal({
     experienceId:
       experienceContext
         ?.experienceId,
+    placeCategory:
+      experienceContext?.placeCategory ??
+      experienceContext?.type ??
+      memoryData.placeCategory,
+    listingStatus:
+      experienceContext?.listingStatus ??
+      memoryData.listingStatus ??
+      "editorial",
     mapBackground:
       memoryData.mapBackground ??
       mapContext,

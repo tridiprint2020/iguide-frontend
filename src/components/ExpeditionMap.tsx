@@ -283,6 +283,14 @@ function ExpeditionMap({
                               point.note ?? "",
                             title:
                               expedition.title,
+                            experienceId:
+                              expedition.experienceId,
+                            placeCategory:
+                              expedition.placeCategory ??
+                              expedition.type,
+                            listingStatus:
+                              expedition.listingStatus ??
+                              "editorial",
                             stats: {
                               durationSeconds,
                               totalDistanceKm,
