@@ -15,6 +15,10 @@ import type {
 
 import FavoriteButton from "../FavoriteButton";
 import { tx } from "../../i18n";
+import {
+  getMemoryCardDescriptor,
+  getListingRatingLabel,
+} from "../../engine/experiencePresentation";
 
 type Props = {
   experience: Experience;
@@ -158,6 +162,22 @@ function ExperienceMapCard({
             {experience.title}
           </h3>
 
+          <p
+            style={{
+              margin: "4px 0 0",
+              color: "#8A2BE2",
+              fontSize: "9px",
+              fontWeight: 800,
+              letterSpacing: "0.06em",
+            }}
+          >
+            {getMemoryCardDescriptor(
+              experience.placeCategory ??
+                experience.type,
+              experience.listingStatus
+            )}
+          </p>
+
           <div
             style={{
               display: "flex",
@@ -184,23 +204,22 @@ function ExperienceMapCard({
               {experience.city}
             </span>
 
-            {typeof experience.rating ===
-              "number" && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "3px",
-                }}
-              >
-                <Star
-                  size={11}
-                  color="#FF3DE8"
-                  fill="#FF3DE8"
-                />
-                {experience.rating.toFixed(1)}
-              </span>
-            )}
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "3px",
+              }}
+            >
+              <Star
+                size={11}
+                color="#FF3DE8"
+                fill="#FF3DE8"
+              />
+              {getListingRatingLabel(
+                experience.rating
+              )}
+            </span>
           </div>
         </div>
 

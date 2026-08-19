@@ -56,6 +56,11 @@ import {
 } from "../data/catalog";
 
 import {
+  getMemoryCardDescriptor,
+  getListingRatingLabel,
+} from "../engine/experiencePresentation";
+
+import {
   loadUserProfile,
 } from "../data/user";
 
@@ -1203,10 +1208,28 @@ function MapPage() {
                             Theme.Colors
                               .textSoft,
                           fontSize: "10px",
+                          letterSpacing:
+                            "0.04em",
                         }}
                       >
-                        {getTypeLabel(
-                          experience.type
+                        {getMemoryCardDescriptor(
+                          experience.placeCategory ??
+                            experience.type,
+                          experience.listingStatus
+                        )}
+                      </small>
+
+                      <small
+                        style={{
+                          display: "block",
+                          marginTop: "2px",
+                          color: "#39E7FF",
+                          fontSize: "10px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {getListingRatingLabel(
+                          experience.rating
                         )}
                       </small>
                     </span>

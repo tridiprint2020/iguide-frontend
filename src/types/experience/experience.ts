@@ -8,12 +8,14 @@ export type ExperienceType =
 
 export type PlaceCategory =
   | ExperienceType
-  | "icecream_shop";
+  | "icecream_shop"
+  | "art_experience";
 
 export type ListingStatus =
   | "editorial"
   | "pilot_partner"
-  | "sponsored";
+  | "sponsored"
+  | "access_point";
 
 export type VenueSubtype =
 
