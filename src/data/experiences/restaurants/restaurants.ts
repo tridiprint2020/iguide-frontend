@@ -17,24 +17,13 @@ export const restaurants: Experience[] = [
 
     description:
       "Restaurante pasteleria con platos variados.",
+// PARÍS
+latitude: -12.066938209309713,
+longitude: -75.20915417754811,
+certificationRadiusMeters: 20,
 
-    latitude:-12.066962820751636, 
-    longitude:-75.20918072188105,
-
-    certificationRadiusMeters: 20,
-
-    /*
-     * La primera prueba de campo registró una diferencia de
-     * 86 m entre el pin comercial y el acceso usado por el
-     * visitante. La llegada automática conserva el radio
-     * estricto; este radio ampliado solo se usa cuando el
-     * usuario pulsa explícitamente "Estoy aquí".
-     */
-    manualCertificationRadiusMeters: 120,
-
-    rating:7.7,
-
-    tags:[
+        rating:7.7,
+        tags:[
         "tradicional",
         "familia",
         "almuerzo"
@@ -161,15 +150,12 @@ estimatedVisitMinutes: 60
     description:
       "Restaurante Parrillas de renombre en Huancayo desde 1985.",
 
-    latitude:-12.062674525276481, 
+latitude: -12.063010512710676,
+longitude: -75.20661076642759,
 
-    longitude:-75.20639804385293,
+certificationRadiusMeters: 20,
 
-    certificationRadiusMeters: 20,
-
-    manualCertificationRadiusMeters: 100,
-
-    rating:8.7,
+    rating: 8.7,
 
     tags:[
         "tradicional",
