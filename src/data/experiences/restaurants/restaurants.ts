@@ -167,6 +167,8 @@ estimatedVisitMinutes: 60
 
     certificationRadiusMeters: 20,
 
+    manualCertificationRadiusMeters: 100,
+
     rating:8.7,
 
     tags:[
