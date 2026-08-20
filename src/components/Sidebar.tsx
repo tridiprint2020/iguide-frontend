@@ -1,5 +1,5 @@
 import {
-  Compass,
+  Binoculars,
   Heart,
   House,
   Map,
@@ -47,7 +47,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     to: "/explorer",
-    icon: Compass,
+    icon: Binoculars,
     label: "Explorar",
     tone: "cyan",
   },

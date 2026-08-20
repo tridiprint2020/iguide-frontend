@@ -164,7 +164,7 @@ export default function HospesBanner({
           <NoriCompass
             state={noriState}
             size={54}
-            label={tx("NORI · brújula de I.GUIDE")}
+            label={tx("Hospes · brújula de I.GUIDE")}
           />
         </div>
 
