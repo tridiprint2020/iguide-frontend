@@ -107,21 +107,21 @@ export interface VenueExperience extends PublishableExperience {
   type: "restaurant" | "cafe" | "bar" | "nightclub";
   subtype?: VenueSubtype;
   cuisine?: string;
-  priceRange: "budget" | "mid" | "premium";
-  openingHours: string;
-  admissionFee: number;   
-  hasDelivery: boolean;
+  priceRange?: "budget" | "mid" | "premium";
+  openingHours?: string;
+  admissionFee?: number;
+  hasDelivery?: boolean;
   menuHighlights?: string[];
 }
 
 export interface HotelExperience extends PublishableExperience {
   type: "hotel";
-  priceRange: "budget" | "mid" | "premium";
-  checkIn: string;
-  checkOut: string;
+  priceRange?: "budget" | "mid" | "premium";
+  checkIn?: string;
+  checkOut?: string;
   stars?: number;
-  amenities: string[];    
-  roomTypes: string[];    
+  amenities?: string[];
+  roomTypes?: string[];
 }
 
 export interface MuseumExperience extends PublishableExperience {

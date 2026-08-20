@@ -115,6 +115,100 @@ gallery: [],
 isActive: true,
 estimatedVisitMinutes: 60
 
+},
+
+{
+    experienceId: "CAF-0101",
+
+    slug: "la-serranita",
+
+    title: "La Serranita",
+
+    type: "cafe",
+
+    subtype: "icecream",
+
+    placeCategory: "icecream_shop",
+
+    listingStatus: "access_point",
+
+    city: "Huancayo",
+
+    image: placeholder,
+
+    description: "Heladería de Huancayo y punto de acceso I.GUIDE.",
+
+    latitude: -12.067778839437912,
+
+    longitude: -75.20962406108907,
+
+    arrivalLatitude: -12.067778839437912,
+
+    arrivalLongitude: -75.20962406108907,
+
+    certificationRadiusMeters: 20,
+
+    rating: 7.3,
+
+    tags: ["heladería"],
+
+    cuisine: "heladería",
+
+    coverImage: placeholder,
+
+    gallery: [],
+
+    isActive: true,
+
+    lastUpdated: "2026-08-19"
+
+},
+
+{
+    experienceId: "CAF-0102",
+
+    slug: "polares-gelato-italiano",
+
+    title: "Polares – Auténtico Gelato Italiano",
+
+    type: "cafe",
+
+    subtype: "icecream",
+
+    placeCategory: "icecream_shop",
+
+    listingStatus: "editorial",
+
+    city: "Huancayo",
+
+    image: placeholder,
+
+    description: "Heladería seleccionada por I.GUIDE en Huancayo.",
+
+    latitude: -12.062364113242808,
+
+    longitude: -75.20662237587491,
+
+    arrivalLatitude: -12.062364113242808,
+
+    arrivalLongitude: -75.20662237587491,
+
+    certificationRadiusMeters: 20,
+
+    rating: 7.7,
+
+    tags: ["heladería"],
+
+    cuisine: "heladería",
+
+    coverImage: placeholder,
+
+    gallery: [],
+
+    isActive: true,
+
+    lastUpdated: "2026-08-19"
+
 }
 
 ];

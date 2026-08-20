@@ -93,6 +93,9 @@ const baseCatalog: Experience[] = [
 ];
 
 export const catalog: Experience[] =
-  baseCatalog.map(
-    localizeExperience
-  );
+  baseCatalog
+    .filter(
+      (experience) =>
+        experience.isActive !== false
+    )
+    .map(localizeExperience);

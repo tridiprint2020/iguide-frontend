@@ -140,6 +140,15 @@ const en: Record<string, string> = {
   "Arte y experiencias": "Art and experiences",
   "Puntuación I.GUIDE: {{value}}": "I.GUIDE score: {{value}}",
   "Sin calificación": "Not rated",
+  "Hotel aliado del piloto I.GUIDE en Huancayo.":
+    "Hotel participating as an I.GUIDE pilot partner in Huancayo.",
+  "Hotel con un punto de acceso I.GUIDE en Huancayo.":
+    "Hotel with an I.GUIDE access point in Huancayo.",
+  "Heladería de Huancayo y punto de acceso I.GUIDE.":
+    "Ice cream shop in Huancayo and I.GUIDE access point.",
+  "Heladería seleccionada por I.GUIDE en Huancayo.":
+    "Ice cream shop selected by I.GUIDE in Huancayo.",
+  "heladería": "ice cream shop",
   "No hay resultados": "No results",
   "Cargando…": "Loading…",
   "Preparando…": "Preparing…",
