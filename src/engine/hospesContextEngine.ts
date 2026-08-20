@@ -446,7 +446,9 @@ export function getHospesMessage(
       const suggestionObservation =
         suggestedExperience
           ? ` ${tx("Mi elección es {{title}}.", { title: suggestedExperience.title })}`
-          : ` ${tx("Tengo varias posibilidades listas para ti.")}`;
+          : unsafeOutdoorWeather
+            ? ` ${tx("Por seguridad, hoy no te propondré una misión al aire libre. Puedes revisar alternativas bajo techo y confirmar sus horarios.")}`
+            : ` ${tx("Tengo varias posibilidades listas para ti.")}`;
 
       const closing =
         suggestedExperience

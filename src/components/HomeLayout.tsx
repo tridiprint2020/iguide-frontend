@@ -26,6 +26,7 @@ import {
 } from "../engine/hospesContextEngine";
 
 import {
+  getSafeCandidates,
   selectHomeExperience,
 } from "../engine/homeRecommendationEngine";
 
@@ -171,10 +172,20 @@ function HomeLayout() {
       profile,
     });
 
+  /*
+   * R1: el catálogo jamás llega crudo a la UI.
+   * Todo pasa por la política de seguridad única.
+   */
   const availableExperiences =
-    recommendations.length > 0
-      ? recommendations
-      : catalog;
+    getSafeCandidates(
+      recommendations.length > 0
+        ? recommendations
+        : catalog,
+      {
+        profile,
+        weather: liveWeather,
+      }
+    );
 
   const suggestedExperience =
     selectHomeExperience({
@@ -201,17 +212,11 @@ function HomeLayout() {
   const cornerExperience =
     findCornerExperience(
       availableExperiences
-    ) ??
-    findCornerExperience(
-      catalog
     );
 
   const surpriseExperience =
     findSurpriseExperience(
       availableExperiences
-    ) ??
-    findSurpriseExperience(
-      catalog
     );
 
   const totalExperiences =

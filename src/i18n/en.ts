@@ -706,6 +706,7 @@ const en: Record<string, string> = {
   "Colección Permanente": "Permanent collection",
   "Cerámica Wanka": "Wanka ceramics",
   "Artesanía Wanka": "Wanka handicrafts",
+  "Por seguridad, hoy no te propondré una misión al aire libre. Puedes revisar alternativas bajo techo y confirmar sus horarios.": "For your safety, I won't suggest an outdoor mission today. You can explore indoor alternatives and confirm their opening hours.",
 };
 
 export default en;
