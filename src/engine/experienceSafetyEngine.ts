@@ -8,6 +8,13 @@ import type {
   WeatherStatus,
 } from "./weatherEngine";
 
+export type ExperienceSafetyReason =
+  | "inactive"
+  | "weather-wet-risk"
+  | "weather-unknown-risk"
+  | "high-mountain-weather"
+  | "night-incompatible";
+
 function isOutdoorExperience(
   experience: Experience
 ): boolean {
@@ -67,6 +74,8 @@ function isNightCompatible(
   return [
     "restaurant",
     "cafe",
+    "bar",
+    "nightclub",
     "nightlife",
     "gastronomy",
   ].includes(
@@ -90,6 +99,70 @@ export function isWetRisky(
   );
 }
 
+function hasWetWeather(
+  weather: WeatherStatus
+): boolean {
+  return (
+    weather.condition === "rain" ||
+    weather.condition === "drizzle" ||
+    weather.condition === "snow" ||
+    (weather.precipitationProbabilityNext3Hours ??
+      0) >= 40
+  );
+}
+
+/**
+ * Expone el mismo veredicto que usa el filtro para que la UI y
+ * Hospes puedan explicar una exclusión sin duplicar reglas.
+ */
+export function getExperienceSafetyReason(
+  experience: Experience,
+  weather: WeatherStatus | null,
+  currentDate: Date
+): ExperienceSafetyReason | null {
+  if (experience.isActive === false) {
+    return "inactive";
+  }
+
+  if (
+    weather !== null &&
+    hasWetWeather(weather) &&
+    (!isIndoorFriendly(experience) ||
+      isOutdoorExperience(experience) ||
+      isWetRisky(experience))
+  ) {
+    return "weather-wet-risk";
+  }
+
+  if (
+    weather === null &&
+    isWetRisky(experience)
+  ) {
+    return "weather-unknown-risk";
+  }
+
+  if (
+    weather !== null &&
+    !weather.isHighMountainSafe &&
+    experience.terrain === "mountain"
+  ) {
+    return "high-mountain-weather";
+  }
+
+  const hour = currentDate.getHours();
+  const isNight =
+    hour >= 18 || hour < 6;
+
+  if (
+    isNight &&
+    !isNightCompatible(experience)
+  ) {
+    return "night-incompatible";
+  }
+
+  return null;
+}
+
 /**
  * Política neutral de seguridad para experiencias.
  * Nunca recupera candidatos que hayan fallado un filtro.
@@ -99,57 +172,14 @@ export function filterSafeExperiences(
   weather: WeatherStatus | null,
   currentDate: Date
 ): Experience[] {
-  const activeExperiences =
-    experiences.filter(
-      (experience) =>
-        experience.isActive !== false
-    );
-
-  const hour =
-    currentDate.getHours();
-
-  const isNight =
-    hour >= 18 || hour < 6;
-
-  const hasBadWeather =
-    weather !== null &&
-    (weather.condition === "rain" ||
-      weather.condition === "drizzle" ||
-      weather.condition === "snow" ||
-      (weather.precipitationProbabilityNext3Hours ?? 0) >= 40);
-
-  const weatherUnknown =
-    weather === null;
-
-  let candidates =
-    activeExperiences;
-
-  if (hasBadWeather) {
-    candidates =
-      candidates.filter(
-        (experience) =>
-          isIndoorFriendly(experience) &&
-          !isOutdoorExperience(experience) &&
-          !isWetRisky(experience)
-      );
-  }
-
-  if (weatherUnknown) {
-    candidates =
-      candidates.filter(
-        (experience) =>
-          !isWetRisky(experience)
-      );
-  }
-
-  if (isNight) {
-    candidates =
-      candidates.filter(
-        isNightCompatible
-      );
-  }
-
-  return candidates;
+  return experiences.filter(
+    (experience) =>
+      getExperienceSafetyReason(
+        experience,
+        weather,
+        currentDate
+      ) === null
+  );
 }
 
 /**

@@ -1,141 +1,724 @@
 import { catalog } from "../data/catalog";
-import type { Experience } from "../types/experience";
-import { isExpedition } from "../types/experience";
-import type { Interest } from "../types/interest";
-import type { ExplorerContext } from "../types/explorerContext";
+import type {
+  Experience,
+} from "../types/experience";
+import {
+  isExpedition,
+} from "../types/experience";
+import type {
+  ExplorerContext,
+} from "../types/explorerContext";
+import type {
+  Interest,
+} from "../types/interest";
+import type {
+  ItineraryDecisionAction,
+  ItineraryExclusion,
+  ItineraryPlan,
+  ItineraryReasonCode,
+  ItineraryStop,
+} from "../types/itinerary";
+import {
+  getExperienceSafetyReason,
+  getSafeCandidates,
+} from "./experienceSafetyEngine";
+import type {
+  ExperienceSafetyReason,
+} from "./experienceSafetyEngine";
+import type {
+  WeatherForecastDay,
+  WeatherStatus,
+} from "./weatherEngine";
 
-function parseMinutes(text?: string): number {
-  if (!text) return Infinity;
-  const match = text.match(/\d+/);
-  return match ? parseInt(match[0], 10) : Infinity;
+const DAY_END_MINUTES = 21 * 60;
+const MAX_STOPS = 8;
+const FULL_DAY_MINUTES = 6 * 60;
+
+export interface ItineraryBuildOptions {
+  forecast?: WeatherForecastDay | null;
+  experiences?: Experience[];
+  excludedExperienceIds?: string[];
+  action?: Exclude<
+    ItineraryDecisionAction,
+    "excluded"
+  >;
 }
 
-/**
- * Calcula cuántas horas reales de exploración tiene el usuario
- * a partir del día y la hora que eligió en el calendario.
- *
- * Si el día elegido es hoy, se resta la hora actual del cierre
- * habitual de actividades (21:00). Si es un día futuro, se asume
- * jornada completa disponible desde las 8am.
- *
- * Reemplaza la antigua pregunta "¿Cuánto tiempo tienes?".
- */
-function calculateAvailableHours(
-  selectedDate: string,
-  selectedHour: number
+function parseDurationMinutes(
+  text?: string
+): number | null {
+  if (!text) return null;
+
+  const match = text.match(/(\d+(?:[.,]\d+)?)/);
+
+  if (!match) return null;
+
+  const value = Number(
+    match[1].replace(",", ".")
+  );
+
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  if (/hora|hour/i.test(text)) {
+    return Math.round(value * 60);
+  }
+
+  return Math.round(value);
+}
+
+function getVisitMinutes(
+  experience: Experience
 ): number {
-  const DAY_END_HOUR = 21;
-  const FULL_DAY_START_HOUR = 8;
+  const expeditionDuration =
+    isExpedition(experience)
+      ? parseDurationMinutes(
+          experience.duration
+        )
+      : null;
 
-  const todayIso = new Date()
-    .toISOString()
-    .slice(0, 10);
+  return Math.max(
+    30,
+    expeditionDuration ??
+      experience.estimatedVisitMinutes ??
+      90
+  );
+}
 
-  if (selectedDate === todayIso) {
-    return Math.max(
-      1,
-      DAY_END_HOUR - selectedHour
+function getTravelMinutes(
+  experience: Experience,
+  context: ExplorerContext
+): number | null {
+  const transport =
+    context.answers?.transport ??
+    "walking";
+
+  if (!isExpedition(experience)) {
+    if (transport === "taxi") return 8;
+    if (transport === "transport") return 12;
+    return 15;
+  }
+
+  if (transport === "walking") {
+    return parseDurationMinutes(
+      experience.walkTime
     );
   }
 
-  return DAY_END_HOUR - FULL_DAY_START_HOUR;
+  const driveMinutes =
+    parseDurationMinutes(
+      experience.driveTime
+    );
+
+  if (driveMinutes === null) {
+    return null;
+  }
+
+  return transport === "transport"
+    ? driveMinutes + 10
+    : driveMinutes;
 }
 
-function placesForAvailableHours(
-  hours: number
-): number {
-  if (hours <= 2) return 2;
-  if (hours <= 5) return 4;
-  if (hours <= 8) return 6;
-  return Math.min(8, catalog.length);
+function getOpeningWindow(
+  experience: Experience
+): {
+  opensAt: number;
+  closesAt: number;
+} | null {
+  if (
+    !("openingHours" in experience) ||
+    typeof experience.openingHours !==
+      "string"
+  ) {
+    return null;
+  }
+
+  const match =
+    experience.openingHours.match(
+      /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/
+    );
+
+  if (!match) return null;
+
+  const opensAt =
+    Number(match[1]) * 60 +
+    Number(match[2]);
+
+  let closesAt =
+    Number(match[3]) * 60 +
+    Number(match[4]);
+
+  if (closesAt <= opensAt) {
+    closesAt += 24 * 60;
+  }
+
+  return {
+    opensAt,
+    closesAt,
+  };
 }
 
-export function buildItinerary(
-  context: ExplorerContext
-): Experience[] {
-  const { profile, answers } = context;
-  if (!answers) return [];
+function createSelectedDate(
+  selectedDate: string,
+  selectedHour: number
+): Date | null {
+  const match =
+    selectedDate.match(
+      /^(\d{4})-(\d{2})-(\d{2})$/
+    );
 
-  const candidates = catalog.filter(
-    (e) =>
-      !profile.visitedExperiences.includes(
-        e.experienceId
-      )
+  if (
+    !match ||
+    !Number.isInteger(selectedHour) ||
+    selectedHour < 0 ||
+    selectedHour > 23
+  ) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const result = new Date(
+    year,
+    month - 1,
+    day,
+    selectedHour,
+    0,
+    0,
+    0
   );
 
-  const scored = candidates.map(
-    (experience) => {
-      let score = 0;
+  if (
+    result.getFullYear() !== year ||
+    result.getMonth() !== month - 1 ||
+    result.getDate() !== day ||
+    result.getHours() !== selectedHour
+  ) {
+    return null;
+  }
 
-      if (isExpedition(experience)) {
-        const affinity = experience.affinity;
-        const priorityKey =
-          answers.priority as Interest;
+  return result;
+}
 
-        if (priorityKey in affinity) {
-          score += affinity[priorityKey] * 2;
-        }
+function forecastToWeatherStatus(
+  forecast: WeatherForecastDay | null
+): WeatherStatus | null {
+  if (!forecast) return null;
 
-        if (answers.companions === "family") {
-          score += affinity.family;
-        }
-        if (answers.companions === "couple") {
-          score += affinity.couples;
-        }
-        if (answers.companions === "friends") {
-          score += affinity.backpacker;
-        }
+  return {
+    city: forecast.city,
+    condition: forecast.condition,
+    temperature: Math.round(
+      (forecast.temperatureMin +
+        forecast.temperatureMax) /
+        2
+    ),
+    precipitationProbabilityNext3Hours:
+      forecast.precipitationProbability,
+    windSpeedKmh:
+      forecast.windSpeedKmh,
+    isHighMountainSafe:
+      forecast.isHighMountainSafe,
+  };
+}
 
-        const walkMinutes = parseMinutes(
-          experience.walkTime
+function matchesPriority(
+  experience: Experience,
+  priority: string
+): boolean {
+  const knownInterest = [
+    "photography",
+    "adventure",
+    "gastronomy",
+    "family",
+    "couples",
+    "backpacker",
+    "nightlife",
+  ].includes(priority)
+    ? (priority as Interest)
+    : null;
+
+  if (
+    knownInterest &&
+    experience.interests?.includes(
+      knownInterest
+    )
+  ) {
+    return true;
+  }
+
+  if (isExpedition(experience)) {
+    return (
+      knownInterest !== null &&
+      experience.affinity[
+        knownInterest
+      ] > 50
+    );
+  }
+
+  if (priority === "gastronomy") {
+    return ["restaurant", "cafe"].includes(
+      experience.type
+    );
+  }
+
+  if (priority === "nightlife") {
+    return ["bar", "nightclub"].includes(
+      experience.type
+    );
+  }
+
+  if (priority === "photography") {
+    return experience.tags.some((tag) =>
+      [
+        "fotografía",
+        "photography",
+        "mirador",
+        "atardecer",
+      ].includes(tag.toLowerCase())
+    );
+  }
+
+  return priority === "surprise";
+}
+
+function scoreExperience(
+  experience: Experience,
+  context: ExplorerContext
+): number {
+  const answers = context.answers;
+
+  if (!answers) return 0;
+
+  let score = matchesPriority(
+    experience,
+    answers.priority
+  )
+    ? 100
+    : 0;
+
+  if (isExpedition(experience)) {
+    const priority =
+      answers.priority as Interest;
+
+    if (priority in experience.affinity) {
+      score +=
+        experience.affinity[priority] * 2;
+    }
+
+    if (answers.companions === "family") {
+      score += experience.affinity.family;
+    }
+
+    if (answers.companions === "couple") {
+      score += experience.affinity.couples;
+    }
+
+    if (answers.companions === "friends") {
+      score +=
+        experience.affinity.backpacker;
+    }
+
+    const walkingMinutes =
+      parseDurationMinutes(
+        experience.walkTime
+      );
+
+    if (
+      answers.transport === "walking" &&
+      (walkingMinutes === null ||
+        walkingMinutes > 20)
+    ) {
+      score -= 40;
+    }
+
+    if (
+      answers.transport !== "taxi" &&
+      !answers.hasCar
+    ) {
+      const driveMinutes =
+        parseDurationMinutes(
+          experience.driveTime
         );
 
-        const movingOnFoot =
-          answers.transport === "walking";
-
-        if (movingOnFoot && walkMinutes > 20) {
-          score -= 40;
-        }
-        if (!movingOnFoot && walkMinutes <= 20) {
-          score += 10;
-        }
-
-        if (
-          answers.transport !== "taxi" &&
-          !answers.hasCar
-        ) {
-          const driveMinutes = parseMinutes(
-            experience.driveTime
-          );
-          if (driveMinutes > 20) {
-            score -= 30;
-          }
-        }
-
-        if (
-          answers.budget === "budget" &&
-          experience.price !== "Gratis"
-        ) {
-          score -= 25;
-        }
+      if (
+        driveMinutes === null ||
+        driveMinutes > 20
+      ) {
+        score -= 30;
       }
-
-      return { experience, score };
     }
+
+    if (
+      answers.budget === "budget" &&
+      experience.price !== "Gratis"
+    ) {
+      score -= 25;
+    }
+  }
+
+  for (const interest of context.profile
+    .interests) {
+    if (
+      experience.interests?.includes(
+        interest
+      )
+    ) {
+      score += 10;
+    }
+  }
+
+  return score;
+}
+
+function isWetForecast(
+  forecast: WeatherForecastDay
+): boolean {
+  return (
+    forecast.condition === "rain" ||
+    forecast.condition === "drizzle" ||
+    forecast.condition === "snow" ||
+    forecast.precipitationProbability >= 40
   );
+}
 
-  scored.sort((a, b) => b.score - a.score);
+function getRecommendationReason(
+  forecast: WeatherForecastDay | null,
+  score: number,
+  visitMinutes: number
+): ItineraryReasonCode {
+  if (visitMinutes >= FULL_DAY_MINUTES) {
+    return "full-day-experience";
+  }
 
-  const availableHours =
-    calculateAvailableHours(
+  if (forecast === null) {
+    return "weather-unknown-conservative";
+  }
+
+  if (isWetForecast(forecast)) {
+    return "indoor-priority";
+  }
+
+  return score > 0
+    ? "interest-match"
+    : "weather-compatible";
+}
+
+function safetyReasonToItineraryReason(
+  reason: Exclude<
+    ExperienceSafetyReason,
+    "inactive"
+  >
+): ItineraryReasonCode {
+  return reason;
+}
+
+function createExclusion(
+  experience: Experience,
+  reasonCode: ItineraryReasonCode,
+  params?: Record<
+    string,
+    string | number | boolean
+  >
+): ItineraryExclusion {
+  return {
+    experienceId:
+      experience.experienceId,
+    title: experience.title,
+    explanation: {
+      action: "excluded",
+      reasonCode,
+      params,
+    },
+  };
+}
+
+/**
+ * Itinerary Engine v2.
+ *
+ * Recibe una fotografía del pronóstico ya resuelta, aplica el motor
+ * neutral de seguridad, acumula traslado + visita + horarios reales
+ * disponibles y devuelve razones estructuradas para UI y Hospes.
+ */
+export function buildItineraryPlan(
+  context: ExplorerContext,
+  options: ItineraryBuildOptions = {}
+): ItineraryPlan | null {
+  const answers = context.answers;
+
+  if (!answers) return null;
+
+  const selectedDate =
+    createSelectedDate(
       answers.selectedDate,
       answers.selectedHour
     );
 
-  const limit =
-    placesForAvailableHours(availableHours);
+  if (!selectedDate) return null;
 
-  return scored
-    .slice(0, limit)
-    .map((s) => s.experience);
+  const startMinutes =
+    answers.selectedHour * 60;
+  const availableMinutes = Math.max(
+    0,
+    DAY_END_MINUTES - startMinutes
+  );
+  const forecast =
+    options.forecast ?? null;
+  const weather =
+    forecastToWeatherStatus(forecast);
+  const excludedIds = new Set(
+    options.excludedExperienceIds ?? []
+  );
+  const visitedIds = new Set(
+    context.profile.visitedExperiences
+  );
+  const source =
+    options.experiences ?? catalog;
+
+  const relevantExperiences =
+    source.filter(
+      (experience) =>
+        experience.isActive !== false &&
+        experience.type !== "hotel" &&
+        !visitedIds.has(
+          experience.experienceId
+        ) &&
+        !excludedIds.has(
+          experience.experienceId
+        )
+    );
+
+  const safeCandidates =
+    getSafeCandidates(
+      relevantExperiences,
+      {
+        profile: context.profile,
+        weather,
+        currentDate: selectedDate,
+      }
+    );
+  const safeIds = new Set(
+    safeCandidates.map(
+      (experience) =>
+        experience.experienceId
+    )
+  );
+  const exclusions: ItineraryExclusion[] =
+    [];
+
+  for (const experience of
+    relevantExperiences) {
+    if (safeIds.has(experience.experienceId)) {
+      continue;
+    }
+
+    const reason =
+      getExperienceSafetyReason(
+        experience,
+        weather,
+        selectedDate
+      );
+
+    if (reason && reason !== "inactive") {
+      exclusions.push(
+        createExclusion(
+          experience,
+          safetyReasonToItineraryReason(
+            reason
+          ),
+          forecast
+            ? {
+                precipitationProbability:
+                  forecast.precipitationProbability,
+                windSpeedKmh:
+                  forecast.windSpeedKmh,
+              }
+            : undefined
+        )
+      );
+    }
+  }
+
+  const scored = safeCandidates
+    .map((experience, index) => ({
+      experience,
+      index,
+      score: scoreExperience(
+        experience,
+        context
+      ),
+    }))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.index - b.index
+    );
+
+  const stops: ItineraryStop[] = [];
+  let cursor = startMinutes;
+
+  for (const candidate of scored) {
+    if (stops.length >= MAX_STOPS) {
+      break;
+    }
+
+    const { experience, score } =
+      candidate;
+    const visitMinutes =
+      getVisitMinutes(experience);
+    const isFullDay =
+      visitMinutes >= FULL_DAY_MINUTES;
+    const travelMinutes =
+      getTravelMinutes(
+        experience,
+        context
+      );
+
+    if (travelMinutes === null) {
+      exclusions.push(
+        createExclusion(
+          experience,
+          "transport-incompatible"
+        )
+      );
+      continue;
+    }
+
+    if (isFullDay && stops.length > 0) {
+      exclusions.push(
+        createExclusion(
+          experience,
+          "full-day-conflict",
+          { visitMinutes }
+        )
+      );
+      continue;
+    }
+
+    const openingWindow =
+      getOpeningWindow(experience);
+    let visitStart =
+      cursor + travelMinutes;
+
+    if (
+      openingWindow &&
+      visitStart < openingWindow.opensAt
+    ) {
+      visitStart = openingWindow.opensAt;
+    }
+
+    const visitEnd =
+      visitStart + visitMinutes;
+
+    if (
+      openingWindow &&
+      (visitStart >=
+        openingWindow.closesAt ||
+        visitEnd >
+          openingWindow.closesAt)
+    ) {
+      exclusions.push(
+        createExclusion(
+          experience,
+          "outside-opening-hours",
+          {
+            opensAt:
+              openingWindow.opensAt,
+            closesAt:
+              openingWindow.closesAt,
+          }
+        )
+      );
+      continue;
+    }
+
+    if (visitEnd > DAY_END_MINUTES) {
+      exclusions.push(
+        createExclusion(
+          experience,
+          "not-enough-time",
+          {
+            requiredMinutes:
+              visitEnd - cursor,
+            remainingMinutes:
+              Math.max(
+                0,
+                DAY_END_MINUTES - cursor
+              ),
+          }
+        )
+      );
+      continue;
+    }
+
+    stops.push({
+      experience,
+      startMinutes: visitStart,
+      endMinutes: visitEnd,
+      travelMinutes,
+      visitMinutes,
+      explanation: {
+        action:
+          options.action ??
+          "recommended",
+        reasonCode:
+          getRecommendationReason(
+            forecast,
+            score,
+            visitMinutes
+          ),
+        params: {
+          priority: answers.priority,
+          visitMinutes,
+          ...(forecast
+            ? {
+                precipitationProbability:
+                  forecast.precipitationProbability,
+                windSpeedKmh:
+                  forecast.windSpeedKmh,
+              }
+            : {}),
+        },
+      },
+    });
+
+    cursor = visitEnd;
+
+    if (isFullDay) {
+      break;
+    }
+  }
+
+  return {
+    selectedDate: answers.selectedDate,
+    selectedHour: answers.selectedHour,
+    availableMinutes,
+    totalDurationMinutes:
+      stops.length > 0
+        ? stops[
+            stops.length - 1
+          ].endMinutes - startMinutes
+        : 0,
+    forecast: forecast
+      ? { ...forecast }
+      : null,
+    stops,
+    exclusions,
+  };
+}
+
+/**
+ * Adaptador temporal para consumidores legacy. La interfaz nueva debe
+ * usar buildItineraryPlan para conservar horarios y explicaciones.
+ */
+export function buildItinerary(
+  context: ExplorerContext
+): Experience[] {
+  return (
+    buildItineraryPlan(context)?.stops.map(
+      (stop) => stop.experience
+    ) ?? []
+  );
 }
