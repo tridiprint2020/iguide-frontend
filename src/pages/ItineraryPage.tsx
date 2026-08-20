@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -15,19 +16,32 @@ import {
 } from "lucide-react";
 
 import {
+  ItineraryPlanResult,
+} from "../components/itinerary/ItineraryPlanResult";
+import {
+  WeeklyForecast,
+} from "../components/itinerary/WeeklyForecast";
+
+import {
   loadUserProfile,
 } from "../data/user";
 
 import {
-  buildItinerary,
+  buildItineraryPlan,
 } from "../engine/itineraryEngine";
 
+import {
+  fetchSevenDayForecast,
+} from "../engine/weatherService";
+
 import type {
-  Experience,
-} from "../types/experience";
+  WeatherForecast,
+  WeatherForecastDay,
+} from "../engine/weatherEngine";
 
 import type {
   ItineraryAnswers,
+  ItineraryPlan,
 } from "../types/itinerary";
 
 import logoIG from "../assets/branding/logo-dark-bg.png";
@@ -76,7 +90,15 @@ const WEEKDAY_LABELS = [
 ];
 
 function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function formatHour(hour: number): string {
@@ -187,8 +209,49 @@ function ItineraryPage() {
       "walking" | "transport" | "taxi" | null
     >(null);
 
-  const [results, setResults] =
-    useState<Experience[] | null>(null);
+  const [forecast, setForecast] =
+    useState<WeatherForecast | null>(null);
+
+  const [forecastLoading, setForecastLoading] =
+    useState(true);
+
+  const [forecastError, setForecastError] =
+    useState(false);
+
+  const [plan, setPlan] =
+    useState<ItineraryPlan | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    void fetchSevenDayForecast()
+      .then((nextForecast) => {
+        if (!active) return;
+        setForecast(nextForecast);
+        setForecastError(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setForecastError(true);
+      })
+      .finally(() => {
+        if (!active) return;
+        setForecastLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedForecast = useMemo(
+    () =>
+      forecast?.days.find(
+        (day) =>
+          day.date === selectedDate
+      ) ?? null,
+    [forecast, selectedDate]
+  );
 
   const canBuildPlan =
     selectedDate !== null &&
@@ -198,7 +261,32 @@ function ItineraryPage() {
   function handleSelectDate(date: Date) {
     setSelectedDate(toIsoDate(date));
     setSelectedHour(null);
-    setResults(null);
+    setPlan(null);
+  }
+
+  function handleSelectForecastDate(
+    day: WeatherForecastDay
+  ) {
+    setSelectedDate(day.date);
+    setSelectedHour(null);
+    setPlan(null);
+  }
+
+  async function handleRetryForecast() {
+    setForecastLoading(true);
+    setForecastError(false);
+
+    try {
+      const nextForecast =
+        await fetchSevenDayForecast({
+          forceRefresh: true,
+        });
+      setForecast(nextForecast);
+    } catch {
+      setForecastError(true);
+    } finally {
+      setForecastLoading(false);
+    }
   }
 
   function handleBuildPlan() {
@@ -217,17 +305,23 @@ function ItineraryPage() {
       transport: transport ?? "walking",
     };
 
-    const itinerary = buildItinerary({
-      profile,
-      answers,
-    });
+    const itinerary =
+      buildItineraryPlan(
+        {
+          profile,
+          answers,
+        },
+        {
+          forecast: selectedForecast,
+        }
+      );
 
-    setResults(itinerary);
+    setPlan(itinerary);
   }
 
   function handleReplace(index: number) {
     if (
-      !results ||
+      !plan ||
       !selectedDate ||
       selectedHour === null ||
       !want
@@ -236,7 +330,10 @@ function ItineraryPage() {
     }
 
     const usedIds = new Set(
-      results.map((e) => e.experienceId)
+      plan.stops.map(
+        (stop) =>
+          stop.experience.experienceId
+      )
     );
 
     const answers: ItineraryAnswers = {
@@ -246,34 +343,84 @@ function ItineraryPage() {
       transport: transport ?? "walking",
     };
 
-    const replacement = buildItinerary({
-      profile: {
-        ...profile,
-        visitedExperiences: [
-          ...profile.visitedExperiences,
-          ...Array.from(usedIds),
-        ],
-      },
-      answers,
-    })[0];
+    const replacementPlan =
+      buildItineraryPlan(
+        {
+          profile,
+          answers,
+        },
+        {
+          forecast: plan.forecast,
+          excludedExperienceIds:
+            Array.from(usedIds),
+          action: "replaced",
+        }
+      );
+
+    const replacement =
+      replacementPlan?.stops[0];
 
     if (!replacement) return;
 
-    setResults((current) => {
-      if (!current) return current;
-      const next = [...current];
-      next[index] = replacement;
-      return next;
-    });
-  }
+    const nextExperiences =
+      plan.stops.map((stop, stopIndex) =>
+        stopIndex === index
+          ? replacement.experience
+          : stop.experience
+      );
 
-  function scheduleTimeFor(index: number): string {
-    if (selectedHour === null) return "";
-    const hour =
-      selectedHour + Math.round(index * 1.5);
-    return formatHour(
-      hour > 23 ? hour - 24 : hour
+    const rebuiltPlan =
+      buildItineraryPlan(
+        {
+          profile,
+          answers,
+        },
+        {
+          forecast: plan.forecast,
+          experiences: nextExperiences,
+        }
+      );
+
+    if (
+      !rebuiltPlan ||
+      !rebuiltPlan.stops.some(
+        (stop) =>
+          stop.experience.experienceId ===
+          replacement.experience.experienceId
+      )
+    ) {
+      return;
+    }
+
+    const mergedExclusions = new Map(
+      [
+        ...plan.exclusions,
+        ...rebuiltPlan.exclusions,
+      ].map((item) => [
+        item.experienceId,
+        item,
+      ])
     );
+
+    setPlan({
+      ...rebuiltPlan,
+      exclusions: Array.from(
+        mergedExclusions.values()
+      ),
+      stops: rebuiltPlan.stops.map(
+        (stop) =>
+          stop.experience.experienceId ===
+          replacement.experience.experienceId
+            ? {
+                ...stop,
+                explanation: {
+                  ...stop.explanation,
+                  action: "replaced",
+                },
+              }
+            : stop
+      ),
+    });
   }
 
   return (
@@ -370,6 +517,15 @@ function ItineraryPage() {
             {tx("Itinerario")}
           </h1>
         </div>
+
+        <WeeklyForecast
+          forecast={forecast}
+          loading={forecastLoading}
+          hasError={forecastError}
+          selectedDate={selectedDate}
+          onSelect={handleSelectForecastDate}
+          onRetry={handleRetryForecast}
+        />
 
         {/* CALENDARIO */}
         <section
@@ -492,6 +648,26 @@ function ItineraryPage() {
           </div>
         </section>
 
+        {selectedDate &&
+          !forecastLoading &&
+          !selectedForecast && (
+            <p
+              role="status"
+              style={{
+                margin:
+                  "-6px 2px 16px",
+                color:
+                  "rgba(255,255,255,0.62)",
+                fontSize: "11px",
+                lineHeight: 1.45,
+              }}
+            >
+              {tx(
+                "Esa fecha está fuera del pronóstico disponible. Hospes aplicará el filtro conservador y no asumirá buen clima."
+              )}
+            </p>
+          )}
+
         {/* HORA */}
         {selectedDate && (
           <section
@@ -539,7 +715,7 @@ function ItineraryPage() {
                   }
                   onClick={() => {
                     setSelectedHour(hour);
-                    setResults(null);
+                    setPlan(null);
                   }}
                 />
               ))}
@@ -578,9 +754,10 @@ function ItineraryPage() {
                     selected={
                       want === option.value
                     }
-                    onClick={() =>
-                      setWant(option.value)
-                    }
+                    onClick={() => {
+                      setWant(option.value);
+                      setPlan(null);
+                    }}
                   />
                 ))}
               </div>
@@ -616,11 +793,12 @@ function ItineraryPage() {
                         transport ===
                         option.value
                       }
-                      onClick={() =>
+                      onClick={() => {
                         setTransport(
                           option.value
-                        )
-                      }
+                        );
+                        setPlan(null);
+                      }}
                     />
                   )
                 )}
@@ -667,110 +845,15 @@ function ItineraryPage() {
           {tx("Hospes, arma mi plan")}
         </button>
 
-        {/* RESULTADO */}
-        {results && results.length > 0 && (
-          <section
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            {results.map((experience, index) => (
-              <article
-                key={experience.experienceId}
-                style={{
-                  borderRadius: "18px",
-                  padding: "14px",
-                  background:
-                    "rgba(255,255,255,0.03)",
-                  border:
-                    "1px solid rgba(255,255,255,0.06)",
-                  display: "flex",
-                  justifyContent:
-                    "space-between",
-                  alignItems: "center",
-                  gap: "10px",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <p
-                    style={{
-                      margin: "0 0 3px",
-                      color: "#39E7FF",
-                      fontSize: "11px",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {scheduleTimeFor(index)}
-                  </p>
-                  <strong
-                    style={{
-                      display: "block",
-                      color: "#FFFFFF",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {experience.title}
-                  </strong>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "6px",
-                    flexShrink: 0,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate(
-                        `/expedition/${experience.slug}`
-                      )
-                    }
-                    style={{
-                      minHeight: "36px",
-                      padding: "0 12px",
-                      border: "none",
-                      borderRadius: "10px",
-                      background:
-                        "linear-gradient(135deg, #FF00C8, #B500FF)",
-                      color: "#FFFFFF",
-                      fontSize: "11px",
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {tx("Iniciar")}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleReplace(index)
-                    }
-                    style={{
-                      minHeight: "36px",
-                      padding: "0 12px",
-                      borderRadius: "10px",
-                      border:
-                        "1px solid rgba(255,255,255,0.12)",
-                      background:
-                        "rgba(255,255,255,0.05)",
-                      color: "#FFFFFF",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {tx("Reemplazar")}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </section>
+        {/* RESULTADO EXPLICABLE */}
+        {plan && (
+          <ItineraryPlanResult
+            plan={plan}
+            onStart={(slug) =>
+              navigate(`/expedition/${slug}`)
+            }
+            onReplace={handleReplace}
+          />
         )}
 
         {/* CTA HOSPES */}
