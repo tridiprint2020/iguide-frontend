@@ -28,6 +28,24 @@ export interface WeatherStatus {
   windSpeedKmh?: number;
 }
 
+export interface WeatherForecastDay {
+  date: string;
+  city: string;
+  condition: WeatherStatus["condition"];
+  temperatureMin: number;
+  temperatureMax: number;
+  precipitationProbability: number;
+  windSpeedKmh: number;
+  isHighMountainSafe: boolean;
+}
+
+export interface WeatherForecast {
+  city: string;
+  timezone: string;
+  fetchedAt: number;
+  days: WeatherForecastDay[];
+}
+
 export interface WeatherVisual {
   icon: string;
   label: string;

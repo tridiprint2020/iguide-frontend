@@ -1,4 +1,8 @@
-import type { WeatherStatus } from "./weatherEngine";
+import type {
+  WeatherForecast,
+  WeatherForecastDay,
+  WeatherStatus,
+} from "./weatherEngine";
 
 type OpenMeteoCurrent = {
   time: string;
@@ -27,6 +31,17 @@ type OpenMeteoResponse = {
     time: string[];
     precipitation_probability: number[];
   };
+
+  daily?: {
+    time: string[];
+    weather_code: number[];
+    temperature_2m_min: number[];
+    temperature_2m_max: number[];
+    precipitation_probability_max: number[];
+    wind_speed_10m_max: number[];
+  };
+
+  timezone?: string;
 };
 
 function getUpcomingRainProbability(
@@ -60,6 +75,24 @@ const HUANCAYO_COORDINATES = {
   latitude: -12.06513,
   longitude: -75.20486,
 };
+
+const OPEN_METEO_FORECAST_URL =
+  "https://api.open-meteo.com/v1/forecast";
+
+const FORECAST_DAYS = 7;
+
+const FORECAST_CACHE_TTL_MS =
+  3 * 60 * 60 * 1000;
+
+let forecastCache:
+  | {
+      expiresAt: number;
+      value: WeatherForecast;
+    }
+  | null = null;
+
+let forecastRequest:
+  Promise<WeatherForecast> | null = null;
 
 function mapWeatherCode(
   code: number
@@ -114,6 +147,227 @@ function mapWeatherCode(
   return "cloudy";
 }
 
+function getRequiredDailyValue(
+  values: number[] | undefined,
+  index: number,
+  field: string
+): number {
+  const value = values?.[index];
+
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value)
+  ) {
+    throw new Error(
+      `Open-Meteo no devolvió ${field} para el día solicitado.`
+    );
+  }
+
+  return value;
+}
+
+function mapDailyForecast(
+  data: OpenMeteoResponse,
+  fetchedAt: number
+): WeatherForecast {
+  const daily = data.daily;
+  const dates = daily?.time ?? [];
+
+  if (!daily || dates.length === 0) {
+    throw new Error(
+      "Open-Meteo no devolvió el pronóstico diario."
+    );
+  }
+
+  const days =
+    dates
+      .slice(0, FORECAST_DAYS)
+      .map(
+        (
+          date,
+          index
+        ): WeatherForecastDay => {
+          const weatherCode =
+            getRequiredDailyValue(
+              daily.weather_code,
+              index,
+              "weather_code"
+            );
+
+          const temperatureMin =
+            getRequiredDailyValue(
+              daily.temperature_2m_min,
+              index,
+              "temperature_2m_min"
+            );
+
+          const temperatureMax =
+            getRequiredDailyValue(
+              daily.temperature_2m_max,
+              index,
+              "temperature_2m_max"
+            );
+
+          const precipitationProbability =
+            getRequiredDailyValue(
+              daily.precipitation_probability_max,
+              index,
+              "precipitation_probability_max"
+            );
+
+          const windSpeedKmh =
+            getRequiredDailyValue(
+              daily.wind_speed_10m_max,
+              index,
+              "wind_speed_10m_max"
+            );
+
+          const condition =
+            mapWeatherCode(weatherCode);
+
+          const isHighMountainSafe =
+            (condition === "sunny" ||
+              condition === "cloudy") &&
+            precipitationProbability < 40 &&
+            windSpeedKmh < 35;
+
+          return {
+            date,
+            city: "Huancayo",
+            condition,
+            temperatureMin:
+              Math.round(temperatureMin),
+            temperatureMax:
+              Math.round(temperatureMax),
+            precipitationProbability:
+              Math.round(
+                precipitationProbability
+              ),
+            windSpeedKmh:
+              Math.round(windSpeedKmh),
+            isHighMountainSafe,
+          };
+        }
+      );
+
+  return {
+    city: "Huancayo",
+    timezone:
+      data.timezone ?? "America/Lima",
+    fetchedAt,
+    days,
+  };
+}
+
+async function requestSevenDayForecast(): Promise<WeatherForecast> {
+  const parameters =
+    new URLSearchParams({
+      latitude: String(
+        HUANCAYO_COORDINATES.latitude
+      ),
+
+      longitude: String(
+        HUANCAYO_COORDINATES.longitude
+      ),
+
+      daily: [
+        "weather_code",
+        "temperature_2m_min",
+        "temperature_2m_max",
+        "precipitation_probability_max",
+        "wind_speed_10m_max",
+      ].join(","),
+
+      forecast_days: String(
+        FORECAST_DAYS
+      ),
+
+      timezone:
+        "America/Lima",
+
+      wind_speed_unit:
+        "kmh",
+    });
+
+  const response =
+    await fetch(
+      `${OPEN_METEO_FORECAST_URL}?${parameters.toString()}`
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `Open-Meteo respondió con estado ${response.status}.`
+    );
+  }
+
+  const data =
+    (await response.json()) as OpenMeteoResponse;
+
+  return mapDailyForecast(
+    data,
+    Date.now()
+  );
+}
+
+export async function fetchSevenDayForecast(
+  options?: {
+    forceRefresh?: boolean;
+  }
+): Promise<WeatherForecast> {
+  const now = Date.now();
+
+  if (
+    !options?.forceRefresh &&
+    forecastCache &&
+    forecastCache.expiresAt > now
+  ) {
+    return forecastCache.value;
+  }
+
+  if (
+    !options?.forceRefresh &&
+    forecastRequest
+  ) {
+    return forecastRequest;
+  }
+
+  const request =
+    requestSevenDayForecast()
+      .then((forecast) => {
+        forecastCache = {
+          value: forecast,
+          expiresAt:
+            forecast.fetchedAt +
+            FORECAST_CACHE_TTL_MS,
+        };
+
+        return forecast;
+      })
+      .finally(() => {
+        if (forecastRequest === request) {
+          forecastRequest = null;
+        }
+      });
+
+  forecastRequest = request;
+
+  return request;
+}
+
+export async function getForecastForDate(
+  date: string
+): Promise<WeatherForecastDay | null> {
+  const forecast =
+    await fetchSevenDayForecast();
+
+  return (
+    forecast.days.find(
+      (day) =>
+        day.date === date
+    ) ?? null
+  );
+}
+
 export async function fetchCurrentWeather(): Promise<WeatherStatus> {
   const parameters =
     new URLSearchParams({
@@ -144,7 +398,7 @@ export async function fetchCurrentWeather(): Promise<WeatherStatus> {
 
   const response =
     await fetch(
-      `https://api.open-meteo.com/v1/forecast?${parameters.toString()}`
+      `${OPEN_METEO_FORECAST_URL}?${parameters.toString()}`
     );
 
   if (!response.ok) {
