@@ -118,14 +118,19 @@ function getHospesPlanMessage(
     );
   }
 
-  const wetForecast =
-    plan.forecast.condition === "rain" ||
-    plan.forecast.condition === "drizzle" ||
-    plan.forecast.condition === "snow" ||
-    plan.forecast
-      .precipitationProbability >= 40;
+  const hasIndoorPriority =
+    plan.stops.some(
+      (stop) =>
+        stop.explanation.reasonCode ===
+        "indoor-priority"
+    ) ||
+    plan.exclusions.some(
+      (item) =>
+        item.explanation.reasonCode ===
+        "weather-wet-risk"
+    );
 
-  if (wetForecast) {
+  if (hasIndoorPriority) {
     return tx(
       "He priorizado lugares bajo techo por el pronóstico de lluvia y mantuve visibles las opciones descartadas."
     );

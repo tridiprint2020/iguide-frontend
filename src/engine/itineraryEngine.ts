@@ -202,6 +202,22 @@ function createSelectedDate(
   return result;
 }
 
+function createDateAtMinute(
+  reference: Date,
+  minuteOfDay: number
+): Date {
+  const result = new Date(reference);
+
+  result.setHours(
+    0,
+    minuteOfDay,
+    0,
+    0
+  );
+
+  return result;
+}
+
 function forecastToWeatherStatus(
   forecast: WeatherForecastDay | null
 ): WeatherStatus | null {
@@ -647,6 +663,42 @@ export function buildItineraryPlan(
                 0,
                 DAY_END_MINUTES - cursor
               ),
+          }
+        )
+      );
+      continue;
+    }
+
+    /*
+     * La seguridad también se evalúa durante el último minuto de
+     * la parada. Así una actividad diurna no puede atravesar la
+     * noche solo porque comenzó antes de las 18:00.
+     */
+    const endSafetyReason =
+      getExperienceSafetyReason(
+        experience,
+        weather,
+        createDateAtMinute(
+          selectedDate,
+          Math.max(
+            visitStart,
+            visitEnd - 1
+          )
+        )
+      );
+
+    if (
+      endSafetyReason &&
+      endSafetyReason !== "inactive"
+    ) {
+      exclusions.push(
+        createExclusion(
+          experience,
+          safetyReasonToItineraryReason(
+            endSafetyReason
+          ),
+          {
+            endsAt: visitEnd,
           }
         )
       );
