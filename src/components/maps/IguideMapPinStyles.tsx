@@ -25,7 +25,7 @@ function IguideMapPinStyles() {
           border-radius: 50%;
           background: color-mix(
             in srgb,
-            var(--pin-color) 32%,
+            var(--pin-halo-color) 32%,
             transparent
           );
           filter: blur(5px);
@@ -106,7 +106,7 @@ function IguideMapPinStyles() {
           z-index: 0;
           border: 1px solid color-mix(
             in srgb,
-            var(--pin-color) 75%,
+            var(--pin-halo-color) 75%,
             transparent
           );
           border-radius: 50%;
@@ -121,21 +121,6 @@ function IguideMapPinStyles() {
         .iguide-neon-pin__icon {
           width: 86%;
           height: 86%;
-        }
-
-        .iguide-neon-pin--catalog
-        .iguide-neon-pin__halo {
-          background: rgba(0,230,255,0.24);
-        }
-
-        .iguide-neon-pin--mission
-        .iguide-neon-pin__halo {
-          background: rgba(0,230,255,0.32);
-        }
-
-        .iguide-neon-pin--abort
-        .iguide-neon-pin__halo {
-          background: rgba(255,138,0,0.26);
         }
 
         .iguide-neon-pin--visited
