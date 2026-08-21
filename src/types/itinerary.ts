@@ -81,6 +81,45 @@ export interface ItineraryPlan {
   exclusions: ItineraryExclusion[];
 }
 
+export interface ItineraryPlanPreferences {
+  priority: string;
+  transport: ItineraryTransport;
+}
+
+export interface ItineraryPlanSnapshotStop {
+  experienceId: string;
+  startMinutes: number;
+  endMinutes: number;
+  travelMinutes: number;
+  visitMinutes: number;
+  explanation: ItineraryDecision;
+}
+
+/**
+ * Contrato portable del itinerario.
+ *
+ * No guarda perfil, nombre, GPS ni objetos completos del catálogo.
+ * Las experiencias se resuelven por ID al restaurar el plan y el
+ * pronóstico queda congelado tal como fue usado para recomendarlo.
+ */
+export interface ItineraryPlanSnapshot {
+  schemaVersion: 1;
+  selectedDate: string;
+  selectedHour: number;
+  availableMinutes: number;
+  totalDurationMinutes: number;
+  preferences: ItineraryPlanPreferences;
+  forecast: ItineraryWeatherSnapshot | null;
+  stops: ItineraryPlanSnapshotStop[];
+  exclusions: ItineraryExclusion[];
+}
+
+export interface SavedItineraryPlan {
+  id: string;
+  savedAt: number;
+  snapshot: ItineraryPlanSnapshot;
+}
+
 /**
  * Reemplaza el viejo flujo de varias preguntas (duration +
  * timeOfDay) por un día y una hora reales elegidos en el
