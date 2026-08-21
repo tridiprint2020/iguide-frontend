@@ -4,6 +4,23 @@
  * allowing the whole interface to share one central dictionary.
  */
 const en: Record<string, string> = {
+  "Realidad aumentada": "Augmented reality",
+  "Cámara de realidad aumentada": "Augmented reality camera",
+  "Pines tridimensionales I.GUIDE": "I.GUIDE three-dimensional pins",
+  "{{count}} lugares en 600 m": "{{count}} places within 600 m",
+  "Pines urbanos de 3 metros": "Three-meter urban pins",
+  "Explora Huancayo en realidad aumentada": "Explore Huancayo in augmented reality",
+  "I.GUIDE colocará pines 3D de tres metros hacia los lugares del catálogo activo. La cámara no se graba.": "I.GUIDE will place three-meter 3D pins toward places in the active catalog. The camera is not recorded.",
+  "Preparando cámara y sensores…": "Preparing camera and sensors…",
+  "Activar vista AR": "Activate AR view",
+  "Requiere cámara, ubicación y orientación.": "Requires camera, location, and orientation.",
+  "Brújula aproximada · gira el teléfono para calibrar": "Approximate compass · rotate your phone to calibrate",
+  "Abrir misión": "Open mission",
+  "Detente para mirar la pantalla. Los pines orientan; la llegada se certifica por GPS.": "Stop before looking at the screen. Pins provide direction; arrival is certified by GPS.",
+  "La vista AR necesita una conexión HTTPS segura.": "The AR view needs a secure HTTPS connection.",
+  "I.GUIDE necesita permiso de movimiento y orientación para colocar los pines.": "I.GUIDE needs motion and orientation permission to place the pins.",
+  "Tu dispositivo no permite abrir la cámara AR.": "Your device cannot open the AR camera.",
+  "No se pudo iniciar la vista AR. Revisa los permisos de cámara, ubicación y movimiento.": "The AR view couldn't start. Check camera, location, and motion permissions.",
   "Hospes · brújula de I.GUIDE": "Hospes · I.GUIDE compass",
   "Sonidos y vibración": "Sounds and vibration",
   "Respuesta sutil al iniciar, guardar una foto y llegar.": "Subtle feedback when starting, saving a photo and arriving.",

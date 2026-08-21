@@ -4,6 +4,7 @@ import {
   House,
   Map,
   Route as RouteIcon,
+  ScanLine,
   UserRound,
 } from "lucide-react";
 
@@ -50,6 +51,12 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Binoculars,
     label: "Explorar",
     tone: "cyan",
+  },
+  {
+    to: "/ar",
+    icon: ScanLine,
+    label: "Realidad aumentada",
+    tone: "magenta",
   },
   {
     to: "/mapa",
