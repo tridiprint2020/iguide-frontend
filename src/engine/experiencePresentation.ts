@@ -4,9 +4,10 @@ import {
 } from "../i18n";
 
 import type {
+  Experience,
   ListingStatus,
   PlaceCategory,
-} from "../types/experience/experience";
+} from "../types/experience";
 
 const PLACE_CATEGORY_LABELS: Record<
   PlaceCategory,
@@ -72,13 +73,41 @@ export function getMemoryCardDescriptor(
 }
 
 /**
- * Puntuación oficial I.GUIDE (escala 1.0–10.0, un decimal).
- * Sin dato o fuera de escala: "Sin calificación" / "Not rated".
- * Nunca muestra 0.0, nunca inventa ni convierte valores.
+ * Presentación central de la calificación pública.
+ *
+ * Los hoteles usan únicamente su clasificación oficial verificada. Si no
+ * existe, la línea completa se omite. El resto conserva el Índice I.GUIDE
+ * (escala 1.0–10.0) y el estado explícito "Sin calificación".
  */
 export function getListingRatingLabel(
-  rating?: number
-): string {
+  experience: Experience
+): string | null {
+  const placeCategory =
+    experience.placeCategory ??
+    experience.type;
+
+  if (placeCategory === "hotel") {
+    const officialStars =
+      experience.type === "hotel"
+        ? experience.officialStars
+        : undefined;
+
+    if (
+      typeof officialStars !== "number" ||
+      !Number.isInteger(officialStars) ||
+      officialStars < 1 ||
+      officialStars > 5
+    ) {
+      return null;
+    }
+
+    return tx("Clasificación oficial: {{stars}}", {
+      stars: "★".repeat(officialStars),
+    });
+  }
+
+  const { rating } = experience;
+
   if (
     typeof rating !== "number" ||
     !Number.isFinite(rating) ||

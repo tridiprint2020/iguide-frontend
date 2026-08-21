@@ -140,6 +140,7 @@ const en: Record<string, string> = {
   "Arte y experiencias": "Art and experiences",
   "Puntuación I.GUIDE: {{value}}": "I.GUIDE score: {{value}}",
   "Sin calificación": "Not rated",
+  "Clasificación oficial: {{stars}}": "Official classification: {{stars}}",
   "Hotel aliado del piloto I.GUIDE en Huancayo.":
     "Hotel participating as an I.GUIDE pilot partner in Huancayo.",
   "Hotel con un punto de acceso I.GUIDE en Huancayo.":

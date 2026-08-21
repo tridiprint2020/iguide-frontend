@@ -73,6 +73,9 @@ function ExperienceMapCard({
       ? experience.openingHours
       : null;
 
+  const ratingLabel =
+    getListingRatingLabel(experience);
+
   return (
     <article
       style={{
@@ -204,22 +207,22 @@ function ExperienceMapCard({
               {experience.city}
             </span>
 
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "3px",
-              }}
-            >
-              <Star
-                size={11}
-                color="#FF3DE8"
-                fill="#FF3DE8"
-              />
-              {getListingRatingLabel(
-                experience.rating
-              )}
-            </span>
+            {ratingLabel && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "3px",
+                }}
+              >
+                <Star
+                  size={11}
+                  color="#FF3DE8"
+                  fill="#FF3DE8"
+                />
+                {ratingLabel}
+              </span>
+            )}
           </div>
         </div>
 

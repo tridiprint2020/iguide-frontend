@@ -119,6 +119,15 @@ export interface HotelExperience extends PublishableExperience {
   priceRange?: "budget" | "mid" | "premium";
   checkIn?: string;
   checkOut?: string;
+  /**
+   * Clasificación hotelera confirmada mediante una fuente oficial.
+   * Su ausencia significa que la interfaz no debe mostrar estrellas.
+   */
+  officialStars?: 1 | 2 | 3 | 4 | 5;
+  /**
+   * Campo heredado de los hoteles demo. No acredita una clasificación
+   * oficial y no debe utilizarse en la presentación pública.
+   */
   stars?: number;
   amenities?: string[];
   roomTypes?: string[];

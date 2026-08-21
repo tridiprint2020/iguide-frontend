@@ -116,6 +116,33 @@ type TypeFilter = {
   label: string;
 };
 
+function SearchResultRating({
+  experience,
+}: {
+  experience: Experience;
+}) {
+  const ratingLabel =
+    getListingRatingLabel(experience);
+
+  if (!ratingLabel) {
+    return null;
+  }
+
+  return (
+    <small
+      style={{
+        display: "block",
+        marginTop: "2px",
+        color: "#39E7FF",
+        fontSize: "10px",
+        fontWeight: 700,
+      }}
+    >
+      {ratingLabel}
+    </small>
+  );
+}
+
 const TYPE_FILTERS: TypeFilter[] = [
   {
     type: "expedition",
@@ -1219,19 +1246,9 @@ function MapPage() {
                         )}
                       </small>
 
-                      <small
-                        style={{
-                          display: "block",
-                          marginTop: "2px",
-                          color: "#39E7FF",
-                          fontSize: "10px",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {getListingRatingLabel(
-                          experience.rating
-                        )}
-                      </small>
+                      <SearchResultRating
+                        experience={experience}
+                      />
                     </span>
 
                     <span
