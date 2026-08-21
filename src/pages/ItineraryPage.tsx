@@ -16,8 +16,14 @@ import {
 } from "lucide-react";
 
 import {
+  ItineraryPlanActions,
+} from "../components/itinerary/ItineraryPlanActions";
+import {
   ItineraryPlanResult,
 } from "../components/itinerary/ItineraryPlanResult";
+import {
+  SavedItineraryPlans,
+} from "../components/itinerary/SavedItineraryPlans";
 import {
   WeeklyForecast,
 } from "../components/itinerary/WeeklyForecast";
@@ -31,6 +37,20 @@ import {
 } from "../engine/itineraryEngine";
 
 import {
+  createItinerarySnapshot,
+  deleteSavedItinerary,
+  hydrateItinerarySnapshot,
+  loadSavedItineraries,
+  saveItineraryPlan,
+} from "../engine/itineraryPersistenceEngine";
+
+import {
+  downloadItineraryCalendar,
+  readSharedItinerary,
+  shareItinerary,
+} from "../engine/itineraryShareEngine";
+
+import {
   fetchSevenDayForecast,
 } from "../engine/weatherService";
 
@@ -42,6 +62,7 @@ import type {
 import type {
   ItineraryAnswers,
   ItineraryPlan,
+  SavedItineraryPlan,
 } from "../types/itinerary";
 
 import logoIG from "../assets/branding/logo-dark-bg.png";
@@ -195,19 +216,52 @@ function ItineraryPage() {
       ? ["M", "T", "W", "T", "F", "S", "S"]
       : WEEKDAY_LABELS;
 
+  const initialShared = useMemo(() => {
+    const result =
+      readSharedItinerary();
+
+    if (result.status !== "ready") {
+      return {
+        status: result.status,
+        plan: null,
+        snapshot: null,
+      } as const;
+    }
+
+    return {
+      status: "ready",
+      plan: hydrateItinerarySnapshot(
+        result.snapshot
+      ),
+      snapshot: result.snapshot,
+    } as const;
+  }, []);
+
   const [selectedDate, setSelectedDate] =
-    useState<string | null>(null);
+    useState<string | null>(
+      initialShared.plan?.selectedDate ??
+        null
+    );
 
   const [selectedHour, setSelectedHour] =
-    useState<number | null>(null);
+    useState<number | null>(
+      initialShared.plan?.selectedHour ??
+        null
+    );
 
   const [want, setWant] =
-    useState<string | null>(null);
+    useState<string | null>(
+      initialShared.snapshot
+        ?.preferences.priority ?? null
+    );
 
   const [transport, setTransport] =
     useState<
       "walking" | "transport" | "taxi" | null
-    >(null);
+    >(
+      initialShared.snapshot
+        ?.preferences.transport ?? null
+    );
 
   const [forecast, setForecast] =
     useState<WeatherForecast | null>(null);
@@ -219,7 +273,36 @@ function ItineraryPage() {
     useState(false);
 
   const [plan, setPlan] =
-    useState<ItineraryPlan | null>(null);
+    useState<ItineraryPlan | null>(
+      initialShared.plan
+    );
+
+  const [savedPlans, setSavedPlans] =
+    useState<SavedItineraryPlan[]>(
+      () => loadSavedItineraries()
+    );
+
+  const [planActionBusy, setPlanActionBusy] =
+    useState(false);
+
+  const [planNotice, setPlanNotice] =
+    useState<string | null>(() => {
+      if (
+        initialShared.status === "invalid" ||
+        (initialShared.status === "ready" &&
+          !initialShared.plan)
+      ) {
+        return tx(
+          "El enlace compartido no es válido o sus lugares ya no están disponibles."
+        );
+      }
+
+      return initialShared.status === "ready"
+        ? tx(
+            "Plan compartido abierto con el pronóstico guardado por su creador."
+          )
+        : null;
+    });
 
   useEffect(() => {
     let active = true;
@@ -258,10 +341,26 @@ function ItineraryPage() {
     selectedHour !== null &&
     want !== null;
 
+  function getCurrentSnapshot() {
+    if (!plan || !want) {
+      return null;
+    }
+
+    return createItinerarySnapshot(
+      plan,
+      {
+        priority: want,
+        transport:
+          transport ?? "walking",
+      }
+    );
+  }
+
   function handleSelectDate(date: Date) {
     setSelectedDate(toIsoDate(date));
     setSelectedHour(null);
     setPlan(null);
+    setPlanNotice(null);
   }
 
   function handleSelectForecastDate(
@@ -270,6 +369,7 @@ function ItineraryPage() {
     setSelectedDate(day.date);
     setSelectedHour(null);
     setPlan(null);
+    setPlanNotice(null);
   }
 
   async function handleRetryForecast() {
@@ -317,6 +417,168 @@ function ItineraryPage() {
       );
 
     setPlan(itinerary);
+    setPlanNotice(null);
+  }
+
+  function handleSavePlan() {
+    const snapshot =
+      getCurrentSnapshot();
+
+    if (!plan || !want || !snapshot) {
+      return;
+    }
+
+    try {
+      saveItineraryPlan(
+        plan,
+        snapshot.preferences
+      );
+      setSavedPlans(
+        loadSavedItineraries()
+      );
+      setPlanNotice(
+        tx(
+          "Plan guardado en este celular."
+        )
+      );
+    } catch (error) {
+      console.error(
+        "No se pudo guardar el itinerario:",
+        error
+      );
+      setPlanNotice(
+        tx(
+          "No se pudo guardar el plan en este celular."
+        )
+      );
+    }
+  }
+
+  async function handleSharePlan() {
+    const snapshot =
+      getCurrentSnapshot();
+
+    if (!snapshot) return;
+
+    setPlanActionBusy(true);
+
+    try {
+      const result = await shareItinerary(
+        snapshot
+      );
+
+      if (result === "shared") {
+        setPlanNotice(
+          tx("Plan compartido.")
+        );
+      } else if (result === "copied") {
+        setPlanNotice(
+          tx(
+            "Enlace copiado. Ya puedes pegarlo en WhatsApp o Messenger."
+          )
+        );
+      }
+    } catch (error) {
+      console.error(
+        "No se pudo compartir el itinerario:",
+        error
+      );
+      setPlanNotice(
+        tx(
+          "No se pudo compartir el plan. Inténtalo nuevamente."
+        )
+      );
+    } finally {
+      setPlanActionBusy(false);
+    }
+  }
+
+  function handleAddToCalendar() {
+    const snapshot =
+      getCurrentSnapshot();
+
+    if (!snapshot) return;
+
+    try {
+      downloadItineraryCalendar(
+        snapshot
+      );
+      setPlanNotice(
+        tx(
+          "Calendario descargado con una alarma 30 minutos antes."
+        )
+      );
+    } catch (error) {
+      console.error(
+        "No se pudo crear el calendario:",
+        error
+      );
+      setPlanNotice(
+        tx(
+          "No se pudo preparar el calendario. Inténtalo nuevamente."
+        )
+      );
+    }
+  }
+
+  function handleOpenSavedPlan(
+    savedPlan: SavedItineraryPlan
+  ) {
+    const restored =
+      hydrateItinerarySnapshot(
+        savedPlan.snapshot
+      );
+
+    if (!restored) {
+      setPlanNotice(
+        tx(
+          "No se pudo abrir el plan porque sus lugares ya no están disponibles."
+        )
+      );
+      return;
+    }
+
+    setSelectedDate(
+      savedPlan.snapshot.selectedDate
+    );
+    setSelectedHour(
+      savedPlan.snapshot.selectedHour
+    );
+    setWant(
+      savedPlan.snapshot.preferences
+        .priority
+    );
+    setTransport(
+      savedPlan.snapshot.preferences
+        .transport
+    );
+    setPlan(restored);
+    setPlanNotice(
+      tx(
+        "Plan guardado abierto con su pronóstico original."
+      )
+    );
+  }
+
+  function handleDeleteSavedPlan(
+    savedPlan: SavedItineraryPlan
+  ) {
+    const confirmed = window.confirm(
+      tx(
+        "¿Eliminar este plan guardado de este celular?"
+      )
+    );
+
+    if (!confirmed) return;
+
+    setSavedPlans(
+      deleteSavedItinerary(
+        savedPlan.id
+      )
+    );
+    setPlanNotice(
+      tx("Plan eliminado.")
+    );
   }
 
   function handleReplace(index: number) {
@@ -527,6 +789,33 @@ function ItineraryPage() {
           onRetry={handleRetryForecast}
         />
 
+        {planNotice && (
+          <p
+            role="status"
+            style={{
+              margin: "-4px 0 14px",
+              padding: "10px 12px",
+              borderRadius: "13px",
+              background:
+                "rgba(57,231,255,0.07)",
+              border:
+                "1px solid rgba(57,231,255,0.16)",
+              color:
+                "rgba(255,255,255,0.78)",
+              fontSize: "11px",
+              lineHeight: 1.45,
+            }}
+          >
+            {planNotice}
+          </p>
+        )}
+
+        <SavedItineraryPlans
+          plans={savedPlans}
+          onOpen={handleOpenSavedPlan}
+          onDelete={handleDeleteSavedPlan}
+        />
+
         {/* CALENDARIO */}
         <section
           style={{
@@ -716,6 +1005,7 @@ function ItineraryPage() {
                   onClick={() => {
                     setSelectedHour(hour);
                     setPlan(null);
+                    setPlanNotice(null);
                   }}
                 />
               ))}
@@ -757,6 +1047,7 @@ function ItineraryPage() {
                     onClick={() => {
                       setWant(option.value);
                       setPlan(null);
+                      setPlanNotice(null);
                     }}
                   />
                 ))}
@@ -798,6 +1089,7 @@ function ItineraryPage() {
                           option.value
                         );
                         setPlan(null);
+                        setPlanNotice(null);
                       }}
                     />
                   )
@@ -847,13 +1139,26 @@ function ItineraryPage() {
 
         {/* RESULTADO EXPLICABLE */}
         {plan && (
-          <ItineraryPlanResult
-            plan={plan}
-            onStart={(slug) =>
-              navigate(`/expedition/${slug}`)
-            }
-            onReplace={handleReplace}
-          />
+          <>
+            <ItineraryPlanResult
+              plan={plan}
+              onStart={(slug) =>
+                navigate(`/expedition/${slug}`)
+              }
+              onReplace={handleReplace}
+            />
+
+            {plan.stops.length > 0 && (
+              <ItineraryPlanActions
+                busy={planActionBusy}
+                onSave={handleSavePlan}
+                onShare={handleSharePlan}
+                onAddToCalendar={
+                  handleAddToCalendar
+                }
+              />
+            )}
+          </>
         )}
 
         {/* CTA HOSPES */}
