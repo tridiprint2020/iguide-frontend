@@ -39,7 +39,7 @@ import {
 import {
   createItinerarySnapshot,
   deleteSavedItinerary,
-  hydrateItinerarySnapshot,
+  hydrateItinerarySnapshotWithReport,
   loadSavedItineraries,
   saveItineraryPlan,
 } from "../engine/itineraryPersistenceEngine";
@@ -159,6 +159,27 @@ function buildMonthGrid(
   return cells;
 }
 
+function getOmittedStopsNotice(
+  omittedStopCount: number
+): string | null {
+  if (omittedStopCount === 1) {
+    return tx(
+      "Se omitió 1 parada que ya no está disponible."
+    );
+  }
+
+  if (omittedStopCount > 1) {
+    return tx(
+      "Se omitieron {{count}} paradas que ya no están disponibles.",
+      {
+        count: omittedStopCount,
+      }
+    );
+  }
+
+  return null;
+}
+
 function Chip({
   label,
   selected,
@@ -225,15 +246,21 @@ function ItineraryPage() {
         status: result.status,
         plan: null,
         snapshot: null,
+        omittedStopCount: 0,
       } as const;
     }
 
+    const hydration =
+      hydrateItinerarySnapshotWithReport(
+        result.snapshot
+      );
+
     return {
       status: "ready",
-      plan: hydrateItinerarySnapshot(
-        result.snapshot
-      ),
+      plan: hydration.plan,
       snapshot: result.snapshot,
+      omittedStopCount:
+        hydration.omittedStopCount,
     } as const;
   }, []);
 
@@ -297,11 +324,21 @@ function ItineraryPage() {
         );
       }
 
-      return initialShared.status === "ready"
-        ? tx(
-            "Plan compartido abierto con el pronóstico guardado por su creador."
-          )
-        : null;
+      if (initialShared.status !== "ready") {
+        return null;
+      }
+
+      const baseNotice = tx(
+        "Plan compartido abierto con el pronóstico guardado por su creador."
+      );
+      const omittedNotice =
+        getOmittedStopsNotice(
+          initialShared.omittedStopCount
+        );
+
+      return omittedNotice
+        ? `${baseNotice} ${omittedNotice}`
+        : baseNotice;
     });
 
   useEffect(() => {
@@ -524,12 +561,12 @@ function ItineraryPage() {
   function handleOpenSavedPlan(
     savedPlan: SavedItineraryPlan
   ) {
-    const restored =
-      hydrateItinerarySnapshot(
+    const hydration =
+      hydrateItinerarySnapshotWithReport(
         savedPlan.snapshot
       );
 
-    if (!restored) {
+    if (!hydration.plan) {
       setPlanNotice(
         tx(
           "No se pudo abrir el plan porque sus lugares ya no están disponibles."
@@ -552,11 +589,20 @@ function ItineraryPage() {
       savedPlan.snapshot.preferences
         .transport
     );
-    setPlan(restored);
+    setPlan(hydration.plan);
+
+    const baseNotice = tx(
+      "Plan guardado abierto con su pronóstico original."
+    );
+    const omittedNotice =
+      getOmittedStopsNotice(
+        hydration.omittedStopCount
+      );
+
     setPlanNotice(
-      tx(
-        "Plan guardado abierto con su pronóstico original."
-      )
+      omittedNotice
+        ? `${baseNotice} ${omittedNotice}`
+        : baseNotice
     );
   }
 

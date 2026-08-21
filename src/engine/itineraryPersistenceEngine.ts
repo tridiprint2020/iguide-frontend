@@ -408,15 +408,25 @@ export function createItinerarySnapshot(
   };
 }
 
-export function hydrateItinerarySnapshot(
+export type ItineraryHydrationResult = {
+  plan: ItineraryPlan | null;
+  omittedStopCount: number;
+};
+
+export function hydrateItinerarySnapshotWithReport(
   snapshot: ItineraryPlanSnapshot,
   experiences: Experience[] = catalog
-): ItineraryPlan | null {
+): ItineraryHydrationResult {
   const experienceById = new Map(
-    experiences.map((experience) => [
-      experience.experienceId,
-      experience,
-    ])
+    experiences
+      .filter(
+        (experience) =>
+          experience.isActive
+      )
+      .map((experience) => [
+        experience.experienceId,
+        experience,
+      ])
   );
 
   const stops = snapshot.stops
@@ -458,43 +468,67 @@ export function hydrateItinerarySnapshot(
       > => stop !== null
     );
 
+  const omittedStopCount =
+    snapshot.stops.length -
+    stops.length;
+
   if (
     snapshot.stops.length > 0 &&
     stops.length === 0
   ) {
-    return null;
+    return {
+      plan: null,
+      omittedStopCount,
+    };
   }
 
   return {
-    selectedDate:
-      snapshot.selectedDate,
-    selectedHour:
-      snapshot.selectedHour,
-    availableMinutes:
-      snapshot.availableMinutes,
-    totalDurationMinutes:
-      snapshot.totalDurationMinutes,
-    forecast: snapshot.forecast
-      ? { ...snapshot.forecast }
-      : null,
-    stops,
-    exclusions:
-      snapshot.exclusions.map(
-        (exclusion) => ({
-          ...exclusion,
-          explanation: {
-            ...exclusion.explanation,
-            ...(exclusion.explanation.params
-              ? {
-                  params: {
-                    ...exclusion.explanation.params,
-                  },
-                }
-              : {}),
-          },
-        })
-      ),
+    plan: {
+      selectedDate:
+        snapshot.selectedDate,
+      selectedHour:
+        snapshot.selectedHour,
+      availableMinutes:
+        snapshot.availableMinutes,
+      totalDurationMinutes:
+        snapshot.totalDurationMinutes,
+      forecast: snapshot.forecast
+        ? { ...snapshot.forecast }
+        : null,
+      stops,
+      exclusions:
+        snapshot.exclusions.map(
+          (exclusion) => ({
+            ...exclusion,
+            explanation: {
+              ...exclusion.explanation,
+              ...(exclusion.explanation.params
+                ? {
+                    params: {
+                      ...exclusion.explanation.params,
+                    },
+                  }
+                : {}),
+            },
+          })
+        ),
+    },
+    omittedStopCount,
   };
+}
+
+/**
+ * Contrato compatible para consumidores que solo necesitan el plan.
+ * La UI usa la variante con reporte cuando debe explicar omisiones.
+ */
+export function hydrateItinerarySnapshot(
+  snapshot: ItineraryPlanSnapshot,
+  experiences: Experience[] = catalog
+): ItineraryPlan | null {
+  return hydrateItinerarySnapshotWithReport(
+    snapshot,
+    experiences
+  ).plan;
 }
 
 function getSnapshotIdentity(

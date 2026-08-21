@@ -724,6 +724,8 @@ const en: Record<string, string> = {
   "El enlace compartido no es válido o sus lugares ya no están disponibles.": "The shared link is invalid or its places are no longer available.",
   "Plan guardado abierto con su pronóstico original.": "Saved plan opened with its original forecast.",
   "No se pudo abrir el plan porque sus lugares ya no están disponibles.": "The plan couldn't be opened because its places are no longer available.",
+  "Se omitió 1 parada que ya no está disponible.": "1 stop that is no longer available was omitted.",
+  "Se omitieron {{count}} paradas que ya no están disponibles.": "{{count}} stops that are no longer available were omitted.",
   "¿Eliminar este plan guardado de este celular?": "Delete this saved plan from this device?",
   "Plan eliminado.": "Plan deleted.",
   "Mi itinerario I.GUIDE": "My I.GUIDE itinerary",
