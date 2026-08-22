@@ -10,6 +10,9 @@ import type {
 const EARTH_RADIUS_METERS =
   6_371_000;
 
+export const AR_MAXIMUM_DISTANCE_METERS =
+  150;
+
 function toRadians(
   degrees: number
 ): number {
@@ -137,7 +140,7 @@ export function getArGeoPlacements(
 ): ArGeoPlacement[] {
   const maximumDistanceMeters =
     options.maximumDistanceMeters ??
-    600;
+    AR_MAXIMUM_DISTANCE_METERS;
 
   return experiences
     .filter(

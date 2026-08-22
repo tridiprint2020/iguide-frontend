@@ -32,8 +32,13 @@ import {
 } from "../data/user";
 
 import {
+  AR_MAXIMUM_DISTANCE_METERS,
   getArGeoPlacements,
 } from "../engine/arGeoEngine";
+
+import {
+  AR_REQUIRED_ACCURACY_METERS,
+} from "../engine/arSensorEngine";
 
 import {
   getMemoryCardDescriptor,
@@ -118,7 +123,8 @@ function ARPage() {
             coordinates,
             headingDegrees,
             {
-              maximumDistanceMeters: 600,
+              maximumDistanceMeters:
+                AR_MAXIMUM_DISTANCE_METERS,
             }
           )
         : [],
@@ -333,14 +339,14 @@ function ARPage() {
           >
             {sessionReady
               ? tx(
-                  "{{count}} lugares en 600 m",
+                  "{{count}} lugares en 150 m",
                   {
                     count:
                       placements.length,
                   }
                 )
               : tx(
-                  "Pines urbanos de 3 metros"
+                  "Pines urbanos de 7 metros"
                 )}
           </span>
         </div>
@@ -460,7 +466,7 @@ function ARPage() {
               }}
             >
               {tx(
-                "I.GUIDE colocará pines 3D de tres metros hacia los lugares del catálogo activo. La cámara no se graba."
+                "I.GUIDE mostrará pines 3D de siete metros únicamente para lugares a 150 metros. La cámara no se graba."
               )}
             </p>
 
@@ -480,6 +486,32 @@ function ARPage() {
                 {errorMessage}
               </p>
             )}
+
+            {phase === "locating" &&
+              coordinates?.accuracyMeters &&
+              coordinates.accuracyMeters >
+                AR_REQUIRED_ACCURACY_METERS && (
+                <p
+                  role="status"
+                  style={{
+                    margin: "0 0 14px",
+                    color: "#FFBC72",
+                    fontSize: "11px",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {tx(
+                    "Precisión actual ±{{accuracy}} m. Esperando una lectura de {{required}} m o mejor para no colocar pines en ubicaciones falsas.",
+                    {
+                      accuracy: Math.round(
+                        coordinates.accuracyMeters
+                      ),
+                      required:
+                        AR_REQUIRED_ACCURACY_METERS,
+                    }
+                  )}
+                </p>
+              )}
 
             <button
               type="button"

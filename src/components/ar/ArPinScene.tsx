@@ -8,6 +8,7 @@ import * as THREE from "three";
 import {
   createArPinModel,
   disposeArPinModel,
+  AR_PIN_HEIGHT_METERS,
   updateArPinModel,
 } from "../../engine/arPinModelEngine";
 
@@ -41,7 +42,11 @@ type ArPinSceneProps = {
 
 type SceneModel = ArPinModel & {
   placement: ArGeoPlacement;
+  targetPosition: THREE.Vector3;
+  targetRotationY: number;
 };
+
+const POSITION_DAMPING = 0.08;
 
 function getWorldCoordinates(
   placement: ArGeoPlacement
@@ -218,6 +223,31 @@ export function ArPinScene({
 
       models.forEach(
         (model, experienceId) => {
+          model.group.position.x +=
+            (model.targetPosition.x -
+              model.group.position.x) *
+            POSITION_DAMPING;
+          model.group.position.z +=
+            (model.targetPosition.z -
+              model.group.position.z) *
+            POSITION_DAMPING;
+
+          const rotationDifference =
+            Math.atan2(
+              Math.sin(
+                model.targetRotationY -
+                  model.group.rotation.y
+              ),
+              Math.cos(
+                model.targetRotationY -
+                  model.group.rotation.y
+              )
+            );
+
+          model.group.rotation.y +=
+            rotationDifference *
+            POSITION_DAMPING;
+
           updateArPinModel(
             model,
             elapsed,
@@ -236,7 +266,8 @@ export function ArPinScene({
           labelAnchor.set(
             model.group.position.x,
             model.group.position.y +
-              3.34,
+              AR_PIN_HEIGHT_METERS +
+              0.34,
             model.group.position.z
           );
           labelAnchor.project(camera);
@@ -339,6 +370,7 @@ export function ArPinScene({
         );
 
       let model: SceneModel;
+      let modelWasCreated = false;
 
       if (
         previous &&
@@ -358,7 +390,11 @@ export function ArPinScene({
             state
           ),
           placement,
+          targetPosition:
+            new THREE.Vector3(),
+          targetRotationY: 0,
         };
+        modelWasCreated = true;
         scene.add(model.group);
         modelsRef.current.set(
           experienceId,
@@ -369,17 +405,27 @@ export function ArPinScene({
       const world =
         getWorldCoordinates(placement);
 
-      model.group.position.set(
+      model.targetPosition.set(
         world.x,
         0,
         world.z
       );
 
-      model.group.rotation.y =
+      model.targetRotationY =
         Math.atan2(
           -world.x,
           -world.z
         );
+
+      if (modelWasCreated) {
+        model.group.position.set(
+          world.x,
+          0,
+          world.z
+        );
+        model.group.rotation.y =
+          model.targetRotationY;
+      }
 
     });
   }, [markerStates, placements]);
