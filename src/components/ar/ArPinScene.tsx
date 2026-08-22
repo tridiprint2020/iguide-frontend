@@ -47,18 +47,30 @@ type SceneModel = ArPinModel & {
 };
 
 const POSITION_DAMPING = 0.08;
+const MISSION_BEACON_RENDER_DISTANCE_METERS =
+  72;
 
 function getWorldCoordinates(
-  placement: ArGeoPlacement
+  placement: ArGeoPlacement,
+  state: PlaceMarkerState
 ) {
   const angle =
     placement.relativeBearingDegrees *
     Math.PI / 180;
 
-  const distance = Math.max(
-    2.5,
-    placement.distanceMeters
-  );
+  const distance =
+    state === "mission"
+      ? Math.max(
+          2.5,
+          Math.min(
+            placement.distanceMeters,
+            MISSION_BEACON_RENDER_DISTANCE_METERS
+          )
+        )
+      : Math.max(
+          2.5,
+          placement.distanceMeters
+        );
 
   return {
     x: Math.sin(angle) * distance,
@@ -253,7 +265,9 @@ export function ArPinScene({
             elapsed,
             reducedMotion,
             selectedIdRef.current ===
-              experienceId
+              experienceId,
+            model.placement
+              .distanceMeters
           );
 
           const label =
@@ -403,7 +417,10 @@ export function ArPinScene({
       }
 
       const world =
-        getWorldCoordinates(placement);
+        getWorldCoordinates(
+          placement,
+          state
+        );
 
       model.targetPosition.set(
         world.x,

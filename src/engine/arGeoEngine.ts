@@ -136,6 +136,8 @@ export function getArGeoPlacements(
   headingDegrees: number,
   options: {
     maximumDistanceMeters?: number;
+    alwaysIncludeExperienceId?:
+      string | null;
   } = {}
 ): ArGeoPlacement[] {
   const maximumDistanceMeters =
@@ -179,10 +181,17 @@ export function getArGeoPlacements(
           ),
       };
     })
+    /*
+     * El destino activo puede orientar desde lejos, pero esta excepción
+     * es únicamente visual: nunca certifica una llegada.
+     */
     .filter(
       (placement) =>
         placement.distanceMeters <=
-        maximumDistanceMeters
+          maximumDistanceMeters ||
+        placement.experience
+          .experienceId ===
+          options.alwaysIncludeExperienceId
     )
     .sort(
       (first, second) =>

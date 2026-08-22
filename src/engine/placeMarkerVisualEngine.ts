@@ -49,7 +49,7 @@ const VISUALS: Record<
     haloColor: PLACE_MARKER_COLORS.cyan,
     symbolColor: PLACE_MARKER_COLORS.magenta,
     pulses: true,
-    bounces: true,
+    bounces: false,
   },
   start: {
     color: PLACE_MARKER_COLORS.magenta,

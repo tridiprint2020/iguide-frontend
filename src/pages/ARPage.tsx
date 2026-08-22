@@ -20,6 +20,10 @@ import {
 } from "react-router-dom";
 
 import {
+  ArMissionDirectionGuide,
+} from "../components/ar/ArMissionDirectionGuide";
+
+import {
   ArPinScene,
 } from "../components/ar/ArPinScene";
 
@@ -74,6 +78,9 @@ function isJourneyActive(
   );
 }
 
+const MISSION_DIRECTION_THRESHOLD_DEGREES =
+  24;
+
 function ARPage() {
   const navigate = useNavigate();
 
@@ -125,11 +132,49 @@ function ARPage() {
             {
               maximumDistanceMeters:
                 AR_MAXIMUM_DISTANCE_METERS,
+              alwaysIncludeExperienceId:
+                activeMissionId,
             }
           )
         : [],
-    [coordinates, headingDegrees]
+    [
+      activeMissionId,
+      coordinates,
+      headingDegrees,
+    ]
   );
+
+  const nearbyPlacementCount = useMemo(
+    () =>
+      placements.filter(
+        (placement) =>
+          placement.distanceMeters <=
+          AR_MAXIMUM_DISTANCE_METERS
+      ).length,
+    [placements]
+  );
+
+  const activeMissionPlacement =
+    activeMissionId
+      ? placements.find(
+          (placement) =>
+            placement.experience
+              .experienceId ===
+            activeMissionId
+        ) ?? null
+      : null;
+
+  const missionTurnDirection =
+    activeMissionPlacement &&
+    Math.abs(
+      activeMissionPlacement
+        .relativeBearingDegrees
+    ) > MISSION_DIRECTION_THRESHOLD_DEGREES
+      ? activeMissionPlacement
+          .relativeBearingDegrees < 0
+        ? "left"
+        : "right"
+      : null;
 
   const markerStates = useMemo(
     () =>
@@ -342,7 +387,7 @@ function ARPage() {
                   "{{count}} lugares en 150 m",
                   {
                     count:
-                      placements.length,
+                      nearbyPlacementCount,
                   }
                 )
               : tx(
@@ -466,7 +511,7 @@ function ARPage() {
               }}
             >
               {tx(
-                "I.GUIDE mostrará pines 3D de siete metros únicamente para lugares a 150 metros. La cámara no se graba."
+                "I.GUIDE mostrará pines 3D de siete metros para lugares a 150 metros. Si tienes una misión activa, su faro podrá verse desde más lejos. La cámara no se graba."
               )}
             </p>
 
@@ -593,6 +638,26 @@ function ARPage() {
               "Brújula aproximada · gira el teléfono para calibrar"
             )}
           </p>
+        )}
+
+      {sessionReady &&
+        activeMissionPlacement &&
+        missionTurnDirection && (
+          <ArMissionDirectionGuide
+            direction={
+              missionTurnDirection
+            }
+            distanceMeters={
+              activeMissionPlacement
+                .distanceMeters
+            }
+            onSelect={() =>
+              setSelectedExperienceId(
+                activeMissionPlacement
+                  .experience.experienceId
+              )
+            }
+          />
         )}
 
       {sessionReady &&
