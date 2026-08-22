@@ -1,18 +1,15 @@
 import L from "leaflet";
 
-export type IguidePinKind =
-  | "catalog"
-  | "visited"
-  | "mission"
-  | "start"
-  | "memory"
-  | "finish"
-  | "home"
-  | "abort";
+import {
+  getPlaceMarkerVisual,
+} from "../../engine/placeMarkerVisualEngine";
 
-const MAGENTA = "#FF00FF";
-const CYAN = "#00E6FF";
-const ORANGE = "#FF8A00";
+import type {
+  PlaceMarkerState,
+} from "../../engine/placeMarkerVisualEngine";
+
+export type IguidePinKind =
+  PlaceMarkerState;
 
 const pinCache =
   new Map<string, L.DivIcon>();
@@ -48,14 +45,15 @@ export function createIguidePin(
     kind === "memory";
   const isMission =
     kind === "mission";
-  const isVisited =
-    kind === "visited";
   const isStart =
     kind === "start";
   const isFinish =
     kind === "finish";
   const isHome =
     kind === "home";
+
+  const visual =
+    getPlaceMarkerVisual(kind);
 
   const size =
     isStart || isFinish
@@ -70,19 +68,10 @@ export function createIguidePin(
             ? 32
             : 40;
 
-  const color =
-    isAbort
-      ? ORANGE
-      : isMemory
-        ? CYAN
-      : isHome
-        ? CYAN
-      : MAGENTA;
+  const color = visual.color;
 
   const symbolColor =
-    isVisited
-      ? CYAN
-      : color;
+    visual.symbolColor;
 
   const safeTitle =
     escapeHtml(title);
@@ -190,7 +179,7 @@ export function createIguidePin(
     <div
       class="iguide-neon-pin iguide-neon-pin--${kind}"
       title="${safeTitle}"
-      style="--pin-color: ${color}; --pin-symbol-color: ${symbolColor}; --pin-size: ${size}px;"
+      style="--pin-color: ${color}; --pin-halo-color: ${visual.haloColor}; --pin-symbol-color: ${symbolColor}; --pin-size: ${size}px;"
     >
       <span class="iguide-neon-pin__halo"></span>
       <span class="iguide-neon-pin__icon">
