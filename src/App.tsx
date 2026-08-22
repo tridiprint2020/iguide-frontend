@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +24,10 @@ import NotFound from "./pages/NotFound";
 import {
   MainContainer,
 } from "./pages/MainContainer";
+
+const ARPage = lazy(
+  () => import("./pages/ARPage")
+);
 
 import {
   WalkingView,
@@ -156,6 +162,30 @@ function App() {
         <Route
           path="/mapa"
           element={<MapPage />}
+        />
+
+        <Route
+          path="/ar"
+          element={
+            <Suspense
+              fallback={
+                <div
+                  role="status"
+                  style={{
+                    minHeight: "100dvh",
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#05060B",
+                    color: "#FFFFFF",
+                  }}
+                >
+                  I.GUIDE AR…
+                </div>
+              }
+            >
+              <ARPage />
+            </Suspense>
+          }
         />
 
         {/* Compatibilidad con enlaces antiguos. */}
