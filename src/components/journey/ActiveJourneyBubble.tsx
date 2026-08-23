@@ -15,6 +15,9 @@ import {
   useJourney,
 } from "../../context/JourneyContext";
 import { tx } from "../../i18n";
+import {
+  Ar360Icon,
+} from "../ar/Ar360Icon";
 
 export default function ActiveJourneyBubble() {
   const navigate =
@@ -63,6 +66,10 @@ export default function ActiveJourneyBubble() {
     location.pathname === "/journey" ||
     location.pathname.startsWith("/journey/");
 
+  const isArScreen =
+    location.pathname === "/ar" ||
+    location.pathname.startsWith("/ar/");
+
   function handleContinueJourney() {
     setExpanded(false);
     navigate("/journey");
@@ -77,6 +84,11 @@ export default function ActiveJourneyBubble() {
     setExpanded(false);
     openCamera();
     navigate("/journey");
+  }
+
+  function handleOpenAr() {
+    setExpanded(false);
+    navigate("/ar");
   }
 
   function handleAbandon() {
@@ -246,6 +258,34 @@ export default function ActiveJourneyBubble() {
                 }}
               >
                 🧭 {tx("Volver al recorrido")}
+              </button>
+            )}
+
+            {!isArScreen && (
+              <button
+                type="button"
+                onClick={handleOpenAr}
+                style={{
+                  minHeight: "48px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "9px",
+                  border:
+                    "1px solid rgba(0,230,255,0.42)",
+                  borderRadius: "12px",
+                  background:
+                    "linear-gradient(145deg, rgba(0,230,255,0.15), rgba(10,11,22,0.92))",
+                  color: "#8AF4FF",
+                  fontWeight: 850,
+                  cursor: "pointer",
+                }}
+              >
+                <Ar360Icon
+                  size={34}
+                  tone="cyan"
+                />
+                {tx("Abrir AR 360°")}
               </button>
             )}
 
@@ -469,6 +509,39 @@ export default function ActiveJourneyBubble() {
           <Camera
             size={24}
             strokeWidth={2.1}
+          />
+        </button>
+      )}
+
+      {!expanded && !isArScreen && (
+        <button
+          type="button"
+          onClick={handleOpenAr}
+          aria-label={tx("Abrir AR 360° durante la misión")}
+          title={tx("Abrir AR 360°")}
+          style={{
+            position: "fixed",
+            right: "152px",
+            bottom: "91px",
+            zIndex: 10002,
+            width: "50px",
+            height: "50px",
+            display: "grid",
+            placeItems: "center",
+            borderRadius: "17px",
+            border:
+              "2px solid rgba(255,255,255,0.90)",
+            background:
+              "linear-gradient(145deg, rgba(0,230,255,0.22), rgba(11,12,25,0.98))",
+            color: "#00E6FF",
+            boxShadow:
+              "0 9px 24px rgba(0,230,255,0.30)",
+            cursor: "pointer",
+          }}
+        >
+          <Ar360Icon
+            size={38}
+            tone="cyan"
           />
         </button>
       )}

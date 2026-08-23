@@ -4,7 +4,6 @@ import {
   House,
   Map,
   Route as RouteIcon,
-  ScanLine,
   UserRound,
 } from "lucide-react";
 
@@ -17,6 +16,9 @@ import {
 } from "react-router-dom";
 
 import NeonIcon from "./ui/NeonIcon";
+import {
+  Ar360Icon,
+} from "./ar/Ar360Icon";
 
 import {
   tx,
@@ -32,7 +34,7 @@ import type {
 
 type NavigationItem = {
   to: string;
-  icon: LucideIcon;
+  icon: LucideIcon | "ar360";
   label: string;
   tone: NeonTone;
   end?: boolean;
@@ -54,9 +56,9 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     to: "/ar",
-    icon: ScanLine,
-    label: "Realidad aumentada",
-    tone: "magenta",
+    icon: "ar360",
+    label: "AR 360°",
+    tone: "cyan",
   },
   {
     to: "/mapa",
@@ -112,7 +114,6 @@ function Sidebar() {
       }}
     >
       {NAVIGATION_ITEMS.map((item) => {
-        const Icon = item.icon;
         const translatedLabel =
           tx(item.label);
 
@@ -156,13 +157,22 @@ function Sidebar() {
             })}
           >
             {({ isActive }) => (
-              <NeonIcon
-                icon={Icon}
-                tone={item.tone}
-                size={25}
-                strokeWidth={1.55}
-                active={isActive}
-              />
+              item.icon === "ar360"
+                ? (
+                  <Ar360Icon
+                    tone={item.tone}
+                    size={38}
+                  />
+                )
+                : (
+                  <NeonIcon
+                    icon={item.icon}
+                    tone={item.tone}
+                    size={25}
+                    strokeWidth={1.55}
+                    active={isActive}
+                  />
+                )
             )}
           </NavLink>
         );

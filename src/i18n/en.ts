@@ -5,6 +5,10 @@
  */
 const en: Record<string, string> = {
   "Realidad aumentada": "Augmented reality",
+  "AR 360°": "AR 360°",
+  "Abrir AR 360°": "Open AR 360°",
+  "Abrir AR 360° durante la misión": "Open AR 360° during the mission",
+  "Mira el faro de tu misión y los lugares cercanos": "See your mission beacon and nearby places",
   "Cámara de realidad aumentada": "Augmented reality camera",
   "Pines tridimensionales I.GUIDE": "I.GUIDE three-dimensional pins",
   "{{count}} lugares en 150 m": "{{count}} places within 150 m",

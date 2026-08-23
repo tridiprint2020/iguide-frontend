@@ -36,6 +36,9 @@ import {
 import HospesBanner from "../hospes/HospesBanner";
 import ExpeditionMap from "../ExpeditionMap";
 import MemoryCardModal from "../sharing/MemoryCardModal";
+import {
+  Ar360Icon,
+} from "../ar/Ar360Icon";
 
 import {
   getHospesMessage,
@@ -502,6 +505,64 @@ export function WalkingView() {
               {tx("eventos registrados")}
             </p>
           </section>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/ar")
+            }
+            aria-label={tx("Abrir AR 360° durante la misión")}
+            style={{
+              width: "100%",
+              minHeight: "62px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              padding: "9px 16px",
+              borderRadius: "18px",
+              border:
+                "1px solid rgba(0,230,255,0.45)",
+              background:
+                "linear-gradient(145deg, rgba(0,230,255,0.17), rgba(255,0,255,0.08), rgba(11,12,25,0.96))",
+              color: "#FFFFFF",
+              boxShadow:
+                "0 10px 28px rgba(0,230,255,0.14)",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <Ar360Icon
+              size={46}
+              tone="cyan"
+            />
+
+            <span>
+              <strong
+                style={{
+                  display: "block",
+                  color: CYAN,
+                  fontSize: "15px",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {tx("Abrir AR 360°")}
+              </strong>
+
+              <span
+                style={{
+                  display: "block",
+                  marginTop: "3px",
+                  color:
+                    "rgba(255,255,255,0.65)",
+                  fontSize: "10px",
+                  lineHeight: 1.35,
+                }}
+              >
+                {tx("Mira el faro de tu misión y los lugares cercanos")}
+              </span>
+            </span>
+          </button>
 
           {journey.experience && (
             <ExpeditionMap
