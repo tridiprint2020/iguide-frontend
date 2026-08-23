@@ -58,7 +58,7 @@ export function Ar360Icon({
         flexShrink: 0,
         display: "inline-flex",
         color,
-        opacity: active ? 1 : 0.55,
+        opacity: active ? 1 : 0.48,
         filter: active
           ? getToneGlow(tone)
           : "none",
@@ -73,55 +73,50 @@ export function Ar360Icon({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path
-          d="M7.5 23.5C8.1 14.9 15.3 8 24 8c5.1 0 9.7 2.3 12.7 5.9"
+        <circle
+          cx="24"
+          cy="24"
+          r="19"
           stroke="currentColor"
-          strokeWidth="2.5"
+          strokeWidth="2"
+        />
+
+        <ellipse
+          cx="24"
+          cy="24"
+          rx="8.5"
+          ry="19"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          opacity="0.48"
+        />
+
+        <path
+          d="M5 24C10.5 16.8 37.5 16.8 43 24"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          opacity="0.58"
+        />
+
+        <path
+          d="M43 24C37.5 31.2 10.5 31.2 5 24"
+          stroke="currentColor"
+          strokeWidth="2.35"
           strokeLinecap="round"
         />
 
         <path
-          d="m34 8.8 3.2 5.8-6.4.5"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        <path
-          d="M40.5 24.5C39.9 33.1 32.7 40 24 40c-5.1 0-9.7-2.3-12.7-5.9"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-
-        <path
-          d="m14 39.2-3.2-5.8 6.4-.5"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          d="m21.5 28.2 7.5 3.3-7.5 3.5Z"
+          fill="currentColor"
         />
 
         <text
           x="24"
-          y="19"
+          y="27.3"
           textAnchor="middle"
           fill="currentColor"
-          fontSize="8"
-          fontWeight="900"
-          fontFamily="Arial, sans-serif"
-          letterSpacing="1"
-        >
-          AR
-        </text>
-
-        <text
-          x="24"
-          y="30.5"
-          textAnchor="middle"
-          fill="currentColor"
-          fontSize="13"
+          fontSize="12.5"
           fontWeight="900"
           fontFamily="Arial, sans-serif"
           letterSpacing="-0.5"

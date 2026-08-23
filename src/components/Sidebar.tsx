@@ -162,6 +162,7 @@ function Sidebar() {
                   <Ar360Icon
                     tone={item.tone}
                     size={38}
+                    active={isActive}
                   />
                 )
                 : (
