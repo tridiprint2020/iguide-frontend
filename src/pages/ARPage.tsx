@@ -43,6 +43,7 @@ import {
   AR_MAXIMUM_DISTANCE_METERS,
   calculateArBearingDegrees,
   calculateArDistanceMeters,
+  calculateArViewerWorldPosition,
   getArGeoPlacements,
   getSignedAngleDifference,
 } from "../engine/arGeoEngine";
@@ -229,6 +230,24 @@ function ARPage() {
           AR_MAXIMUM_DISTANCE_METERS
       ).length,
     [placements]
+  );
+
+  const viewerPosition = useMemo(
+    () =>
+      coordinates &&
+      referenceCoordinates &&
+      referenceHeadingDegrees !== null
+        ? calculateArViewerWorldPosition(
+            referenceCoordinates,
+            coordinates,
+            referenceHeadingDegrees
+          )
+        : { x: 0, z: 0 },
+    [
+      coordinates,
+      referenceCoordinates,
+      referenceHeadingDegrees,
+    ]
   );
 
   const activeMissionPlacement =
@@ -510,6 +529,7 @@ function ARPage() {
           calibrationRevision={
             calibrationRevision
           }
+          viewerPosition={viewerPosition}
           onSelect={handleSelect}
         />
       )}

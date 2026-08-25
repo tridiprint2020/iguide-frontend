@@ -16,6 +16,11 @@ import {
 
 import {
   formatArDistance,
+  projectArPlacementToWorld,
+} from "../../engine/arGeoEngine";
+
+import type {
+  ArWorldCoordinates,
 } from "../../engine/arGeoEngine";
 
 import type {
@@ -40,6 +45,7 @@ type ArPinSceneProps = {
   selectedExperienceId: string | null;
   viewQuaternion: ArQuaternion | null;
   calibrationRevision: number;
+  viewerPosition: ArWorldCoordinates;
   onSelect: (
     placement: ArGeoPlacement
   ) => void;
@@ -66,39 +72,9 @@ type SceneModel = ArPinModel & {
 
 const POSITION_DAMPING = 0.07;
 const CAMERA_ROTATION_DAMPING = 0.2;
-const MISSION_BEACON_RENDER_DISTANCE_METERS =
-  72;
+const CAMERA_POSITION_DAMPING = 0.08;
+const AR_CAMERA_FAR_METERS = 20_000;
 const MAX_CATALOG_LABELS = 3;
-
-function getWorldCoordinates(
-  placement: ArGeoPlacement,
-  state: PlaceMarkerState
-) {
-  const angle =
-    placement.relativeBearingDegrees *
-    Math.PI / 180;
-
-  const distance =
-    state === "mission"
-      ? Math.max(
-          2.5,
-          Math.min(
-            placement.spatialDistanceMeters ??
-              placement.distanceMeters,
-            MISSION_BEACON_RENDER_DISTANCE_METERS
-          )
-        )
-      : Math.max(
-          2.5,
-          placement.spatialDistanceMeters ??
-            placement.distanceMeters
-        );
-
-  return {
-    x: Math.sin(angle) * distance,
-    z: -Math.cos(angle) * distance,
-  };
-}
 
 export const ArPinScene =
   forwardRef<
@@ -111,6 +87,7 @@ export const ArPinScene =
       selectedExperienceId,
       viewQuaternion,
       calibrationRevision,
+      viewerPosition,
       onSelect,
     },
     forwardedRef
@@ -138,6 +115,15 @@ export const ArPinScene =
 
     const targetCameraQuaternionRef =
       useRef(new THREE.Quaternion());
+
+    const targetCameraPositionRef =
+      useRef(
+        new THREE.Vector3(
+          viewerPosition.x,
+          1.65,
+          viewerPosition.z
+        )
+      );
 
     const calibrationRevisionRef =
       useRef(calibrationRevision);
@@ -222,6 +208,17 @@ export const ArPinScene =
     ]);
 
     useEffect(() => {
+      targetCameraPositionRef.current.set(
+        viewerPosition.x,
+        1.65,
+        viewerPosition.z
+      );
+    }, [
+      viewerPosition.x,
+      viewerPosition.z,
+    ]);
+
+    useEffect(() => {
       const target =
         targetCameraQuaternionRef.current;
 
@@ -242,6 +239,9 @@ export const ArPinScene =
       ) {
         cameraRef.current?.quaternion.copy(
           target
+        );
+        cameraRef.current?.position.copy(
+          targetCameraPositionRef.current
         );
         calibrationRevisionRef.current =
           calibrationRevision;
@@ -297,11 +297,17 @@ export const ArPinScene =
           62,
           1,
           0.1,
-          1000
+          AR_CAMERA_FAR_METERS
         );
 
-      camera.position.set(0, 1.65, 0);
-      camera.lookAt(0, 1.65, -1);
+      camera.position.copy(
+        targetCameraPositionRef.current
+      );
+      camera.lookAt(
+        camera.position.x,
+        1.65,
+        camera.position.z - 1
+      );
 
       scene.add(
         new THREE.HemisphereLight(
@@ -384,6 +390,10 @@ export const ArPinScene =
           targetCameraQuaternionRef.current,
           CAMERA_ROTATION_DAMPING
         );
+        camera.position.lerp(
+          targetCameraPositionRef.current,
+          CAMERA_POSITION_DAMPING
+        );
         camera.updateMatrixWorld();
 
         captureLabels.clear();
@@ -430,7 +440,8 @@ export const ArPinScene =
             labelAnchor.set(
               model.group.position.x,
               model.group.position.y +
-                AR_PIN_HEIGHT_METERS +
+                AR_PIN_HEIGHT_METERS *
+                  model.pinGroup.scale.y +
                 0.45,
               model.group.position.z
             );
@@ -609,9 +620,8 @@ export const ArPinScene =
         }
 
         const world =
-          getWorldCoordinates(
-            placement,
-            state
+          projectArPlacementToWorld(
+            placement
           );
 
         model.targetPosition.set(

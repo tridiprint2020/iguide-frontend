@@ -111,6 +111,70 @@ export function calculateArBearingDegrees(
   );
 }
 
+export type ArWorldCoordinates = {
+  x: number;
+  z: number;
+};
+
+/**
+ * Proyecta una distancia y rumbo sobre el plano local de la escena.
+ * No comprime ni aproxima el radio: el origen continúa siendo la
+ * coordenada GPS de referencia y el resultado conserva la distancia.
+ */
+export function projectArDistanceToWorld(
+  distanceMeters: number,
+  relativeBearingDegrees: number
+): ArWorldCoordinates {
+  const angle =
+    toRadians(
+      relativeBearingDegrees
+    );
+  const distance = Math.max(
+    0,
+    distanceMeters
+  );
+
+  return {
+    x: Math.sin(angle) * distance,
+    z: -Math.cos(angle) * distance,
+  };
+}
+
+export function projectArPlacementToWorld(
+  placement: ArGeoPlacement
+): ArWorldCoordinates {
+  return projectArDistanceToWorld(
+    placement.spatialDistanceMeters ??
+      placement.distanceMeters,
+    placement.relativeBearingDegrees
+  );
+}
+
+export function calculateArViewerWorldPosition(
+  referenceCoordinates: ArCoordinates,
+  viewerCoordinates: ArCoordinates,
+  referenceHeadingDegrees: number
+): ArWorldCoordinates {
+  const distanceMeters =
+    calculateArDistanceMeters(
+      referenceCoordinates,
+      viewerCoordinates
+    );
+  const bearingDegrees =
+    calculateArBearingDegrees(
+      referenceCoordinates,
+      viewerCoordinates
+    );
+
+  return projectArDistanceToWorld(
+    distanceMeters,
+    getSignedAngleDifference(
+      bearingDegrees,
+      referenceHeadingDegrees
+    )
+  );
+}
+
 function hasUsableCoordinates(
   experience: Experience
 ): boolean {
