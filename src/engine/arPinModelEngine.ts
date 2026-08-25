@@ -18,6 +18,7 @@ import {
   AR_MISSION_BEACON_HEIGHT_METERS,
   AR_PIN_HEIGHT_METERS,
   getArPinRotationState,
+  getArPinVisualScale,
 } from "./arPinVisualEngine";
 
 const AR_PIN_HOLE_CENTER_Y_METERS = 4.82;
@@ -146,8 +147,7 @@ function normalizePinGeometry(
 }
 
 function createPinBody(
-  color: string,
-  haloColor: string
+  color: string
 ): {
   group: THREE.Group;
   holeCenterY: number;
@@ -188,31 +188,6 @@ function createPinBody(
   body.receiveShadow = false;
   group.add(body);
 
-  // Un aro fino sigue la misma rotación que la gota y revela su grosor
-  // cuando la silueta se pone de perfil.
-  const rim = new THREE.Mesh(
-    new THREE.TorusGeometry(
-      1.07,
-      0.075,
-      12,
-      64
-    ),
-    new THREE.MeshStandardMaterial({
-      color: haloColor,
-      emissive: haloColor,
-      emissiveIntensity: 0.56,
-      metalness: 0.24,
-      roughness: 0.22,
-    })
-  );
-  rim.name = "pin-hole-rim";
-  rim.position.set(
-    0,
-    holeCenterY,
-    0
-  );
-  group.add(rim);
-
   return {
     group,
     holeCenterY,
@@ -236,36 +211,42 @@ function createSolidMaterial(
 function createLetterH(
   color: string
 ): THREE.Group {
+  const shape = new THREE.Shape();
+
+  shape.moveTo(-0.39, 0.54);
+  shape.lineTo(-0.21, 0.54);
+  shape.lineTo(-0.21, 0.09);
+  shape.lineTo(0.21, 0.09);
+  shape.lineTo(0.21, 0.54);
+  shape.lineTo(0.39, 0.54);
+  shape.lineTo(0.39, -0.54);
+  shape.lineTo(0.21, -0.54);
+  shape.lineTo(0.21, -0.09);
+  shape.lineTo(-0.21, -0.09);
+  shape.lineTo(-0.21, -0.54);
+  shape.lineTo(-0.39, -0.54);
+  shape.closePath();
+
+  const geometry =
+    new THREE.ExtrudeGeometry(shape, {
+      depth: 0.22,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      bevelSize: 0.035,
+      bevelThickness: 0.035,
+      curveSegments: 16,
+    });
+  geometry.translate(0, 0, -0.11);
+  geometry.computeVertexNormals();
+
   const group = new THREE.Group();
   group.name = "pin-symbol-H";
-  const material =
-    createSolidMaterial(color);
-
-  const addBar = (
-    width: number,
-    height: number,
-    x: number,
-    y: number
-  ) => {
-    const bar = new THREE.Mesh(
-      new THREE.BoxGeometry(
-        width,
-        height,
-        0.46,
-        2,
-        4,
-        2
-      ),
-      material
-    );
-
-    bar.position.set(x, y, 0);
-    group.add(bar);
-  };
-
-  addBar(0.28, 1.66, -0.48, 0);
-  addBar(0.28, 1.66, 0.48, 0);
-  addBar(1.18, 0.27, 0, 0);
+  group.add(
+    new THREE.Mesh(
+      geometry,
+      createSolidMaterial(color)
+    )
+  );
 
   return group;
 }
@@ -274,8 +255,8 @@ function createStarGlyph(
   color: string
 ): THREE.Group {
   const shape = new THREE.Shape();
-  const outerRadius = 0.82;
-  const innerRadius = 0.34;
+  const outerRadius = 0.58;
+  const innerRadius = 0.25;
 
   for (
     let index = 0;
@@ -303,13 +284,13 @@ function createStarGlyph(
 
   const geometry =
     new THREE.ExtrudeGeometry(shape, {
-      depth: 0.42,
+      depth: 0.22,
       bevelEnabled: true,
       bevelSegments: 3,
-      bevelSize: 0.07,
-      bevelThickness: 0.07,
+      bevelSize: 0.035,
+      bevelThickness: 0.035,
     });
-  geometry.translate(0, 0, -0.21);
+  geometry.translate(0, 0, -0.11);
   geometry.computeVertexNormals();
 
   const group = new THREE.Group();
@@ -451,8 +432,7 @@ export function createArPinModel(
     `iguide-ar-map-pin:${experience.experienceId}`;
 
   const pinBodyResult = createPinBody(
-    visual.color,
-    visual.haloColor
+    visual.color
   );
   const pinBody = pinBodyResult.group;
   const symbol = createCenteredSymbol(
@@ -509,11 +489,14 @@ export function updateArPinModel(
   selected: boolean,
   distanceMeters: number
 ) {
-  const selectedScale =
-    selected ? 1.08 : 1;
+  const visualScale =
+    getArPinVisualScale(
+      distanceMeters,
+      selected
+    );
 
   model.pinGroup.scale.setScalar(
-    selectedScale
+    visualScale
   );
 
   const rotation =
@@ -533,19 +516,33 @@ export function updateArPinModel(
       : (elapsedSeconds * 0.52) % 1;
 
     model.groundPulse.scale.setScalar(
-      0.9 + progress * 1.85
+      visualScale *
+        (0.9 + progress * 1.85)
     );
     model.groundPulse.material.opacity =
       reducedMotion
         ? 0.5
         : 0.82 * (1 - progress);
   } else {
-    model.groundPulse.scale.setScalar(1);
+    model.groundPulse.scale.setScalar(
+      visualScale
+    );
     model.groundPulse.material.opacity =
       0.28;
   }
 
   if (!model.missionBeacon) return;
+
+  model.missionBeacon.beam.scale.set(
+    visualScale,
+    1,
+    visualScale
+  );
+  model.missionBeacon.core.scale.set(
+    visualScale,
+    1,
+    visualScale
+  );
 
   const distanceEmphasis =
     THREE.MathUtils.clamp(

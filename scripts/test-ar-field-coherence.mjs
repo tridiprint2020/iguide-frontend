@@ -15,7 +15,15 @@ import {
   AR_MISSION_BEACON_CENTER_Y_METERS,
   AR_MISSION_BEACON_HEIGHT_METERS,
   getArPinRotationState,
+  getArPinVisualScale,
 } from "../src/engine/arPinVisualEngine.ts";
+
+import {
+  calculateArDistanceMeters,
+  calculateArViewerWorldPosition,
+  projectArDistanceToWorld,
+  projectArPlacementToWorld,
+} from "../src/engine/arGeoEngine.ts";
 
 const reference = {
   alphaDegrees: 42,
@@ -117,6 +125,71 @@ assert.deepEqual(
   "el faro debe atravesar el punto desde el subsuelo hasta el cielo"
 );
 
+assert.deepEqual(
+  [
+    getArPinVisualScale(14, false),
+    getArPinVisualScale(40, false),
+    getArPinVisualScale(95, false),
+    getArPinVisualScale(150, false),
+    getArPinVisualScale(500, true),
+  ],
+  [1, 1, 1.25, 1.5, 1.5],
+  "el pin debe crecer de 7 a 10.5 m sin superar el máximo"
+);
+
+const anchoredPin =
+  projectArPlacementToWorld({
+    distanceMeters: 72,
+    spatialDistanceMeters: 556,
+    relativeBearingDegrees: 90,
+  });
+
+assert.ok(
+  Math.abs(anchoredPin.x - 556) <
+    0.000001 &&
+    Math.abs(anchoredPin.z) < 0.000001,
+  "la misión lejana debe permanecer en su distancia geográfica, sin compresión visual"
+);
+
+const referenceCoordinates = {
+  latitude: -12.0689,
+  longitude: -75.2103,
+};
+const movedCoordinates = {
+  latitude: -12.06845,
+  longitude: -75.2098,
+};
+const expectedMovement =
+  calculateArDistanceMeters(
+    referenceCoordinates,
+    movedCoordinates
+  );
+const viewerPosition =
+  calculateArViewerWorldPosition(
+    referenceCoordinates,
+    movedCoordinates,
+    0
+  );
+
+assert.ok(
+  Math.abs(
+    Math.hypot(
+      viewerPosition.x,
+      viewerPosition.z
+    ) - expectedMovement
+  ) < 0.000001,
+  "la cámara virtual debe recorrer la misma distancia que el GPS filtrado"
+);
+
+const samePointAtTwoScales =
+  projectArDistanceToWorld(120, 37);
+
+assert.deepEqual(
+  samePointAtTwoScales,
+  projectArDistanceToWorld(120, 37),
+  "cambiar el tamaño visual nunca debe mover el centro GPS del pin"
+);
+
 console.log(
-  "AR field coherence: 7/7 pruebas en verde"
+  "AR field coherence: 11/11 pruebas en verde"
 );
