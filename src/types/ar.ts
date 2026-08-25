@@ -15,6 +15,20 @@ export type ArGeoPlacement = {
   relativeBearingDegrees: number;
 };
 
+export type ArOrientationSample = {
+  alphaDegrees: number;
+  betaDegrees: number;
+  gammaDegrees: number;
+  screenOrientationDegrees: number;
+};
+
+export type ArQuaternion = {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+};
+
 export type ArSessionPhase =
   | "idle"
   | "requesting"
@@ -25,8 +39,12 @@ export type ArSessionPhase =
 export type ArSensorSnapshot = {
   phase: ArSessionPhase;
   coordinates: ArCoordinates | null;
+  referenceCoordinates: ArCoordinates | null;
   headingDegrees: number | null;
+  referenceHeadingDegrees: number | null;
   headingIsAbsolute: boolean;
+  viewQuaternion: ArQuaternion | null;
+  calibrationRevision: number;
   cameraStream: MediaStream | null;
   errorMessage: string | null;
 };

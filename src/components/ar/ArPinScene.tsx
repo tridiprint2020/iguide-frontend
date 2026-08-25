@@ -1,5 +1,7 @@
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
 } from "react";
 
@@ -22,6 +24,7 @@ import type {
 
 import type {
   ArGeoPlacement,
+  ArQuaternion,
 } from "../../types/ar";
 
 import type {
@@ -35,20 +38,37 @@ type ArPinSceneProps = {
     PlaceMarkerState
   >;
   selectedExperienceId: string | null;
+  viewQuaternion: ArQuaternion | null;
+  calibrationRevision: number;
   onSelect: (
     placement: ArGeoPlacement
   ) => void;
 };
 
+export type ArCaptureLabel = {
+  title: string;
+  distanceText: string;
+  xRatio: number;
+  yRatio: number;
+  mission: boolean;
+};
+
+export type ArPinSceneHandle = {
+  getCanvas: () => HTMLCanvasElement | null;
+  getCaptureLabels: () => ArCaptureLabel[];
+  renderFrame: () => void;
+};
+
 type SceneModel = ArPinModel & {
   placement: ArGeoPlacement;
   targetPosition: THREE.Vector3;
-  targetRotationY: number;
 };
 
-const POSITION_DAMPING = 0.08;
+const POSITION_DAMPING = 0.07;
+const CAMERA_ROTATION_DAMPING = 0.2;
 const MISSION_BEACON_RENDER_DISTANCE_METERS =
   72;
+const MAX_CATALOG_LABELS = 3;
 
 function getWorldCoordinates(
   placement: ArGeoPlacement,
@@ -78,474 +98,639 @@ function getWorldCoordinates(
   };
 }
 
-export function ArPinScene({
-  placements,
-  markerStates,
-  selectedExperienceId,
-  onSelect,
-}: ArPinSceneProps) {
-  const containerRef =
-    useRef<HTMLDivElement | null>(null);
+export const ArPinScene =
+  forwardRef<
+    ArPinSceneHandle,
+    ArPinSceneProps
+  >(function ArPinScene(
+    {
+      placements,
+      markerStates,
+      selectedExperienceId,
+      viewQuaternion,
+      calibrationRevision,
+      onSelect,
+    },
+    forwardedRef
+  ) {
+    const containerRef =
+      useRef<HTMLDivElement | null>(null);
 
-  const canvasRef =
-    useRef<HTMLCanvasElement | null>(null);
+    const canvasRef =
+      useRef<HTMLCanvasElement | null>(
+        null
+      );
 
-  const rendererRef =
-    useRef<THREE.WebGLRenderer | null>(
-      null
+    const rendererRef =
+      useRef<THREE.WebGLRenderer | null>(
+        null
+      );
+
+    const sceneRef =
+      useRef<THREE.Scene | null>(null);
+
+    const cameraRef =
+      useRef<THREE.PerspectiveCamera | null>(
+        null
+      );
+
+    const targetCameraQuaternionRef =
+      useRef(new THREE.Quaternion());
+
+    const calibrationRevisionRef =
+      useRef(calibrationRevision);
+
+    const modelsRef =
+      useRef<Map<string, SceneModel>>(
+        new Map()
+      );
+
+    const labelRefs =
+      useRef<
+        Map<string, HTMLButtonElement>
+      >(new Map());
+
+    const visibleLabelIdsRef =
+      useRef<Set<string>>(new Set());
+
+    const captureLabelsRef =
+      useRef<Map<string, ArCaptureLabel>>(
+        new Map()
+      );
+
+    const renderFrameRef =
+      useRef<() => void>(() => undefined);
+
+    const selectedIdRef =
+      useRef<string | null>(
+        selectedExperienceId
+      );
+
+    useImperativeHandle(
+      forwardedRef,
+      () => ({
+        getCanvas: () => canvasRef.current,
+        getCaptureLabels: () =>
+          Array.from(
+            captureLabelsRef.current.values()
+          ),
+        renderFrame: () =>
+          renderFrameRef.current(),
+      }),
+      []
     );
 
-  const sceneRef =
-    useRef<THREE.Scene | null>(null);
+    useEffect(() => {
+      selectedIdRef.current =
+        selectedExperienceId;
+    }, [selectedExperienceId]);
 
-  const cameraRef =
-    useRef<THREE.PerspectiveCamera | null>(
-      null
-    );
+    useEffect(() => {
+      const visibleIds = new Set(
+        placements
+          .slice(0, MAX_CATALOG_LABELS)
+          .map(
+            (placement) =>
+              placement.experience
+                .experienceId
+          )
+      );
 
-  const modelsRef =
-    useRef<Map<string, SceneModel>>(
-      new Map()
-    );
+      placements.forEach((placement) => {
+        const experienceId =
+          placement.experience
+            .experienceId;
 
-  const labelRefs =
-    useRef<Map<string, HTMLButtonElement>>(
-      new Map()
-    );
-
-  const selectedIdRef =
-    useRef<string | null>(
-      selectedExperienceId
-    );
-
-  useEffect(() => {
-    selectedIdRef.current =
-      selectedExperienceId;
-  }, [selectedExperienceId]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container =
-      containerRef.current;
-
-    if (!canvas || !container) {
-      return;
-    }
-
-    const renderer =
-      new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-        powerPreference:
-          "high-performance",
+        if (
+          markerStates.get(experienceId) ===
+            "mission" ||
+          experienceId ===
+            selectedExperienceId
+        ) {
+          visibleIds.add(experienceId);
+        }
       });
 
-    const models =
-      modelsRef.current;
+      visibleLabelIdsRef.current =
+        visibleIds;
+    }, [
+      markerStates,
+      placements,
+      selectedExperienceId,
+    ]);
 
-    renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(
-      Math.min(
-        window.devicePixelRatio,
-        2
-      )
-    );
-    renderer.outputColorSpace =
-      THREE.SRGBColorSpace;
+    useEffect(() => {
+      const target =
+        targetCameraQuaternionRef.current;
 
-    const scene = new THREE.Scene();
+      if (viewQuaternion) {
+        target.set(
+          viewQuaternion.x,
+          viewQuaternion.y,
+          viewQuaternion.z,
+          viewQuaternion.w
+        ).normalize();
+      } else {
+        target.identity();
+      }
 
-    const camera =
-      new THREE.PerspectiveCamera(
-        62,
-        1,
-        0.1,
-        1000
-      );
+      if (
+        calibrationRevisionRef.current !==
+        calibrationRevision
+      ) {
+        cameraRef.current?.quaternion.copy(
+          target
+        );
+        calibrationRevisionRef.current =
+          calibrationRevision;
+      }
+    }, [
+      calibrationRevision,
+      viewQuaternion,
+    ]);
 
-    camera.position.set(0, 1.65, 0);
-    camera.lookAt(0, 1.65, -1);
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      const container =
+        containerRef.current;
 
-    scene.add(
-      new THREE.HemisphereLight(
-        0xffffff,
-        0x101020,
-        2.2
-      )
-    );
-
-    const directionalLight =
-      new THREE.DirectionalLight(
-        0xffffff,
-        2.4
-      );
-
-    directionalLight.position.set(
-      -2,
-      5,
-      4
-    );
-    scene.add(directionalLight);
-
-    rendererRef.current = renderer;
-    sceneRef.current = scene;
-    cameraRef.current = camera;
-
-    const resize = () => {
-      const width =
-        container.clientWidth;
-      const height =
-        container.clientHeight;
-
-      if (width <= 0 || height <= 0) {
+      if (!canvas || !container) {
         return;
       }
 
-      renderer.setSize(
-        width,
-        height,
-        false
+      const renderer =
+        new THREE.WebGLRenderer({
+          canvas,
+          alpha: true,
+          antialias: true,
+          preserveDrawingBuffer: true,
+          powerPreference:
+            "high-performance",
+        });
+
+      const models = modelsRef.current;
+      const captureLabels =
+        captureLabelsRef.current;
+
+      renderer.setClearColor(
+        0x000000,
+        0
       );
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-    };
+      renderer.setPixelRatio(
+        Math.min(
+          window.devicePixelRatio,
+          2
+        )
+      );
+      renderer.outputColorSpace =
+        THREE.SRGBColorSpace;
+      renderer.toneMapping =
+        THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
 
-    resize();
+      const scene = new THREE.Scene();
 
-    const resizeObserver =
-      new ResizeObserver(resize);
+      const camera =
+        new THREE.PerspectiveCamera(
+          62,
+          1,
+          0.1,
+          1000
+        );
 
-    resizeObserver.observe(container);
+      camera.position.set(0, 1.65, 0);
+      camera.lookAt(0, 1.65, -1);
 
-    const reducedMotion =
-      window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
-
-    const clock = new THREE.Clock();
-    const labelAnchor =
-      new THREE.Vector3();
-
-    let animationFrame = 0;
-
-    const render = () => {
-      const elapsed =
-        clock.getElapsedTime();
-
-      models.forEach(
-        (model, experienceId) => {
-          model.group.position.x +=
-            (model.targetPosition.x -
-              model.group.position.x) *
-            POSITION_DAMPING;
-          model.group.position.z +=
-            (model.targetPosition.z -
-              model.group.position.z) *
-            POSITION_DAMPING;
-
-          const rotationDifference =
-            Math.atan2(
-              Math.sin(
-                model.targetRotationY -
-                  model.group.rotation.y
-              ),
-              Math.cos(
-                model.targetRotationY -
-                  model.group.rotation.y
-              )
-            );
-
-          model.group.rotation.y +=
-            rotationDifference *
-            POSITION_DAMPING;
-
-          updateArPinModel(
-            model,
-            elapsed,
-            reducedMotion,
-            selectedIdRef.current ===
-              experienceId,
-            model.placement
-              .distanceMeters
-          );
-
-          const label =
-            labelRefs.current.get(
-              experienceId
-            );
-
-          if (!label) return;
-
-          labelAnchor.set(
-            model.group.position.x,
-            model.group.position.y +
-              AR_PIN_HEIGHT_METERS +
-              0.34,
-            model.group.position.z
-          );
-          labelAnchor.project(camera);
-
-          const visible =
-            labelAnchor.z >= -1 &&
-            labelAnchor.z <= 1 &&
-            Math.abs(labelAnchor.x) <= 1.08 &&
-            Math.abs(labelAnchor.y) <= 1.08 &&
-            model.group.position.z < 0;
-
-          if (!visible) {
-            label.style.opacity = "0";
-            label.style.pointerEvents =
-              "none";
-            return;
-          }
-
-          const x =
-            (labelAnchor.x * 0.5 + 0.5) *
-            container.clientWidth;
-          const y =
-            (-labelAnchor.y * 0.5 + 0.5) *
-            container.clientHeight;
-
-          label.style.opacity = "1";
-          label.style.pointerEvents =
-            "auto";
-          label.style.transform =
-            `translate3d(${x}px, ${y}px, 0) translate(-50%, -100%)`;
-        }
+      scene.add(
+        new THREE.HemisphereLight(
+          0xffffff,
+          0x101020,
+          1.72
+        )
       );
 
-      renderer.render(scene, camera);
-      animationFrame =
-        requestAnimationFrame(render);
-    };
+      const directionalLight =
+        new THREE.DirectionalLight(
+          0xffffff,
+          2.15
+        );
 
-    render();
-
-    return () => {
-      cancelAnimationFrame(
-        animationFrame
+      directionalLight.position.set(
+        -3,
+        7,
+        4
       );
-      resizeObserver.disconnect();
+      scene.add(directionalLight);
 
-      models.forEach(
-        (model) =>
-          disposeArPinModel(model)
-      );
-      models.clear();
+      const rimLight =
+        new THREE.DirectionalLight(
+          0x39e7ff,
+          1.3
+        );
 
-      renderer.dispose();
-      rendererRef.current = null;
-      sceneRef.current = null;
-      cameraRef.current = null;
-    };
-  }, []);
+      rimLight.position.set(4, 2, -5);
+      scene.add(rimLight);
 
-  useEffect(() => {
-    const scene = sceneRef.current;
+      rendererRef.current = renderer;
+      sceneRef.current = scene;
+      cameraRef.current = camera;
 
-    if (!scene) return;
+      const resize = () => {
+        const width =
+          container.clientWidth;
+        const height =
+          container.clientHeight;
 
-    const currentIds = new Set(
-      placements.map(
-        (placement) =>
-          placement.experience
-            .experienceId
-      )
-    );
-
-    modelsRef.current.forEach(
-      (model, experienceId) => {
-        if (currentIds.has(experienceId)) {
+        if (width <= 0 || height <= 0) {
           return;
         }
 
-        scene.remove(model.group);
-        disposeArPinModel(model);
-        modelsRef.current.delete(
-          experienceId
+        renderer.setSize(
+          width,
+          height,
+          false
         );
-      }
-    );
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      };
 
-    placements.forEach((placement) => {
-      const experienceId =
-        placement.experience
-          .experienceId;
+      resize();
 
-      const state =
-        markerStates.get(
-          experienceId
-        ) ?? "catalog";
+      const resizeObserver =
+        new ResizeObserver(resize);
 
-      const previous =
-        modelsRef.current.get(
-          experienceId
+      resizeObserver.observe(container);
+
+      const reducedMotion =
+        window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+      const clock = new THREE.Clock();
+      const labelAnchor =
+        new THREE.Vector3();
+      const cameraSpaceAnchor =
+        new THREE.Vector3();
+
+      let animationFrame = 0;
+
+      const renderScene = () => {
+        const elapsed =
+          clock.getElapsedTime();
+
+        camera.quaternion.slerp(
+          targetCameraQuaternionRef.current,
+          CAMERA_ROTATION_DAMPING
+        );
+        camera.updateMatrixWorld();
+
+        captureLabels.clear();
+
+        models.forEach(
+          (model, experienceId) => {
+            model.group.position.x +=
+              (model.targetPosition.x -
+                model.group.position.x) *
+              POSITION_DAMPING;
+            model.group.position.z +=
+              (model.targetPosition.z -
+                model.group.position.z) *
+              POSITION_DAMPING;
+
+            updateArPinModel(
+              model,
+              elapsed,
+              reducedMotion,
+              selectedIdRef.current ===
+                experienceId,
+              model.placement
+                .distanceMeters
+            );
+
+            const label =
+              labelRefs.current.get(
+                experienceId
+              );
+
+            if (!label) return;
+
+            if (
+              !visibleLabelIdsRef.current.has(
+                experienceId
+              )
+            ) {
+              label.style.opacity = "0";
+              label.style.pointerEvents =
+                "none";
+              return;
+            }
+
+            labelAnchor.set(
+              model.group.position.x,
+              model.group.position.y +
+                AR_PIN_HEIGHT_METERS +
+                0.45,
+              model.group.position.z
+            );
+
+            cameraSpaceAnchor
+              .copy(labelAnchor)
+              .applyMatrix4(
+                camera.matrixWorldInverse
+              );
+            labelAnchor.project(camera);
+
+            const visible =
+              cameraSpaceAnchor.z < 0 &&
+              labelAnchor.z >= -1 &&
+              labelAnchor.z <= 1 &&
+              Math.abs(labelAnchor.x) <=
+                1.08 &&
+              Math.abs(labelAnchor.y) <=
+                1.08;
+
+            if (!visible) {
+              label.style.opacity = "0";
+              label.style.pointerEvents =
+                "none";
+              return;
+            }
+
+            const x =
+              (labelAnchor.x * 0.5 +
+                0.5) *
+              container.clientWidth;
+            const y =
+              (-labelAnchor.y * 0.5 +
+                0.5) *
+              container.clientHeight;
+
+            label.style.opacity = "1";
+            label.style.pointerEvents =
+              "auto";
+            label.style.transform =
+              `translate3d(${x}px, ${y}px, 0) translate(-50%, -100%)`;
+
+            captureLabels.set(
+              experienceId,
+              {
+                title:
+                  model.placement
+                    .experience.title,
+                distanceText:
+                  formatArDistance(
+                    model.placement
+                      .distanceMeters
+                  ),
+                xRatio:
+                  x /
+                  container.clientWidth,
+                yRatio:
+                  y /
+                  container.clientHeight,
+                mission:
+                  model.state ===
+                  "mission",
+              }
+            );
+          }
         );
 
-      let model: SceneModel;
-      let modelWasCreated = false;
+        renderer.render(scene, camera);
+      };
 
-      if (
-        previous &&
-        previous.state === state
-      ) {
-        model = previous;
-        model.placement = placement;
-      } else {
-        if (previous) {
-          scene.remove(previous.group);
-          disposeArPinModel(previous);
-        }
+      renderFrameRef.current = renderScene;
 
-        model = {
-          ...createArPinModel(
-            placement.experience,
-            state
-          ),
-          placement,
-          targetPosition:
-            new THREE.Vector3(),
-          targetRotationY: 0,
-        };
-        modelWasCreated = true;
-        scene.add(model.group);
-        modelsRef.current.set(
-          experienceId,
-          model
+      const render = () => {
+        renderScene();
+        animationFrame =
+          requestAnimationFrame(render);
+      };
+
+      render();
+
+      return () => {
+        cancelAnimationFrame(
+          animationFrame
         );
-      }
+        resizeObserver.disconnect();
 
-      const world =
-        getWorldCoordinates(
-          placement,
-          state
+        models.forEach((model) =>
+          disposeArPinModel(model)
         );
+        models.clear();
+        captureLabels.clear();
 
-      model.targetPosition.set(
-        world.x,
-        0,
-        world.z
+        renderer.dispose();
+        renderFrameRef.current =
+          () => undefined;
+        rendererRef.current = null;
+        sceneRef.current = null;
+        cameraRef.current = null;
+      };
+    }, []);
+
+    useEffect(() => {
+      const scene = sceneRef.current;
+
+      if (!scene) return;
+
+      const currentIds = new Set(
+        placements.map(
+          (placement) =>
+            placement.experience
+              .experienceId
+        )
       );
 
-      model.targetRotationY =
-        Math.atan2(
-          -world.x,
-          -world.z
-        );
+      modelsRef.current.forEach(
+        (model, experienceId) => {
+          if (
+            currentIds.has(experienceId)
+          ) {
+            return;
+          }
 
-      if (modelWasCreated) {
-        model.group.position.set(
+          scene.remove(model.group);
+          disposeArPinModel(model);
+          modelsRef.current.delete(
+            experienceId
+          );
+        }
+      );
+
+      placements.forEach((placement) => {
+        const experienceId =
+          placement.experience
+            .experienceId;
+
+        const state =
+          markerStates.get(
+            experienceId
+          ) ?? "catalog";
+
+        const previous =
+          modelsRef.current.get(
+            experienceId
+          );
+
+        let model: SceneModel;
+        let modelWasCreated = false;
+
+        if (
+          previous &&
+          previous.state === state
+        ) {
+          model = previous;
+          model.placement = placement;
+        } else {
+          if (previous) {
+            scene.remove(previous.group);
+            disposeArPinModel(previous);
+          }
+
+          model = {
+            ...createArPinModel(
+              placement.experience,
+              state
+            ),
+            placement,
+            targetPosition:
+              new THREE.Vector3(),
+          };
+          modelWasCreated = true;
+          scene.add(model.group);
+          modelsRef.current.set(
+            experienceId,
+            model
+          );
+        }
+
+        const world =
+          getWorldCoordinates(
+            placement,
+            state
+          );
+
+        model.targetPosition.set(
           world.x,
           0,
           world.z
         );
-        model.group.rotation.y =
-          model.targetRotationY;
-      }
 
-    });
-  }, [markerStates, placements]);
+        if (modelWasCreated) {
+          model.group.position.set(
+            world.x,
+            0,
+            world.z
+          );
+        }
+      });
+    }, [markerStates, placements]);
 
-  return (
-    <div
-      ref={containerRef}
-      aria-label="Pines tridimensionales I.GUIDE"
-      style={{
-        position: "absolute",
-        inset: 0,
-        overflow: "hidden",
-      }}
-    >
-      <canvas
-        ref={canvasRef}
-        aria-hidden="true"
+    return (
+      <div
+        ref={containerRef}
+        aria-label="Pines tridimensionales I.GUIDE"
         style={{
           position: "absolute",
           inset: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
+          overflow: "hidden",
         }}
-      />
-
-      {placements.map((placement) => (
-        <button
-          key={
-            placement.experience
-              .experienceId
-          }
-          ref={(element) => {
-            const experienceId =
-              placement.experience
-                .experienceId;
-
-            if (element) {
-              labelRefs.current.set(
-                experienceId,
-                element
-              );
-            } else {
-              labelRefs.current.delete(
-                experienceId
-              );
-            }
-          }}
-          type="button"
-          onClick={() =>
-            onSelect(placement)
-          }
+      >
+        <canvas
+          ref={canvasRef}
+          aria-hidden="true"
           style={{
             position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 7,
-            maxWidth: "180px",
-            padding: "7px 9px",
-            borderRadius: "11px",
-            border:
-              selectedExperienceId ===
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+          }}
+        />
+
+        {placements.map((placement) => (
+          <button
+            key={
               placement.experience
                 .experienceId
-                ? "1px solid rgba(255,255,255,0.72)"
-                : "1px solid rgba(57,231,255,0.32)",
-            background:
-              "rgba(7,8,17,0.82)",
-            boxShadow:
-              "0 0 17px rgba(0,230,255,0.16)",
-            color: "#FFFFFF",
-            cursor: "pointer",
-            opacity: 0,
-            transition:
-              "opacity 100ms linear, border-color 160ms ease",
-          }}
-        >
-          <strong
+            }
+            ref={(element) => {
+              const experienceId =
+                placement.experience
+                  .experienceId;
+
+              if (element) {
+                labelRefs.current.set(
+                  experienceId,
+                  element
+                );
+              } else {
+                labelRefs.current.delete(
+                  experienceId
+                );
+              }
+            }}
+            type="button"
+            onClick={() =>
+              onSelect(placement)
+            }
             style={{
-              display: "block",
-              overflow: "hidden",
-              fontSize: "11px",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              zIndex: 7,
+              maxWidth: "180px",
+              padding: "7px 9px",
+              borderRadius: "11px",
+              border:
+                selectedExperienceId ===
+                placement.experience
+                  .experienceId
+                  ? "1px solid rgba(255,255,255,0.72)"
+                  : "1px solid rgba(57,231,255,0.32)",
+              background:
+                "rgba(7,8,17,0.82)",
+              boxShadow:
+                "0 0 17px rgba(0,230,255,0.16)",
+              color: "#FFFFFF",
+              cursor: "pointer",
+              opacity: 0,
+              transition:
+                "opacity 100ms linear, border-color 160ms ease",
             }}
           >
-            {placement.experience.title}
-          </strong>
-          <span
-            style={{
-              display: "block",
-              marginTop: "2px",
-              color: "#39E7FF",
-              fontSize: "10px",
-              fontWeight: 800,
-            }}
-          >
-            {formatArDistance(
-              placement.distanceMeters
-            )}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
+            <strong
+              style={{
+                display: "block",
+                overflow: "hidden",
+                fontSize: "11px",
+                textOverflow:
+                  "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {
+                placement.experience
+                  .title
+              }
+            </strong>
+            <span
+              style={{
+                display: "block",
+                marginTop: "2px",
+                color: "#39E7FF",
+                fontSize: "10px",
+                fontWeight: 800,
+              }}
+            >
+              {formatArDistance(
+                placement.distanceMeters
+              )}
+            </span>
+          </button>
+        ))}
+      </div>
+    );
+  });

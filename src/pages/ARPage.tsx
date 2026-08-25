@@ -37,7 +37,10 @@ import {
 
 import {
   AR_MAXIMUM_DISTANCE_METERS,
+  calculateArBearingDegrees,
+  calculateArDistanceMeters,
   getArGeoPlacements,
+  getSignedAngleDifference,
 } from "../engine/arGeoEngine";
 
 import {
@@ -92,10 +95,15 @@ function ARPage() {
   const {
     phase,
     coordinates,
+    referenceCoordinates,
     headingDegrees,
+    referenceHeadingDegrees,
     headingIsAbsolute,
+    viewQuaternion,
+    calibrationRevision,
     cameraStream,
     errorMessage,
+    recalibrate,
     start,
   } = useArSession();
 
@@ -104,6 +112,10 @@ function ARPage() {
 
   const [selectedExperienceId,
     setSelectedExperienceId] =
+    useState<string | null>(null);
+
+  const [calibrationMessage,
+    setCalibrationMessage] =
     useState<string | null>(null);
 
   const visitedIds = useMemo(
@@ -121,26 +133,54 @@ function ARPage() {
       ? journey.experience.experienceId
       : null;
 
-  const placements = useMemo(
-    () =>
-      coordinates &&
-      headingDegrees !== null
-        ? getArGeoPlacements(
-            catalog,
+  const placements = useMemo(() => {
+    if (
+      !referenceCoordinates ||
+      referenceHeadingDegrees === null
+    ) {
+      return [];
+    }
+
+    const anchoredPlacements =
+      getArGeoPlacements(
+        catalog,
+        referenceCoordinates,
+        referenceHeadingDegrees,
+        {
+          maximumDistanceMeters:
+            AR_MAXIMUM_DISTANCE_METERS,
+          alwaysIncludeExperienceId:
+            activeMissionId,
+        }
+      );
+
+    if (!coordinates) {
+      return anchoredPlacements;
+    }
+
+    return anchoredPlacements.map(
+      (placement) => ({
+        ...placement,
+        distanceMeters:
+          calculateArDistanceMeters(
             coordinates,
-            headingDegrees,
             {
-              maximumDistanceMeters:
-                AR_MAXIMUM_DISTANCE_METERS,
-              alwaysIncludeExperienceId:
-                activeMissionId,
+              latitude:
+                placement.experience
+                  .latitude,
+              longitude:
+                placement.experience
+                  .longitude,
             }
-          )
-        : [],
+          ),
+      })
+    );
+  },
     [
       activeMissionId,
       coordinates,
-      headingDegrees,
+      referenceCoordinates,
+      referenceHeadingDegrees,
     ]
   );
 
@@ -164,14 +204,31 @@ function ARPage() {
         ) ?? null
       : null;
 
-  const missionTurnDirection =
+  const missionRelativeBearing =
     activeMissionPlacement &&
-    Math.abs(
-      activeMissionPlacement
-        .relativeBearingDegrees
-    ) > MISSION_DIRECTION_THRESHOLD_DEGREES
-      ? activeMissionPlacement
-          .relativeBearingDegrees < 0
+    coordinates &&
+    headingDegrees !== null
+      ? getSignedAngleDifference(
+          calculateArBearingDegrees(
+            coordinates,
+            {
+              latitude:
+                activeMissionPlacement
+                  .experience.latitude,
+              longitude:
+                activeMissionPlacement
+                  .experience.longitude,
+            }
+          ),
+          headingDegrees
+        )
+      : null;
+
+  const missionTurnDirection =
+    missionRelativeBearing !== null &&
+    Math.abs(missionRelativeBearing) >
+      MISSION_DIRECTION_THRESHOLD_DEGREES
+      ? missionRelativeBearing < 0
         ? "left"
         : "right"
       : null;
@@ -256,6 +313,20 @@ function ARPage() {
     }
   }
 
+  function handleRecalibrate() {
+    const calibrated = recalibrate();
+
+    setCalibrationMessage(
+      calibrated
+        ? tx(
+            "Escena fijada desde este punto."
+          )
+        : tx(
+            "Espera una ubicación precisa antes de fijar la escena."
+          )
+    );
+  }
+
   const sessionReady =
     phase === "ready";
 
@@ -308,6 +379,12 @@ function ARPage() {
           markerStates={markerStates}
           selectedExperienceId={
             selectedExperienceId
+          }
+          viewQuaternion={
+            viewQuaternion
+          }
+          calibrationRevision={
+            calibrationRevision
           }
           onSelect={handleSelect}
         />
@@ -426,6 +503,73 @@ function ARPage() {
               )}
         </div>
       </header>
+
+      {sessionReady && (
+        <div
+          style={{
+            position: "absolute",
+            top:
+              "max(70px, calc(env(safe-area-inset-top) + 58px))",
+            right: "12px",
+            zIndex: 19,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "6px",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleRecalibrate}
+            aria-label={tx(
+              "Fijar la escena desde este punto"
+            )}
+            style={{
+              minHeight: "34px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "7px 10px",
+              borderRadius: "11px",
+              border:
+                "1px solid rgba(57,231,255,0.38)",
+              background:
+                "rgba(7,8,17,0.82)",
+              color: "#8AF4FF",
+              fontSize: "10px",
+              fontWeight: 900,
+              cursor: "pointer",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            <LocateFixed
+              size={15}
+              aria-hidden="true"
+            />
+            {tx("Fijar escena")}
+          </button>
+
+          {calibrationMessage && (
+            <span
+              role="status"
+              style={{
+                maxWidth: "210px",
+                padding: "6px 8px",
+                borderRadius: "9px",
+                background:
+                  "rgba(7,8,17,0.78)",
+                color:
+                  "rgba(255,255,255,0.78)",
+                fontSize: "9px",
+                lineHeight: 1.35,
+                textAlign: "right",
+              }}
+            >
+              {calibrationMessage}
+            </span>
+          )}
+        </div>
+      )}
 
       {!sessionReady && (
         <section

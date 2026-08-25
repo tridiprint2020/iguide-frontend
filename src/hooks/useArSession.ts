@@ -17,8 +17,15 @@ import {
   stopArCameraStream,
 } from "../engine/arSensorEngine";
 
+import {
+  getArOrientationSample,
+  getRelativeArViewQuaternion,
+} from "../engine/arPoseEngine";
+
 import type {
   ArCoordinates,
+  ArOrientationSample,
+  ArQuaternion,
   ArSensorSnapshot,
 } from "../types/ar";
 
@@ -29,10 +36,21 @@ import {
 const INITIAL_STATE: ArSensorSnapshot = {
   phase: "idle",
   coordinates: null,
+  referenceCoordinates: null,
   headingDegrees: null,
+  referenceHeadingDegrees: null,
   headingIsAbsolute: false,
+  viewQuaternion: null,
+  calibrationRevision: 0,
   cameraStream: null,
   errorMessage: null,
+};
+
+const IDENTITY_QUATERNION: ArQuaternion = {
+  x: 0,
+  y: 0,
+  z: 0,
+  w: 1,
 };
 
 export function useArSession() {
@@ -50,7 +68,26 @@ export function useArSession() {
   const headingRef =
     useRef<number | null>(null);
 
+  const orientationRef =
+    useRef<ArOrientationSample | null>(
+      null
+    );
+
+  const referenceOrientationRef =
+    useRef<ArOrientationSample | null>(
+      null
+    );
+
+  const referenceHeadingRef =
+    useRef<number | null>(null);
+
+  const calibrationRevisionRef =
+    useRef(0);
+
   const coordinatesRef =
+    useRef<ArCoordinates | null>(null);
+
+  const referenceCoordinatesRef =
     useRef<ArCoordinates | null>(null);
 
   const locationReliableRef =
@@ -100,10 +137,55 @@ export function useArSession() {
     );
     streamRef.current = null;
     headingRef.current = null;
+    orientationRef.current = null;
+    referenceOrientationRef.current =
+      null;
+    referenceHeadingRef.current = null;
+    calibrationRevisionRef.current = 0;
     coordinatesRef.current = null;
+    referenceCoordinatesRef.current =
+      null;
     locationReliableRef.current = false;
     gpsSampleCountRef.current = 0;
     headingSampleCountRef.current = 0;
+  }, []);
+
+  const recalibrate = useCallback(() => {
+    const heading = headingRef.current;
+    const orientation =
+      orientationRef.current;
+
+    if (
+      heading === null ||
+      !orientation ||
+      !coordinatesRef.current ||
+      !locationReliableRef.current
+    ) {
+      return false;
+    }
+
+    referenceHeadingRef.current =
+      heading;
+    referenceOrientationRef.current =
+      orientation;
+    referenceCoordinatesRef.current =
+      coordinatesRef.current;
+    calibrationRevisionRef.current += 1;
+
+    setSnapshot((current) => ({
+      ...current,
+      referenceHeadingDegrees:
+        heading,
+      referenceCoordinates:
+        referenceCoordinatesRef.current,
+      viewQuaternion:
+        IDENTITY_QUATERNION,
+      calibrationRevision:
+        calibrationRevisionRef.current,
+      phase: "ready",
+    }));
+
+    return true;
   }, []);
 
   const start = useCallback(async () => {
@@ -145,12 +227,17 @@ export function useArSession() {
       const handleOrientation = (
         event: DeviceOrientationEvent
       ) => {
+        const orientation =
+          getArOrientationSample(event);
+
         const heading =
           getHeadingFromOrientation(
             event
           );
 
-        if (!heading) return;
+        if (!heading || !orientation) {
+          return;
+        }
 
         const headingIsAbsolute =
           heading.isAbsolute ||
@@ -169,6 +256,8 @@ export function useArSession() {
 
         headingRef.current =
           smoothedHeading;
+        orientationRef.current =
+          orientation;
 
         headingSampleCountRef.current +=
           1;
@@ -177,15 +266,50 @@ export function useArSession() {
           headingSampleCountRef.current >=
           AR_REQUIRED_STABLE_HEADING_SAMPLES;
 
+        if (
+          headingReliable &&
+          locationReliableRef.current &&
+          referenceHeadingRef.current ===
+            null
+        ) {
+          referenceHeadingRef.current =
+            smoothedHeading;
+          referenceOrientationRef.current =
+            orientation;
+          referenceCoordinatesRef.current =
+            coordinatesRef.current;
+        }
+
+        const referenceOrientation =
+          referenceOrientationRef.current;
+
+        const viewQuaternion =
+          referenceOrientation
+            ? getRelativeArViewQuaternion(
+                referenceOrientation,
+                orientation
+              )
+            : null;
+
         setSnapshot((current) => ({
           ...current,
           headingDegrees:
             smoothedHeading,
           headingIsAbsolute:
             headingIsAbsolute,
+          referenceHeadingDegrees:
+            referenceHeadingRef.current,
+          referenceCoordinates:
+            referenceCoordinatesRef.current,
+          viewQuaternion,
+          calibrationRevision:
+            calibrationRevisionRef.current,
           phase:
             locationReliableRef.current &&
-            headingReliable
+            headingReliable &&
+            referenceHeadingRef.current !==
+              null &&
+            viewQuaternion
               ? "ready"
               : "locating",
         }));
@@ -285,15 +409,49 @@ export function useArSession() {
               headingSampleCountRef.current >=
               AR_REQUIRED_STABLE_HEADING_SAMPLES;
 
+            if (
+              headingReliable &&
+              referenceHeadingRef.current ===
+                null &&
+              headingRef.current !== null &&
+              orientationRef.current
+            ) {
+              referenceHeadingRef.current =
+                headingRef.current;
+              referenceOrientationRef.current =
+                orientationRef.current;
+              referenceCoordinatesRef.current =
+                stableCoordinates;
+            }
+
+            const viewQuaternion =
+              referenceOrientationRef.current &&
+              orientationRef.current
+                ? getRelativeArViewQuaternion(
+                    referenceOrientationRef.current,
+                    orientationRef.current
+                  )
+                : null;
+
             setSnapshot((current) => ({
               ...current,
               coordinates:
                 stableCoordinates,
+              referenceHeadingDegrees:
+                referenceHeadingRef.current,
+              referenceCoordinates:
+                referenceCoordinatesRef.current,
+              viewQuaternion,
+              calibrationRevision:
+                calibrationRevisionRef.current,
               phase:
                 current.headingDegrees !==
                   null &&
                 locationReliableRef.current &&
-                headingReliable
+                headingReliable &&
+                referenceHeadingRef.current !==
+                  null &&
+                viewQuaternion
                   ? "ready"
                   : "locating",
             }));
@@ -358,6 +516,7 @@ export function useArSession() {
 
   return {
     ...snapshot,
+    recalibrate,
     start,
     stop,
   };
