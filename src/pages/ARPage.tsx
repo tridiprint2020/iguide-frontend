@@ -27,6 +27,10 @@ import {
   ArPinScene,
 } from "../components/ar/ArPinScene";
 
+import type {
+  ArPinSceneHandle,
+} from "../components/ar/ArPinScene";
+
 import {
   catalog,
 } from "../data/catalog";
@@ -46,6 +50,19 @@ import {
 import {
   AR_REQUIRED_ACCURACY_METERS,
 } from "../engine/arSensorEngine";
+
+import {
+  captureArCompositeBlob,
+} from "../engine/arCaptureEngine";
+
+import {
+  deletePhoto,
+  storePhotoBlob,
+} from "../engine/mediaStorage";
+
+import {
+  sensoryFeedbackEngine,
+} from "../engine/sensoryFeedbackEngine";
 
 import {
   getMemoryCardDescriptor,
@@ -89,6 +106,7 @@ function ARPage() {
 
   const {
     journey,
+    savePoint,
     startWalking,
   } = useJourney();
 
@@ -110,6 +128,11 @@ function ARPage() {
   const videoRef =
     useRef<HTMLVideoElement | null>(null);
 
+  const sceneRef =
+    useRef<ArPinSceneHandle | null>(
+      null
+    );
+
   const [selectedExperienceId,
     setSelectedExperienceId] =
     useState<string | null>(null);
@@ -117,6 +140,18 @@ function ARPage() {
   const [calibrationMessage,
     setCalibrationMessage] =
     useState<string | null>(null);
+
+  const [captureMessage,
+    setCaptureMessage] =
+    useState<string | null>(null);
+
+  const [isCapturing,
+    setIsCapturing] =
+    useState(false);
+
+  const [isFlashing,
+    setIsFlashing] =
+    useState(false);
 
   const visitedIds = useMemo(
     () =>
@@ -327,6 +362,92 @@ function ARPage() {
     );
   }
 
+  async function handleArCapture() {
+    const video = videoRef.current;
+    const scene = sceneRef.current;
+
+    if (
+      !video ||
+      !scene ||
+      !coordinates ||
+      !journey.experience ||
+      isCapturing
+    ) {
+      return;
+    }
+
+    let storedPhotoReference:
+      | string
+      | null = null;
+
+    setIsCapturing(true);
+    setCaptureMessage(null);
+    setIsFlashing(true);
+    sensoryFeedbackEngine.prepare();
+    sensoryFeedbackEngine.shutter();
+
+    window.setTimeout(
+      () => setIsFlashing(false),
+      220
+    );
+
+    try {
+      scene.renderFrame();
+
+      const overlayCanvas =
+        scene.getCanvas();
+
+      if (!overlayCanvas) {
+        throw new Error(
+          "ar-overlay-not-ready"
+        );
+      }
+
+      const photo =
+        await captureArCompositeBlob({
+          video,
+          overlayCanvas,
+          labels:
+            scene.getCaptureLabels(),
+          missionTitle:
+            journey.experience.title,
+        });
+
+      storedPhotoReference =
+        await storePhotoBlob(photo);
+
+      savePoint({
+        id: crypto.randomUUID(),
+        type: "memory",
+        lat: coordinates.latitude,
+        lng: coordinates.longitude,
+        timestamp: Date.now(),
+        photo: storedPhotoReference,
+      });
+
+      sensoryFeedbackEngine.memorySaved();
+      setCaptureMessage(
+        tx(
+          "Recuerdo AR guardado en tu MemoryCard."
+        )
+      );
+    } catch {
+      if (storedPhotoReference) {
+        await deletePhoto(
+          storedPhotoReference
+        ).catch(() => undefined);
+      }
+
+      setCaptureMessage(
+        tx(
+          "No se pudo guardar la captura AR. Mantén la cámara abierta e inténtalo nuevamente."
+        )
+      );
+    } finally {
+      setIsCapturing(false);
+    }
+  }
+
   const sessionReady =
     phase === "ready";
 
@@ -375,6 +496,7 @@ function ARPage() {
 
       {sessionReady && (
         <ArPinScene
+          ref={sceneRef}
           placements={placements}
           markerStates={markerStates}
           selectedExperienceId={
@@ -387,6 +509,21 @@ function ARPage() {
             calibrationRevision
           }
           onSelect={handleSelect}
+        />
+      )}
+
+      {isFlashing && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 40,
+            background: "#FFFFFF",
+            animation:
+              "iguide-ar-flash 220ms ease-out forwards",
+            pointerEvents: "none",
+          }}
         />
       )}
 
@@ -549,6 +686,49 @@ function ARPage() {
             {tx("Fijar escena")}
           </button>
 
+          {activeMissionId && (
+            <button
+              type="button"
+              disabled={isCapturing}
+              onClick={() =>
+                void handleArCapture()
+              }
+              aria-label={tx(
+                "Guardar esta vista AR en la MemoryCard"
+              )}
+              style={{
+                minHeight: "38px",
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "8px 11px",
+                borderRadius: "12px",
+                border:
+                  "1px solid rgba(255,98,241,0.52)",
+                background:
+                  "rgba(38,5,42,0.86)",
+                color: "#FF9AF6",
+                fontSize: "10px",
+                fontWeight: 900,
+                cursor: isCapturing
+                  ? "wait"
+                  : "pointer",
+                opacity: isCapturing
+                  ? 0.68
+                  : 1,
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              <Camera
+                size={16}
+                aria-hidden="true"
+              />
+              {isCapturing
+                ? tx("Guardando AR…")
+                : tx("Capturar AR")}
+            </button>
+          )}
+
           {calibrationMessage && (
             <span
               role="status"
@@ -566,6 +746,25 @@ function ARPage() {
               }}
             >
               {calibrationMessage}
+            </span>
+          )}
+
+          {captureMessage && (
+            <span
+              role="status"
+              style={{
+                maxWidth: "220px",
+                padding: "6px 8px",
+                borderRadius: "9px",
+                background:
+                  "rgba(7,8,17,0.84)",
+                color: "#E8FDFF",
+                fontSize: "9px",
+                lineHeight: 1.35,
+                textAlign: "right",
+              }}
+            >
+              {captureMessage}
             </span>
           )}
         </div>
@@ -655,7 +854,7 @@ function ARPage() {
               }}
             >
               {tx(
-                "I.GUIDE mostrará pines 3D de siete metros para lugares a 150 metros. Si tienes una misión activa, su faro podrá verse desde más lejos. La cámara no se graba."
+                "I.GUIDE mostrará pines 3D de siete metros para lugares a 150 metros. Si tienes una misión activa, su faro podrá verse desde más lejos. La cámara no se graba continuamente; solo guardamos una imagen cuando pulsas Capturar AR."
               )}
             </p>
 
@@ -971,6 +1170,11 @@ function ARPage() {
         {`
           @keyframes iguide-ar-spin {
             to { transform: rotate(360deg); }
+          }
+
+          @keyframes iguide-ar-flash {
+            from { opacity: 0.94; }
+            to { opacity: 0; }
           }
         `}
       </style>

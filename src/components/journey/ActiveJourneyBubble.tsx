@@ -289,12 +289,13 @@ export default function ActiveJourneyBubble() {
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={
-                handleCaptureMemory
-              }
-              style={{
+            {!isArScreen && (
+              <button
+                type="button"
+                onClick={
+                  handleCaptureMemory
+                }
+                style={{
                 minHeight:
                   "44px",
                 border:
@@ -309,10 +310,11 @@ export default function ActiveJourneyBubble() {
                   800,
                 cursor:
                   "pointer",
-              }}
-            >
-              📸 {tx("Guardar recuerdo")}
-            </button>
+                }}
+              >
+                📸 {tx("Guardar recuerdo")}
+              </button>
+            )}
 
             <button
               type="button"
@@ -478,7 +480,7 @@ export default function ActiveJourneyBubble() {
         )}
       </button>
 
-      {!expanded && (
+      {!expanded && !isArScreen && (
         <button
           type="button"
           onClick={

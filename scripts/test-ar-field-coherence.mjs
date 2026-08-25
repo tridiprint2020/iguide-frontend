@@ -5,6 +5,10 @@ import {
   getRelativeArViewQuaternion,
 } from "../src/engine/arPoseEngine.ts";
 
+import {
+  getCoverCropRect,
+} from "../src/engine/arCaptureEngine.ts";
+
 const reference = {
   alphaDegrees: 42,
   betaDegrees: 76,
@@ -54,6 +58,22 @@ assert.ok(
   "la inclinación debe mover la escena, no quedarse como overlay 2D"
 );
 
+assert.deepEqual(
+  getCoverCropRect(
+    1920,
+    1080,
+    1080,
+    1920
+  ),
+  {
+    sourceX: 656.25,
+    sourceY: 0,
+    sourceWidth: 607.5,
+    sourceHeight: 1080,
+  },
+  "la captura vertical debe replicar object-fit cover del video"
+);
+
 console.log(
-  "AR field coherence: 3/3 pruebas en verde"
+  "AR field coherence: 4/4 pruebas en verde"
 );
