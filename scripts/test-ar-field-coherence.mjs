@@ -9,6 +9,14 @@ import {
   getCoverCropRect,
 } from "../src/engine/arCaptureEngine.ts";
 
+import {
+  AR_MISSION_BEACON_ABOVE_GROUND_METERS,
+  AR_MISSION_BEACON_BELOW_GROUND_METERS,
+  AR_MISSION_BEACON_CENTER_Y_METERS,
+  AR_MISSION_BEACON_HEIGHT_METERS,
+  getArPinRotationState,
+} from "../src/engine/arPinVisualEngine.ts";
+
 const reference = {
   alphaDegrees: 42,
   betaDegrees: 76,
@@ -74,6 +82,41 @@ assert.deepEqual(
   "la captura vertical debe replicar object-fit cover del video"
 );
 
+const rotation =
+  getArPinRotationState(4, false);
+
+assert.ok(
+  rotation.bodyRotationY < 0 &&
+    rotation.symbolRotationY > 0,
+  "el pin y su símbolo deben girar en sentidos opuestos"
+);
+
+assert.deepEqual(
+  getArPinRotationState(1, true),
+  getArPinRotationState(90, true),
+  "reduced motion debe inmovilizar el pin y su símbolo"
+);
+
+assert.deepEqual(
+  {
+    below:
+      AR_MISSION_BEACON_BELOW_GROUND_METERS,
+    above:
+      AR_MISSION_BEACON_ABOVE_GROUND_METERS,
+    height:
+      AR_MISSION_BEACON_HEIGHT_METERS,
+    center:
+      AR_MISSION_BEACON_CENTER_Y_METERS,
+  },
+  {
+    below: -40,
+    above: 180,
+    height: 220,
+    center: 70,
+  },
+  "el faro debe atravesar el punto desde el subsuelo hasta el cielo"
+);
+
 console.log(
-  "AR field coherence: 4/4 pruebas en verde"
+  "AR field coherence: 7/7 pruebas en verde"
 );
