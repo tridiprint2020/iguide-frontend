@@ -11,6 +11,7 @@ export type ArCoordinates = {
 export type ArGeoPlacement = {
   experience: Experience;
   distanceMeters: number;
+  spatialDistanceMeters?: number;
   bearingDegrees: number;
   relativeBearingDegrees: number;
 };

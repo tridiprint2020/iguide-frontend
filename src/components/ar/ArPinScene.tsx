@@ -83,13 +83,15 @@ function getWorldCoordinates(
       ? Math.max(
           2.5,
           Math.min(
-            placement.distanceMeters,
+            placement.spatialDistanceMeters ??
+              placement.distanceMeters,
             MISSION_BEACON_RENDER_DISTANCE_METERS
           )
         )
       : Math.max(
           2.5,
-          placement.distanceMeters
+          placement.spatialDistanceMeters ??
+            placement.distanceMeters
         );
 
   return {

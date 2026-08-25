@@ -196,6 +196,8 @@ function ARPage() {
     return anchoredPlacements.map(
       (placement) => ({
         ...placement,
+        spatialDistanceMeters:
+          placement.distanceMeters,
         distanceMeters:
           calculateArDistanceMeters(
             coordinates,
