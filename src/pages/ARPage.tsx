@@ -356,10 +356,10 @@ function ARPage() {
     setCalibrationMessage(
       calibrated
         ? tx(
-            "Escena fijada desde este punto."
+            "Escena recentrada."
           )
         : tx(
-            "Espera una ubicación precisa antes de fijar la escena."
+            "Espera una ubicación precisa antes de recentrar."
           )
     );
   }
@@ -661,22 +661,23 @@ function ARPage() {
             type="button"
             onClick={handleRecalibrate}
             aria-label={tx(
-              "Fijar la escena desde este punto"
+              "Recentrar escena"
             )}
+            title={tx("Recentrar escena")}
             style={{
-              minHeight: "34px",
+              width: "34px",
+              height: "34px",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              padding: "7px 10px",
+              justifyContent: "center",
+              padding: 0,
               borderRadius: "11px",
               border:
-                "1px solid rgba(57,231,255,0.38)",
+                "1px solid rgba(57,231,255,0.26)",
               background:
-                "rgba(7,8,17,0.82)",
-              color: "#8AF4FF",
-              fontSize: "10px",
-              fontWeight: 900,
+                "rgba(7,8,17,0.68)",
+              color:
+                "rgba(138,244,255,0.76)",
               cursor: "pointer",
               backdropFilter: "blur(10px)",
             }}
@@ -685,7 +686,6 @@ function ARPage() {
               size={15}
               aria-hidden="true"
             />
-            {tx("Fijar escena")}
           </button>
 
           {activeMissionId && (
