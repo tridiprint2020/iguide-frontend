@@ -29,6 +29,8 @@ import {
 
 import { locationTracker } from "../engine/locationTracker";
 import { sensoryFeedbackEngine } from "../engine/sensoryFeedbackEngine";
+import { getGeolocationOutcomeReason } from "../engine/pilotTelemetryEngine";
+import { recordPilotEvent } from "../repository/pilotTelemetryRepository";
 import { tx } from "../i18n";
 
 interface JourneyContextType {
@@ -258,15 +260,38 @@ export function JourneyProvider({
    */
   locationTracker.prepareFeedback();
 
+  const targetExperienceId =
+    experience.experienceId;
+
+  const startAttemptId =
+    crypto.randomUUID();
+
+  recordPilotEvent(
+    "mission_start_requested",
+    {
+      experienceId:
+        targetExperienceId,
+      dedupeKey: startAttemptId,
+    }
+  );
+
   if (!navigator.geolocation) {
+    recordPilotEvent(
+      "mission_start_failed",
+      {
+        experienceId:
+          targetExperienceId,
+        outcomeReason:
+          "unsupported",
+        dedupeKey: startAttemptId,
+      }
+    );
+
     alert(
       tx("Tu dispositivo no soporta geolocalización.")
     );
     return false;
   }
-
-  const targetExperienceId =
-    experience.experienceId;
 
   let activeExperienceId =
     localStorage.getItem(
@@ -292,6 +317,17 @@ export function JourneyProvider({
       activeTrack &&
       !activeTrack.completedAt
     ) {
+      recordPilotEvent(
+        "mission_start_failed",
+        {
+          experienceId:
+            targetExperienceId,
+          outcomeReason:
+            "another_mission_active",
+          dedupeKey: startAttemptId,
+        }
+      );
+
       alert(
         tx("Ya tienes una misión activa. Continúala o abandónala antes de iniciar otra.")
       );
@@ -337,6 +373,17 @@ export function JourneyProvider({
       timeline:
         existingTrack.timeline,
     });
+
+    recordPilotEvent(
+      "mission_started",
+      {
+        experienceId:
+          targetExperienceId,
+        outcomeReason: "resumed",
+        dedupeKey:
+          existingTrack.sessionId,
+      }
+    );
 
     return true;
   }
@@ -389,6 +436,16 @@ export function JourneyProvider({
           latitude,
           longitude
         );
+
+      recordPilotEvent(
+        "mission_started",
+        {
+          experienceId:
+            targetExperienceId,
+          dedupeKey:
+            initialTrack.sessionId,
+        }
+      );
 
       sensoryFeedbackEngine.missionStart();
 
@@ -443,6 +500,19 @@ export function JourneyProvider({
       console.error(
         "No se pudo obtener la ubicación inicial:",
         error
+      );
+
+      recordPilotEvent(
+        "mission_start_failed",
+        {
+          experienceId:
+            targetExperienceId,
+          outcomeReason:
+            getGeolocationOutcomeReason(
+              error.code
+            ),
+          dedupeKey: startAttemptId,
+        }
       );
 
       localStorage.removeItem(
@@ -623,6 +693,15 @@ function abandonJourney() {
    * iguide_track_<id>
    */
   deleteTrack(experienceId);
+
+  recordPilotEvent(
+    "mission_abandoned",
+    {
+      experienceId,
+      dedupeKey:
+        preservedTrack.sessionId,
+    }
+  );
 
   localStorage.removeItem(
     ACTIVE_JOURNEY_KEY
@@ -831,6 +910,15 @@ function confirmArrival(): Promise<CompletionResult> {
     completeExpedition(
       experienceId,
       150
+    );
+
+    recordPilotEvent(
+      "mission_certified",
+      {
+        experienceId,
+        dedupeKey:
+          completedTrack.sessionId,
+      }
     );
 
     /*

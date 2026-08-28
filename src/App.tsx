@@ -21,6 +21,7 @@ import MapPage from "./pages/MapPage";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import PilotQrLanding from "./pages/PilotQrLanding";
 import {
   MainContainer,
 } from "./pages/MainContainer";
@@ -186,6 +187,11 @@ function App() {
               <ARPage />
             </Suspense>
           }
+        />
+
+        <Route
+          path="/q/:sourceCode"
+          element={<PilotQrLanding />}
         />
 
         {/* Compatibilidad con enlaces antiguos. */}

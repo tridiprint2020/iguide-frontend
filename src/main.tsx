@@ -8,6 +8,7 @@ import {
 } from "@vercel/analytics/react";
 
 import App from "./App";
+import { PilotTelemetryBootstrap } from "./components/telemetry/PilotTelemetryBootstrap";
 import { JourneyProvider } from "./context/JourneyContext";
 import { WeatherProvider } from "./context/WeatherContext";
 
@@ -22,6 +23,7 @@ ReactDOM.createRoot(
       <WeatherProvider>
         <JourneyProvider>
           <App />
+          <PilotTelemetryBootstrap />
           <Analytics />
         </JourneyProvider>
       </WeatherProvider>

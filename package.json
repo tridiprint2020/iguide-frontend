@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "lint:baseline": "node scripts/check-lint-baseline.mjs",
+    "test": "vitest run --pool=forks --maxWorkers=1 --no-file-parallelism",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -37,6 +39,7 @@
     "sharp": "^0.35.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.62.0",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.11"
   }
 }

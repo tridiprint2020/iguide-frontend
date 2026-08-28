@@ -4,6 +4,7 @@
  * allowing the whole interface to share one central dictionary.
  */
 const en: Record<string, string> = {
+  "Preparando I.GUIDE…": "Preparing I.GUIDE…",
   "Realidad aumentada": "Augmented reality",
   "Cámara de realidad aumentada": "Augmented reality camera",
   "Pines tridimensionales I.GUIDE": "I.GUIDE three-dimensional pins",

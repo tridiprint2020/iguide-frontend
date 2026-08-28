@@ -68,6 +68,10 @@ import {
   tx,
 } from "../i18n";
 
+import {
+  recordPilotEvent,
+} from "../repository/pilotTelemetryRepository";
+
 function isJourneyActive(
   state: string
 ): boolean {
@@ -120,6 +124,66 @@ function ARPage() {
     isJourneyActive(journey.state)
       ? journey.experience.experienceId
       : null;
+
+  const [arTelemetrySessionId] =
+    useState(() => crypto.randomUUID());
+
+  const arOpenedRecordedRef =
+    useRef(false);
+
+  const arReadyRecordedRef =
+    useRef(false);
+
+  const arFailedRecordedRef =
+    useRef(false);
+
+  useEffect(() => {
+    if (arOpenedRecordedRef.current) {
+      return;
+    }
+
+    arOpenedRecordedRef.current = true;
+
+    recordPilotEvent("ar_opened", {
+      experienceId: activeMissionId,
+      dedupeKey: arTelemetrySessionId,
+    });
+  }, [
+    activeMissionId,
+    arTelemetrySessionId,
+  ]);
+
+  useEffect(() => {
+    if (
+      phase === "ready" &&
+      !arReadyRecordedRef.current
+    ) {
+      arReadyRecordedRef.current = true;
+
+      recordPilotEvent("ar_ready", {
+        experienceId: activeMissionId,
+        dedupeKey: arTelemetrySessionId,
+      });
+    }
+
+    if (
+      phase === "error" &&
+      !arFailedRecordedRef.current
+    ) {
+      arFailedRecordedRef.current = true;
+
+      recordPilotEvent("ar_failed", {
+        experienceId: activeMissionId,
+        outcomeReason:
+          "sensor_or_camera_error",
+        dedupeKey: arTelemetrySessionId,
+      });
+    }
+  }, [
+    activeMissionId,
+    arTelemetrySessionId,
+    phase,
+  ]);
 
   const placements = useMemo(
     () =>
