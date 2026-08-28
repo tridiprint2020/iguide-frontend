@@ -3,6 +3,7 @@ import {
 } from "react";
 
 import {
+  configurePilotTelemetryCohort,
   flushPilotEvents,
 } from "../../repository/pilotTelemetryRepository";
 
@@ -12,6 +13,7 @@ export function PilotTelemetryBootstrap() {
       void flushPilotEvents();
     };
 
+    configurePilotTelemetryCohort();
     void flushPilotEvents();
 
     window.addEventListener(

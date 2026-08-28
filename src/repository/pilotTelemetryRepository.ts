@@ -11,6 +11,16 @@ import {
   getOrCreatePilotAttribution,
 } from "./pilotAttributionRepository";
 
+import {
+  isInternalPilotCohort,
+  resolveCurrentPilotSourceCode,
+  syncPilotCohortFromUrl,
+} from "./pilotCohortRepository";
+
+import {
+  PILOT_INTERNAL_SOURCE_CODE,
+} from "../engine/pilotCohortEngine";
+
 const PILOT_EVENT_QUEUE_STORAGE_KEY =
   "iguide_pilot_event_queue_v1";
 
@@ -114,6 +124,36 @@ function enqueuePilotEvent(
       -MAXIMUM_QUEUED_EVENTS
     )
   );
+}
+
+function markQueuedEventsAsInternal(): void {
+  const queue = readEventQueue();
+
+  if (queue.length === 0) {
+    return;
+  }
+
+  writeJsonStorage(
+    PILOT_EVENT_QUEUE_STORAGE_KEY,
+    queue.map((event) => ({
+      ...event,
+      sourceCode:
+        PILOT_INTERNAL_SOURCE_CODE,
+    }))
+  );
+}
+
+export function configurePilotTelemetryCohort(): void {
+  const command =
+    syncPilotCohortFromUrl();
+
+  if (
+    command === "internal" ||
+    (command === null &&
+      isInternalPilotCohort())
+  ) {
+    markQueuedEventsAsInternal();
+  }
 }
 
 function getCollectorConfig():
@@ -228,6 +268,8 @@ export function recordPilotEvent(
   eventType: PilotEventType,
   details: PilotEventDetails = {}
 ): PilotEvent {
+  configurePilotTelemetryCohort();
+
   const attribution =
     getOrCreatePilotAttribution();
 
@@ -235,7 +277,10 @@ export function recordPilotEvent(
     eventType,
     visitSessionId:
       attribution.visitSessionId,
-    sourceCode: attribution.sourceCode,
+    sourceCode:
+      resolveCurrentPilotSourceCode(
+        attribution.sourceCode
+      ),
     experienceId:
       details.experienceId,
     outcomeReason:
@@ -254,6 +299,8 @@ export function recordPilotEvent(
 export function recordPilotQrOpened(
   rawSourceCode: string | null | undefined
 ): boolean {
+  configurePilotTelemetryCohort();
+
   const attribution =
     beginPilotQrAttribution(
       rawSourceCode
@@ -267,7 +314,10 @@ export function recordPilotQrOpened(
     eventType: "qr_opened",
     visitSessionId:
       attribution.visitSessionId,
-    sourceCode: attribution.sourceCode,
+    sourceCode:
+      resolveCurrentPilotSourceCode(
+        attribution.sourceCode
+      ),
     dedupeKey: "qr-opened",
     appVersion:
       import.meta.env.VITE_APP_VERSION ??
