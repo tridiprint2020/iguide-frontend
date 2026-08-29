@@ -37,6 +37,17 @@ export interface WeatherForecastDay {
   precipitationProbability: number;
   windSpeedKmh: number;
   isHighMountainSafe: boolean;
+  periods?: {
+    morning: WeatherForecastPeriod;
+    afternoon: WeatherForecastPeriod;
+    night: WeatherForecastPeriod;
+  };
+}
+
+export interface WeatherForecastPeriod {
+  hour: number;
+  temperature: number;
+  condition: WeatherStatus["condition"];
 }
 
 export interface WeatherForecast {

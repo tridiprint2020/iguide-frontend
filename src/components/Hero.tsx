@@ -1,4 +1,9 @@
 import WeatherCard from "./WeatherCard";
+import HomeWeeklyWeatherDialog from "./home/HomeWeeklyWeatherDialog";
+
+import {
+  useState,
+} from "react";
 
 import { loadUserProfile } from "../data/user";
 import { Theme } from "../styles/theme";
@@ -18,6 +23,11 @@ function Hero({
   weather,
   isWeatherLoading = false,
 }: Props) {
+  const [
+    isWeatherOpen,
+    setIsWeatherOpen,
+  ] = useState(false);
+
   const profile =
     loadUserProfile();
 
@@ -172,6 +182,18 @@ function Hero({
             condition:
               weather.condition,
           }}
+          onClick={() =>
+            setIsWeatherOpen(true)
+          }
+          expanded={isWeatherOpen}
+        />
+      )}
+
+      {isWeatherOpen && (
+        <HomeWeeklyWeatherDialog
+          onClose={() =>
+            setIsWeatherOpen(false)
+          }
         />
       )}
     </section>

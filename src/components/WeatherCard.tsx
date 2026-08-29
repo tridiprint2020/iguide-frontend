@@ -31,6 +31,8 @@ type Props = {
     condition:
       WeatherCondition;
   };
+  onClick: () => void;
+  expanded: boolean;
 };
 
 function getWeatherPresentation(
@@ -103,6 +105,8 @@ function getWeatherPresentation(
 function WeatherCard({
   temperature,
   weather,
+  onClick,
+  expanded,
 }: Props) {
   const [
     isHovered,
@@ -123,8 +127,13 @@ function WeatherCard({
     );
 
   return (
-    <div
+    <button
+      type="button"
       className="weather-card"
+      onClick={onClick}
+      aria-haspopup="dialog"
+      aria-expanded={expanded}
+      aria-label={tx("Ver pronóstico de 7 días")}
       onMouseEnter={() =>
         setIsHovered(true)
       }
@@ -140,6 +149,10 @@ function WeatherCard({
         zIndex: 1,
         top: "-40px",
         cursor: "pointer",
+        padding: 0,
+        border: 0,
+        background: "transparent",
+        font: "inherit",
 
         transformOrigin:
           "top right",
@@ -210,7 +223,7 @@ function WeatherCard({
           {tx(visual.label)}
         </span>
       </div>
-    </div>
+    </button>
   );
 }
 

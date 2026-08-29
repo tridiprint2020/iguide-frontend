@@ -29,7 +29,9 @@ type OpenMeteoResponse = {
 
   hourly?: {
     time: string[];
-    precipitation_probability: number[];
+    precipitation_probability?: number[];
+    temperature_2m?: number[];
+    weather_code?: number[];
   };
 
   daily?: {
@@ -166,6 +168,67 @@ function getRequiredDailyValue(
   return value;
 }
 
+function getRequiredHourlyValue(
+  values: number[] | undefined,
+  index: number,
+  field: string,
+  date: string,
+  hour: number
+): number {
+  const value = values?.[index];
+
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value)
+  ) {
+    throw new Error(
+      `Open-Meteo no devolvió ${field} para ${date} a las ${hour}:00.`
+    );
+  }
+
+  return value;
+}
+
+function getForecastPeriod(
+  data: OpenMeteoResponse,
+  date: string,
+  hour: number
+) {
+  const expectedTime =
+    `${date}T${String(hour).padStart(2, "0")}:00`;
+  const times = data.hourly?.time ?? [];
+  const index = times.indexOf(expectedTime);
+
+  if (index < 0) {
+    throw new Error(
+      `Open-Meteo no devolvió el tramo ${expectedTime}.`
+    );
+  }
+
+  const temperature =
+    getRequiredHourlyValue(
+      data.hourly?.temperature_2m,
+      index,
+      "temperature_2m",
+      date,
+      hour
+    );
+  const weatherCode =
+    getRequiredHourlyValue(
+      data.hourly?.weather_code,
+      index,
+      "weather_code",
+      date,
+      hour
+    );
+
+  return {
+    hour,
+    temperature: Math.round(temperature),
+    condition: mapWeatherCode(weatherCode),
+  };
+}
+
 function mapDailyForecast(
   data: OpenMeteoResponse,
   fetchedAt: number
@@ -246,6 +309,23 @@ function mapDailyForecast(
             windSpeedKmh:
               Math.round(windSpeedKmh),
             isHighMountainSafe,
+            periods: {
+              morning: getForecastPeriod(
+                data,
+                date,
+                9
+              ),
+              afternoon: getForecastPeriod(
+                data,
+                date,
+                15
+              ),
+              night: getForecastPeriod(
+                data,
+                date,
+                21
+              ),
+            },
           };
         }
       );
@@ -276,6 +356,11 @@ async function requestSevenDayForecast(): Promise<WeatherForecast> {
         "temperature_2m_max",
         "precipitation_probability_max",
         "wind_speed_10m_max",
+      ].join(","),
+
+      hourly: [
+        "temperature_2m",
+        "weather_code",
       ].join(","),
 
       forecast_days: String(
