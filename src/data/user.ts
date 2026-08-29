@@ -7,6 +7,41 @@ import type {
 const STORAGE_KEY =
   "iguide_user_profile";
 
+const FAVORITE_REACTIONS = new Set<FavoriteReaction>([
+  "saved",
+  "recommended",
+  "loved",
+  "must_try",
+]);
+
+function normalizeFavoriteReactions(
+  favorite: UserFavorite
+): FavoriteReaction[] {
+  const storedReactions =
+    Array.isArray(favorite.reactions)
+      ? favorite.reactions
+      : [favorite.reaction];
+
+  const normalized = Array.from(
+    new Set(
+      storedReactions.filter(
+        (reaction): reaction is FavoriteReaction =>
+          FAVORITE_REACTIONS.has(reaction)
+      )
+    )
+  );
+
+  return normalized.length > 0
+    ? normalized
+    : ["saved"];
+}
+
+export function getFavoriteReactions(
+  favorite: UserFavorite
+): FavoriteReaction[] {
+  return normalizeFavoriteReactions(favorite);
+}
+
 const defaultUser: UserProfile = {
   name: "Explorador",
 
@@ -103,7 +138,15 @@ function normalizeUserProfile(
       Array.isArray(
         rawProfile.favorites
       )
-        ? rawProfile.favorites
+        ? rawProfile.favorites.map(
+            (favorite) => ({
+              ...favorite,
+              reactions:
+                normalizeFavoriteReactions(
+                  favorite
+                ),
+            })
+          )
         : [],
   };
 }
@@ -323,6 +366,7 @@ export function toggleFavorite(
       {
         experienceId,
         reaction: "saved",
+        reactions: ["saved"],
         createdAt: now,
         updatedAt: now,
       },
@@ -337,7 +381,7 @@ export function toggleFavorite(
 }
 
 /**
- * Cambia la valoración positiva.
+ * Agrega una valoración positiva sin borrar las anteriores.
  * Si aún no estaba guardado, lo crea.
  */
 export function setFavoriteReaction(
@@ -358,6 +402,12 @@ export function setFavoriteReaction(
     );
 
   if (existing) {
+    const reactions =
+      getFavoriteReactions(existing).filter(
+        (storedReaction) =>
+          storedReaction !== "saved"
+      );
+
     profile.favorites =
       profile.favorites.map(
         (favorite) =>
@@ -366,6 +416,12 @@ export function setFavoriteReaction(
             ? {
                 ...favorite,
                 reaction,
+                reactions: Array.from(
+                  new Set([
+                    ...reactions,
+                    reaction,
+                  ])
+                ),
                 updatedAt: now,
               }
             : favorite
@@ -376,6 +432,7 @@ export function setFavoriteReaction(
       {
         experienceId,
         reaction,
+        reactions: [reaction],
         createdAt: now,
         updatedAt: now,
       },

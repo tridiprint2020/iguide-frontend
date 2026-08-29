@@ -25,6 +25,7 @@ import {
 } from "../data/catalog";
 
 import {
+  getFavoriteReactions,
   loadUserProfile,
   removeFavorite,
   setFavoriteReaction,
@@ -153,7 +154,11 @@ function Favorites() {
   const reactionCounts = useMemo(() => {
     return profile.favorites.reduce(
       (counts, favorite) => {
-        counts[favorite.reaction] += 1;
+        getFavoriteReactions(
+          favorite
+        ).forEach((reaction) => {
+          counts[reaction] += 1;
+        });
         return counts;
       },
       {
@@ -172,8 +177,9 @@ function Favorites() {
 
     return profile.favorites.filter(
       (favorite) =>
-        favorite.reaction ===
-        activeFilter
+        getFavoriteReactions(
+          favorite
+        ).includes(activeFilter)
     );
   }, [
     activeFilter,
@@ -671,8 +677,9 @@ function Favorites() {
                                 ];
 
                               const active =
-                                favorite.reaction ===
-                                reaction;
+                                getFavoriteReactions(
+                                  favorite
+                                ).includes(reaction);
 
                               return (
                                 <button

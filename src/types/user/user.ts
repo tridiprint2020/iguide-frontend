@@ -9,6 +9,7 @@ export type FavoriteReaction =
 export interface UserFavorite {
   experienceId: string;
   reaction: FavoriteReaction;
+  reactions: FavoriteReaction[];
   createdAt: number;
   updatedAt: number;
 }

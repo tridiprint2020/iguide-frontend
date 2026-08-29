@@ -16,6 +16,7 @@ import {
 
 import {
   getFavorite,
+  getFavoriteReactions,
   setFavoriteReaction,
 } from "../data/user";
 
@@ -167,7 +168,7 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
       setReactionSelection,
     ] = useState<{
       experienceId: string;
-      reaction: FavoriteReaction;
+      reactions: FavoriteReaction[];
     } | null>(null);
 
     const [
@@ -180,13 +181,20 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
       setIsSharing,
     ] = useState(false);
 
-    const selectedReaction =
+    const selectedReactions =
       experienceId &&
       reactionSelection?.experienceId === experienceId
-        ? reactionSelection.reaction
+        ? reactionSelection.reactions
         : experienceId
-          ? getFavorite(experienceId)?.reaction ?? null
-          : null;
+          ? (() => {
+              const favorite =
+                getFavorite(experienceId);
+
+              return favorite
+                ? getFavoriteReactions(favorite)
+                : [];
+            })()
+          : [];
 
     const formattedDistance =
       `${data.stats.totalDistanceKm.toFixed(2)} km`;
@@ -208,10 +216,22 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
         return;
       }
 
-      setFavoriteReaction(experienceId, reaction);
+      const profile = setFavoriteReaction(
+        experienceId,
+        reaction
+      );
+      const favorite =
+        profile.favorites.find(
+          (item) =>
+            item.experienceId ===
+            experienceId
+        );
+
       setReactionSelection({
         experienceId,
-        reaction,
+        reactions: favorite
+          ? getFavoriteReactions(favorite)
+          : [reaction],
       });
     }
 
@@ -686,7 +706,9 @@ const MemoryCard = forwardRef<HTMLElement, Props>(
               {REACTIONS.map((reaction) => {
                 const Icon = reaction.icon;
                 const selected =
-                  selectedReaction === reaction.id;
+                  selectedReactions.includes(
+                    reaction.id
+                  );
 
                 return (
                   <button
