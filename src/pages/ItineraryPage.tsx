@@ -77,10 +77,19 @@ const WANT_OPTIONS: {
   label: string;
 }[] = [
   { value: "gastronomy", label: "Comer local" },
+  {
+    value: "culture",
+    label: "Historia y cultura",
+  },
   { value: "adventure", label: "Aventura" },
   {
     value: "photography",
     label: "Rincones y miradores",
+  },
+  { value: "crafts", label: "Artesanía" },
+  {
+    value: "festivals",
+    label: "Fiestas locales",
   },
   { value: "nightlife", label: "Vida nocturna" },
   { value: "surprise", label: "Sorpréndeme" },
@@ -99,6 +108,11 @@ const HOUR_OPTIONS = Array.from(
   { length: 14 },
   (_, index) => index + 7
 ); // 7:00 a 20:00
+
+const END_HOUR_OPTIONS = Array.from(
+  { length: 14 },
+  (_, index) => index + 8
+); // 8:00 a 21:00
 
 const WEEKDAY_LABELS = [
   "L",
@@ -123,10 +137,21 @@ function toIsoDate(date: Date): string {
 }
 
 function formatHour(hour: number): string {
-  const period = hour >= 12 ? "pm" : "am";
-  const displayHour =
-    hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:00 ${period}`;
+  return new Date(
+    2026,
+    0,
+    1,
+    hour,
+    0
+  ).toLocaleTimeString(
+    getAppLanguage() === "en"
+      ? "en-US"
+      : "es-PE",
+    {
+      hour: "numeric",
+      minute: "2-digit",
+    }
+  );
 }
 
 function buildMonthGrid(
@@ -276,11 +301,19 @@ function ItineraryPage() {
         null
     );
 
-  const [want, setWant] =
-    useState<string | null>(
-      initialShared.snapshot
-        ?.preferences.priority ?? null
+  const [selectedEndMinutes, setSelectedEndMinutes] =
+    useState<number | null>(
+      initialShared.plan?.endMinutes ?? null
     );
+
+  const [wants, setWants] =
+    useState<string[]>(
+      initialShared.snapshot
+        ?.preferences.priorities ?? []
+    );
+
+  const [showFullMonth, setShowFullMonth] =
+    useState(false);
 
   const [transport, setTransport] =
     useState<
@@ -376,17 +409,19 @@ function ItineraryPage() {
   const canBuildPlan =
     selectedDate !== null &&
     selectedHour !== null &&
-    want !== null;
+    selectedEndMinutes !== null &&
+    selectedEndMinutes > selectedHour * 60 &&
+    wants.length > 0;
 
   function getCurrentSnapshot() {
-    if (!plan || !want) {
+    if (!plan || wants.length === 0) {
       return null;
     }
 
     return createItinerarySnapshot(
       plan,
       {
-        priority: want,
+        priorities: wants,
         transport:
           transport ?? "walking",
       }
@@ -396,6 +431,7 @@ function ItineraryPage() {
   function handleSelectDate(date: Date) {
     setSelectedDate(toIsoDate(date));
     setSelectedHour(null);
+    setSelectedEndMinutes(null);
     setPlan(null);
     setPlanNotice(null);
   }
@@ -405,6 +441,7 @@ function ItineraryPage() {
   ) {
     setSelectedDate(day.date);
     setSelectedHour(null);
+    setSelectedEndMinutes(null);
     setPlan(null);
     setPlanNotice(null);
   }
@@ -430,7 +467,8 @@ function ItineraryPage() {
     if (
       !selectedDate ||
       selectedHour === null ||
-      !want
+      selectedEndMinutes === null ||
+      wants.length === 0
     ) {
       return;
     }
@@ -438,7 +476,8 @@ function ItineraryPage() {
     const answers: ItineraryAnswers = {
       selectedDate,
       selectedHour,
-      priority: want,
+      endMinutes: selectedEndMinutes,
+      priorities: wants,
       transport: transport ?? "walking",
     };
 
@@ -461,7 +500,7 @@ function ItineraryPage() {
     const snapshot =
       getCurrentSnapshot();
 
-    if (!plan || !want || !snapshot) {
+    if (!plan || wants.length === 0 || !snapshot) {
       return;
     }
 
@@ -581,9 +620,12 @@ function ItineraryPage() {
     setSelectedHour(
       savedPlan.snapshot.selectedHour
     );
-    setWant(
+    setSelectedEndMinutes(
+      savedPlan.snapshot.endMinutes
+    );
+    setWants(
       savedPlan.snapshot.preferences
-        .priority
+        .priorities
     );
     setTransport(
       savedPlan.snapshot.preferences
@@ -632,7 +674,8 @@ function ItineraryPage() {
       !plan ||
       !selectedDate ||
       selectedHour === null ||
-      !want
+      selectedEndMinutes === null ||
+      wants.length === 0
     ) {
       return;
     }
@@ -647,7 +690,8 @@ function ItineraryPage() {
     const answers: ItineraryAnswers = {
       selectedDate,
       selectedHour,
-      priority: want,
+      endMinutes: selectedEndMinutes,
+      priorities: wants,
       transport: transport ?? "walking",
     };
 
@@ -862,8 +906,42 @@ function ItineraryPage() {
           onDelete={handleDeleteSavedPlan}
         />
 
-        {/* CALENDARIO */}
-        <section
+        <button
+          type="button"
+          aria-expanded={showFullMonth}
+          onClick={() =>
+            setShowFullMonth((current) => !current)
+          }
+          style={{
+            width: "100%",
+            minHeight: "40px",
+            marginBottom: "12px",
+            borderRadius: "13px",
+            border:
+              "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.04)",
+            color: "rgba(255,255,255,0.78)",
+            fontSize: "12px",
+            fontWeight: 750,
+            cursor: "pointer",
+          }}
+        >
+          <Calendar
+            size={15}
+            aria-hidden="true"
+            style={{
+              marginRight: "7px",
+              verticalAlign: "-3px",
+            }}
+          />
+          {showFullMonth
+            ? tx("Ocultar calendario mensual")
+            : tx("Ver todo el mes")}
+        </button>
+
+        {/* CALENDARIO MENSUAL OPCIONAL */}
+        {showFullMonth && (
+          <section
           style={{
             borderRadius: "24px",
             padding: "18px",
@@ -981,7 +1059,8 @@ function ItineraryPage() {
               );
             })}
           </div>
-        </section>
+          </section>
+        )}
 
         {selectedDate &&
           !forecastLoading &&
@@ -1050,6 +1129,54 @@ function ItineraryPage() {
                   }
                   onClick={() => {
                     setSelectedHour(hour);
+                    setSelectedEndMinutes(null);
+                    setPlan(null);
+                    setPlanNotice(null);
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* HORA FINAL */}
+        {selectedHour !== null && (
+          <section
+            style={{ marginBottom: "16px" }}
+          >
+            <strong
+              style={{
+                display: "block",
+                color: "#FFFFFF",
+                fontSize: "13px",
+                marginBottom: "10px",
+              }}
+            >
+              {tx("¿Hasta qué hora tienes tiempo?")}
+            </strong>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                overflowX: "auto",
+                paddingBottom: "4px",
+              }}
+            >
+              {END_HOUR_OPTIONS.filter(
+                (hour) => hour > selectedHour
+              ).map((hour) => (
+                <Chip
+                  key={hour}
+                  label={formatHour(hour)}
+                  selected={
+                    selectedEndMinutes ===
+                    hour * 60
+                  }
+                  onClick={() => {
+                    setSelectedEndMinutes(
+                      hour * 60
+                    );
                     setPlan(null);
                     setPlanNotice(null);
                   }}
@@ -1060,7 +1187,7 @@ function ItineraryPage() {
         )}
 
         {/* PREGUNTAS RÁPIDAS */}
-        {selectedHour !== null && (
+        {selectedEndMinutes !== null && (
           <>
             <section
               style={{ marginBottom: "14px" }}
@@ -1088,10 +1215,34 @@ function ItineraryPage() {
                     key={option.value}
                     label={tx(option.label)}
                     selected={
-                      want === option.value
+                      wants.includes(option.value)
                     }
                     onClick={() => {
-                      setWant(option.value);
+                      setWants((current) => {
+                        if (option.value === "surprise") {
+                          return current.includes("surprise")
+                            ? []
+                            : ["surprise"];
+                        }
+
+                        const withoutSurprise =
+                          current.filter(
+                            (value) =>
+                              value !== "surprise"
+                          );
+
+                        return withoutSurprise.includes(
+                          option.value
+                        )
+                          ? withoutSurprise.filter(
+                              (value) =>
+                                value !== option.value
+                            )
+                          : [
+                              ...withoutSurprise,
+                              option.value,
+                            ];
+                      });
                       setPlan(null);
                       setPlanNotice(null);
                     }}

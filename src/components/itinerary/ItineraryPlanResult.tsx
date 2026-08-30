@@ -30,17 +30,21 @@ function formatMinutes(
     normalized / 60
   );
   const minute = normalized % 60;
-  const period = hour >= 12 ? "pm" : "am";
-  const displayHour =
-    hour === 0
-      ? 12
-      : hour > 12
-        ? hour - 12
-        : hour;
-
-  return `${displayHour}:${String(
+  return new Date(
+    2026,
+    0,
+    1,
+    hour,
     minute
-  ).padStart(2, "0")} ${period}`;
+  ).toLocaleTimeString(
+    getAppLanguage() === "en"
+      ? "en-US"
+      : "es-PE",
+    {
+      hour: "numeric",
+      minute: "2-digit",
+    }
+  );
 }
 
 function formatForecastDate(
@@ -61,6 +65,32 @@ function formatForecastDate(
     {
       weekday: "short",
       day: "numeric",
+    }
+  );
+}
+
+function formatForecastClock(
+  value: string
+): string | null {
+  const match = value.match(
+    /T(\d{2}):(\d{2})/
+  );
+
+  if (!match) return null;
+
+  return new Date(
+    2026,
+    0,
+    1,
+    Number(match[1]),
+    Number(match[2])
+  ).toLocaleTimeString(
+    getAppLanguage() === "en"
+      ? "en-US"
+      : "es-PE",
+    {
+      hour: "numeric",
+      minute: "2-digit",
     }
   );
 }
@@ -94,6 +124,10 @@ function getReasonLabel(
       "No es viable con el transporte elegido",
     "outside-opening-hours":
       "Queda fuera del horario publicado",
+    "after-sunset-outdoor":
+      "Excluido porque terminaría después del atardecer",
+    "meal-window-unavailable":
+      "No corresponde a una franja de comida disponible",
     "full-day-conflict":
       "Necesita una jornada exclusiva",
     "not-enough-time":
@@ -208,6 +242,18 @@ export function ItineraryPlanResult({
         >
           {getHospesPlanMessage(plan)}
         </p>
+        <span
+          style={{
+            display: "block",
+            marginTop: "7px",
+            color: "rgba(255,255,255,0.62)",
+            fontSize: "10px",
+          }}
+        >
+          {tx("Ventana elegida")}: {formatMinutes(
+            plan.selectedHour * 60
+          )} – {formatMinutes(plan.endMinutes)}
+        </span>
       </article>
 
       {plan.forecast && weatherVisual && (
@@ -253,12 +299,46 @@ export function ItineraryPlanResult({
                 fontSize: "10px",
               }}
             >
-              {plan.forecast.temperatureMin}° /{" "}
-              {plan.forecast.temperatureMax}° ·{" "}
-              {plan.forecast
-                .precipitationProbability}%{" "}
+              {plan.selectedForecastPeriod
+                ?.temperature ??
+                plan.forecast.temperatureMin}°
+              {plan.selectedForecastPeriod
+                ?.apparentTemperature !== undefined
+                ? ` · ${tx("sensación")} ${plan.selectedForecastPeriod.apparentTemperature}°`
+                : ""}
+              {" · "}
+              {plan.selectedForecastPeriod
+                ?.precipitationProbability ??
+                plan.forecast
+                  .precipitationProbability}%{" "}
               {tx("lluvia")}
             </span>
+            {(plan.forecast.uvIndexMax !==
+              undefined ||
+              plan.forecast.sunset) && (
+              <span
+                style={{
+                  display: "block",
+                  marginTop: "3px",
+                  color:
+                    "rgba(255,255,255,0.48)",
+                  fontSize: "9px",
+                }}
+              >
+                {plan.forecast.uvIndexMax !==
+                  undefined
+                  ? `${tx("UV máximo")} ${Math.round(plan.forecast.uvIndexMax)}`
+                  : ""}
+                {plan.forecast.uvIndexMax !==
+                  undefined &&
+                plan.forecast.sunset
+                  ? " · "
+                  : ""}
+                {plan.forecast.sunset
+                  ? `${tx("Atardecer")} ${formatForecastClock(plan.forecast.sunset) ?? ""}`
+                  : ""}
+              </span>
+            )}
           </div>
 
           <span
@@ -275,7 +355,9 @@ export function ItineraryPlanResult({
               size={13}
               aria-hidden="true"
             />
-            {plan.forecast.windSpeedKmh} km/h
+            {plan.selectedForecastPeriod
+              ?.windSpeedKmh ??
+              plan.forecast.windSpeedKmh} km/h
           </span>
         </article>
       )}

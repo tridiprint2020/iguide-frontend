@@ -9,6 +9,11 @@ export type ItineraryPace = "low" | "medium" | "high";
 export type ItineraryTime = "morning" | "afternoon" | "night";
 export type ItineraryTransport = "walking" | "transport" | "taxi";
 
+export type ItineraryWeatherPeriodKey =
+  | "morning"
+  | "afternoon"
+  | "night";
+
 export type ItineraryDecisionAction =
   | "recommended"
   | "excluded"
@@ -26,6 +31,8 @@ export type ItineraryReasonCode =
   | "night-incompatible"
   | "transport-incompatible"
   | "outside-opening-hours"
+  | "after-sunset-outdoor"
+  | "meal-window-unavailable"
   | "full-day-conflict"
   | "not-enough-time";
 
@@ -69,19 +76,46 @@ export interface ItineraryWeatherSnapshot {
   precipitationProbability: number;
   windSpeedKmh: number;
   isHighMountainSafe: boolean;
+  apparentTemperature?: number;
+  uvIndexMax?: number;
+  sunrise?: string;
+  sunset?: string;
+  daylightDurationSeconds?: number;
+  precipitationHours?: number;
+  periods?: {
+    morning: ItineraryWeatherPeriodSnapshot;
+    afternoon: ItineraryWeatherPeriodSnapshot;
+    night: ItineraryWeatherPeriodSnapshot;
+  };
+}
+
+export interface ItineraryWeatherPeriodSnapshot {
+  hour: number;
+  temperature: number;
+  apparentTemperature?: number;
+  condition: ItineraryWeatherSnapshot["condition"];
+  precipitationProbability?: number;
+  windSpeedKmh?: number;
 }
 
 export interface ItineraryPlan {
   selectedDate: string;
   selectedHour: number;
+  endMinutes: number;
   availableMinutes: number;
   totalDurationMinutes: number;
   forecast: ItineraryWeatherSnapshot | null;
+  selectedForecastPeriod: ItineraryWeatherPeriodSnapshot | null;
   stops: ItineraryStop[];
   exclusions: ItineraryExclusion[];
 }
 
 export interface ItineraryPlanPreferences {
+  priorities: string[];
+  transport: ItineraryTransport;
+}
+
+export interface ItineraryPlanPreferencesV1 {
   priority: string;
   transport: ItineraryTransport;
 }
@@ -102,22 +136,43 @@ export interface ItineraryPlanSnapshotStop {
  * Las experiencias se resuelven por ID al restaurar el plan y el
  * pronóstico queda congelado tal como fue usado para recomendarlo.
  */
-export interface ItineraryPlanSnapshot {
+export interface ItineraryPlanSnapshotV1 {
   schemaVersion: 1;
   selectedDate: string;
   selectedHour: number;
   availableMinutes: number;
   totalDurationMinutes: number;
-  preferences: ItineraryPlanPreferences;
+  preferences: ItineraryPlanPreferencesV1;
   forecast: ItineraryWeatherSnapshot | null;
   stops: ItineraryPlanSnapshotStop[];
   exclusions: ItineraryExclusion[];
 }
 
+export interface ItineraryPlanSnapshotV2 {
+  schemaVersion: 2;
+  selectedDate: string;
+  selectedHour: number;
+  endMinutes: number;
+  availableMinutes: number;
+  totalDurationMinutes: number;
+  preferences: ItineraryPlanPreferences;
+  forecast: ItineraryWeatherSnapshot | null;
+  selectedForecastPeriod: ItineraryWeatherPeriodSnapshot | null;
+  stops: ItineraryPlanSnapshotStop[];
+  exclusions: ItineraryExclusion[];
+}
+
+export type ItineraryPlanSnapshot =
+  | ItineraryPlanSnapshotV1
+  | ItineraryPlanSnapshotV2;
+
+export type NormalizedItineraryPlanSnapshot =
+  ItineraryPlanSnapshotV2;
+
 export interface SavedItineraryPlan {
   id: string;
   savedAt: number;
-  snapshot: ItineraryPlanSnapshot;
+  snapshot: NormalizedItineraryPlanSnapshot;
 }
 
 /**
@@ -130,8 +185,9 @@ export interface SavedItineraryPlan {
 export interface ItineraryAnswers {
   selectedDate: string; // ISO yyyy-mm-dd
   selectedHour: number; // 0-23
+  endMinutes: number; // minuto del día, posterior al inicio
 
-  priority: string; // reutiliza tus Interest existentes
+  priorities: string[]; // intereses múltiples, por códigos estables
   transport: ItineraryTransport;
 
   /*

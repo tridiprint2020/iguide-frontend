@@ -46,15 +46,21 @@ function formatPlanDate(
 function formatHour(
   hour: number
 ): string {
-  const period = hour >= 12 ? "pm" : "am";
-  const displayHour =
-    hour === 0
-      ? 12
-      : hour > 12
-        ? hour - 12
-        : hour;
-
-  return `${displayHour}:00 ${period}`;
+  return new Date(
+    2026,
+    0,
+    1,
+    hour,
+    0
+  ).toLocaleTimeString(
+    getAppLanguage() === "en"
+      ? "en-US"
+      : "es-PE",
+    {
+      hour: "numeric",
+      minute: "2-digit",
+    }
+  );
 }
 
 export function SavedItineraryPlans({

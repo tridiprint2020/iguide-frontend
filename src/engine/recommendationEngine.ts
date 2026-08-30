@@ -12,8 +12,13 @@ function rankExperiences(context: ExplorerContext) {
 
     if (isExpedition(experience)) {
       const affinity = experience.affinity;
-      const priority = answers?.priority as keyof typeof affinity | undefined;
-      if (priority) score += affinity[priority] * 2;
+      const priorities = answers?.priorities ?? [];
+      for (const priority of priorities) {
+        if (priority in affinity) {
+          score +=
+            affinity[priority as keyof typeof affinity];
+        }
+      }
 
       score += affinity.firstTimeVisitor * (profile.firstVisit ? 1 : 0);
       score += affinity.family * (profile.travelMode === "family" ? 1 : 0);

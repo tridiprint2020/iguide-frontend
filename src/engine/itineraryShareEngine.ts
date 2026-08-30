@@ -3,7 +3,7 @@ import {
   tx,
 } from "../i18n";
 import type {
-  ItineraryPlanSnapshot,
+  NormalizedItineraryPlanSnapshot,
 } from "../types/itinerary";
 import {
   hydrateItinerarySnapshot,
@@ -24,7 +24,7 @@ export type SharedItineraryReadResult =
     }
   | {
       status: "ready";
-      snapshot: ItineraryPlanSnapshot;
+      snapshot: NormalizedItineraryPlanSnapshot;
     };
 
 export type ItineraryShareResult =
@@ -33,8 +33,8 @@ export type ItineraryShareResult =
   | "cancelled";
 
 function getPortableSnapshot(
-  snapshot: ItineraryPlanSnapshot
-): ItineraryPlanSnapshot {
+  snapshot: NormalizedItineraryPlanSnapshot
+): NormalizedItineraryPlanSnapshot {
   return {
     ...snapshot,
     preferences: {
@@ -116,7 +116,7 @@ function decodeBase64Url(
 }
 
 export function encodeItinerarySnapshot(
-  snapshot: ItineraryPlanSnapshot
+  snapshot: NormalizedItineraryPlanSnapshot
 ): string {
   const encoded = encodeBase64Url(
     JSON.stringify(
@@ -138,7 +138,7 @@ export function encodeItinerarySnapshot(
 
 export function decodeItinerarySnapshot(
   encoded: string
-): ItineraryPlanSnapshot | null {
+): NormalizedItineraryPlanSnapshot | null {
   try {
     const parsed: unknown = JSON.parse(
       decodeBase64Url(encoded)
@@ -153,7 +153,7 @@ export function decodeItinerarySnapshot(
 }
 
 export function buildItineraryShareUrl(
-  snapshot: ItineraryPlanSnapshot,
+  snapshot: NormalizedItineraryPlanSnapshot,
   origin = window.location.origin
 ): string {
   const url = new URL(
@@ -243,7 +243,7 @@ function formatMinutes(
 }
 
 function getShareText(
-  snapshot: ItineraryPlanSnapshot
+  snapshot: NormalizedItineraryPlanSnapshot
 ): string {
   const plan =
     hydrateItinerarySnapshot(snapshot);
@@ -308,7 +308,7 @@ async function copyText(
 }
 
 export async function shareItinerary(
-  snapshot: ItineraryPlanSnapshot,
+  snapshot: NormalizedItineraryPlanSnapshot,
   origin = window.location.origin
 ): Promise<ItineraryShareResult> {
   const url = buildItineraryShareUrl(
@@ -403,7 +403,7 @@ function foldIcsLine(
 }
 
 export function buildItineraryCalendar(
-  snapshot: ItineraryPlanSnapshot,
+  snapshot: NormalizedItineraryPlanSnapshot,
   options: {
     generatedAt?: Date;
     shareUrl?: string;
@@ -504,7 +504,7 @@ export function buildItineraryCalendar(
 }
 
 export function downloadItineraryCalendar(
-  snapshot: ItineraryPlanSnapshot,
+  snapshot: NormalizedItineraryPlanSnapshot,
   origin = window.location.origin
 ): void {
   const shareUrl = buildItineraryShareUrl(

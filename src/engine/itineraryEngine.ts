@@ -27,11 +27,23 @@ import type {
 } from "./experienceSafetyEngine";
 import type {
   WeatherForecastDay,
+  WeatherForecastPeriod,
   WeatherStatus,
 } from "./weatherEngine";
+import {
+  estimateTravelMinutes,
+} from "./itineraryTravelEngine";
+import {
+  findNextMealWindow,
+  getWeatherPeriodKey,
+  isOutdoorVisitAfterSunset,
+} from "./itineraryTimePolicyEngine";
+import type {
+  MealSlot,
+} from "./itineraryTimePolicyEngine";
 
-const DAY_END_MINUTES = 21 * 60;
-const MAX_STOPS = 8;
+const MAX_STOPS = 5;
+const MINUTES_PER_RECOMMENDED_STOP = 150;
 const FULL_DAY_MINUTES = 6 * 60;
 
 export interface ItineraryBuildOptions {
@@ -88,36 +100,46 @@ function getVisitMinutes(
 
 function getTravelMinutes(
   experience: Experience,
+  previousExperience: Experience | null,
   context: ExplorerContext
 ): number | null {
   const transport =
     context.answers?.transport ??
     "walking";
 
-  if (!isExpedition(experience)) {
-    if (transport === "taxi") return 8;
-    if (transport === "transport") return 12;
-    return 15;
-  }
-
-  if (transport === "walking") {
+  if (isExpedition(experience) && transport === "walking") {
     return parseDurationMinutes(
       experience.walkTime
     );
   }
 
-  const driveMinutes =
-    parseDurationMinutes(
+  if (isExpedition(experience)) {
+    const driveMinutes = parseDurationMinutes(
       experience.driveTime
     );
 
-  if (driveMinutes === null) {
-    return null;
+    if (driveMinutes === null) return null;
+
+    return transport === "transport"
+      ? driveMinutes + 10
+      : driveMinutes;
   }
 
-  return transport === "transport"
-    ? driveMinutes + 10
-    : driveMinutes;
+  const from = previousExperience
+    ? {
+        latitude: previousExperience.latitude,
+        longitude: previousExperience.longitude,
+      }
+    : context.location ?? null;
+
+  return estimateTravelMinutes(
+    from,
+    {
+      latitude: experience.latitude,
+      longitude: experience.longitude,
+    },
+    transport
+  );
 }
 
 function getOpeningWindow(
@@ -286,6 +308,33 @@ function matchesPriority(
     );
   }
 
+  if (priority === "culture") {
+    return (
+      ["museum", "festival", "event"].includes(
+        experience.type
+      ) ||
+      experience.tags.some((tag) =>
+        [
+          "historia",
+          "history",
+          "cultura",
+          "culture",
+          "patrimonio",
+        ].includes(tag.toLowerCase())
+      )
+    );
+  }
+
+  if (priority === "crafts") {
+    return experience.type === "craft";
+  }
+
+  if (priority === "festivals") {
+    return ["festival", "event"].includes(
+      experience.type
+    );
+  }
+
   if (priority === "photography") {
     return experience.tags.some((tag) =>
       [
@@ -300,6 +349,18 @@ function matchesPriority(
   return priority === "surprise";
 }
 
+function matchesAnyPriority(
+  experience: Experience,
+  priorities: string[]
+): boolean {
+  return (
+    priorities.includes("surprise") ||
+    priorities.some((priority) =>
+      matchesPriority(experience, priority)
+    )
+  );
+}
+
 function scoreExperience(
   experience: Experience,
   context: ExplorerContext
@@ -308,20 +369,24 @@ function scoreExperience(
 
   if (!answers) return 0;
 
-  let score = matchesPriority(
-    experience,
-    answers.priority
-  )
+  const matchedPriorities =
+    answers.priorities.filter((priority) =>
+      matchesPriority(experience, priority)
+    );
+  let score =
+    matchedPriorities.length > 0 ||
+    answers.priorities.includes("surprise")
     ? 100
     : 0;
 
   if (isExpedition(experience)) {
-    const priority =
-      answers.priority as Interest;
+    for (const priorityValue of
+      answers.priorities) {
+      const priority = priorityValue as Interest;
 
-    if (priority in experience.affinity) {
-      score +=
-        experience.affinity[priority] * 2;
+      if (priority in experience.affinity) {
+        score += experience.affinity[priority];
+      }
     }
 
     if (answers.companions === "family") {
@@ -390,18 +455,21 @@ function scoreExperience(
 }
 
 function isWetForecast(
-  forecast: WeatherForecastDay
+  forecast: WeatherForecastDay,
+  period: WeatherForecastPeriod | null
 ): boolean {
   return (
-    forecast.condition === "rain" ||
-    forecast.condition === "drizzle" ||
-    forecast.condition === "snow" ||
-    forecast.precipitationProbability >= 40
+    period?.condition === "rain" ||
+    period?.condition === "drizzle" ||
+    period?.condition === "snow" ||
+    (period?.precipitationProbability ??
+      forecast.precipitationProbability) >= 40
   );
 }
 
 function getRecommendationReason(
   forecast: WeatherForecastDay | null,
+  period: WeatherForecastPeriod | null,
   score: number,
   visitMinutes: number
 ): ItineraryReasonCode {
@@ -413,13 +481,40 @@ function getRecommendationReason(
     return "weather-unknown-conservative";
   }
 
-  if (isWetForecast(forecast)) {
+  if (isWetForecast(forecast, period)) {
     return "indoor-priority";
   }
 
   return score > 0
     ? "interest-match"
     : "weather-compatible";
+}
+
+function getSelectedForecastPeriod(
+  forecast: WeatherForecastDay | null,
+  startMinutes: number
+): WeatherForecastPeriod | null {
+  if (!forecast?.periods) return null;
+
+  return forecast.periods[
+    getWeatherPeriodKey(startMinutes)
+  ];
+}
+
+function isOutdoorSensitive(
+  experience: Experience
+): boolean {
+  if (experience.environment) {
+    return experience.environment === "outdoor";
+  }
+
+  return (
+    isExpedition(experience) ||
+    experience.weatherSensitivity === "high" ||
+    experience.terrain === "trail" ||
+    experience.terrain === "clay" ||
+    experience.terrain === "mountain"
+  );
 }
 
 function safetyReasonToItineraryReason(
@@ -476,14 +571,60 @@ export function buildItineraryPlan(
 
   const startMinutes =
     answers.selectedHour * 60;
-  const availableMinutes = Math.max(
-    0,
-    DAY_END_MINUTES - startMinutes
+  const endMinutes = answers.endMinutes;
+
+  if (
+    !Number.isInteger(endMinutes) ||
+    endMinutes <= startMinutes ||
+    endMinutes > 24 * 60
+  ) {
+    return null;
+  }
+
+  const availableMinutes =
+    endMinutes - startMinutes;
+  const stopLimit = Math.min(
+    MAX_STOPS,
+    Math.max(
+      1,
+      Math.ceil(
+        availableMinutes /
+          MINUTES_PER_RECOMMENDED_STOP
+      )
+    )
   );
   const forecast =
     options.forecast ?? null;
-  const weather =
+  const selectedForecastPeriod =
+    getSelectedForecastPeriod(
+      forecast,
+      startMinutes
+    );
+  const baseWeather =
     forecastToWeatherStatus(forecast);
+  const weather: WeatherStatus | null =
+    forecast && baseWeather
+      ? {
+        ...baseWeather,
+        condition:
+          selectedForecastPeriod?.condition ??
+          forecast.condition,
+        temperature:
+          selectedForecastPeriod?.temperature ??
+          Math.round(
+            (forecast.temperatureMin +
+              forecast.temperatureMax) /
+              2
+          ),
+        precipitationProbabilityNext3Hours:
+          selectedForecastPeriod
+            ?.precipitationProbability ??
+          forecast.precipitationProbability,
+        windSpeedKmh:
+          selectedForecastPeriod?.windSpeedKmh ??
+          forecast.windSpeedKmh,
+      }
+      : null;
   const excludedIds = new Set(
     options.excludedExperienceIds ?? []
   );
@@ -558,6 +699,12 @@ export function buildItineraryPlan(
   }
 
   const scored = safeCandidates
+    .filter((experience) =>
+      matchesAnyPriority(
+        experience,
+        answers.priorities
+      )
+    )
     .map((experience, index) => ({
       experience,
       index,
@@ -573,10 +720,12 @@ export function buildItineraryPlan(
     );
 
   const stops: ItineraryStop[] = [];
+  const usedMealSlots = new Set<MealSlot>();
   let cursor = startMinutes;
+  let previousExperience: Experience | null = null;
 
   for (const candidate of scored) {
-    if (stops.length >= MAX_STOPS) {
+    if (stops.length >= stopLimit) {
       break;
     }
 
@@ -589,6 +738,7 @@ export function buildItineraryPlan(
     const travelMinutes =
       getTravelMinutes(
         experience,
+        previousExperience,
         context
       );
 
@@ -617,6 +767,44 @@ export function buildItineraryPlan(
       getOpeningWindow(experience);
     let visitStart =
       cursor + travelMinutes;
+    let selectedMealSlot: MealSlot | null = null;
+
+    if (
+      experience.type === "restaurant" ||
+      experience.type === "cafe"
+    ) {
+      const mealWindow = findNextMealWindow(
+        experience.type,
+        visitStart,
+        usedMealSlots
+      );
+
+      if (!mealWindow) {
+        exclusions.push(
+          createExclusion(
+            experience,
+            "meal-window-unavailable"
+          )
+        );
+        continue;
+      }
+
+      visitStart = mealWindow.startMinutes;
+      selectedMealSlot = mealWindow.slot;
+
+      if (
+        visitStart + visitMinutes >
+        mealWindow.endMinutes
+      ) {
+        exclusions.push(
+          createExclusion(
+            experience,
+            "meal-window-unavailable"
+          )
+        );
+        continue;
+      }
+    }
 
     if (
       openingWindow &&
@@ -650,7 +838,7 @@ export function buildItineraryPlan(
       continue;
     }
 
-    if (visitEnd > DAY_END_MINUTES) {
+    if (visitEnd > endMinutes) {
       exclusions.push(
         createExclusion(
           experience,
@@ -661,8 +849,30 @@ export function buildItineraryPlan(
             remainingMinutes:
               Math.max(
                 0,
-                DAY_END_MINUTES - cursor
+                endMinutes - cursor
               ),
+          }
+        )
+      );
+      continue;
+    }
+
+    if (
+      isOutdoorVisitAfterSunset({
+        visitEndMinutes: visitEnd,
+        sunset: forecast?.sunset,
+        isOutdoorSensitive:
+          isOutdoorSensitive(experience),
+      })
+    ) {
+      exclusions.push(
+        createExclusion(
+          experience,
+          "after-sunset-outdoor",
+          {
+            endsAt: visitEnd,
+            sunset:
+              forecast?.sunset ?? "18:00",
           }
         )
       );
@@ -718,11 +928,13 @@ export function buildItineraryPlan(
         reasonCode:
           getRecommendationReason(
             forecast,
+            selectedForecastPeriod,
             score,
             visitMinutes
           ),
         params: {
-          priority: answers.priority,
+          priorities:
+            answers.priorities.join(","),
           visitMinutes,
           ...(forecast
             ? {
@@ -737,6 +949,11 @@ export function buildItineraryPlan(
     });
 
     cursor = visitEnd;
+    previousExperience = experience;
+
+    if (selectedMealSlot) {
+      usedMealSlots.add(selectedMealSlot);
+    }
 
     if (isFullDay) {
       break;
@@ -746,6 +963,7 @@ export function buildItineraryPlan(
   return {
     selectedDate: answers.selectedDate,
     selectedHour: answers.selectedHour,
+    endMinutes,
     availableMinutes,
     totalDurationMinutes:
       stops.length > 0
@@ -756,6 +974,10 @@ export function buildItineraryPlan(
     forecast: forecast
       ? { ...forecast }
       : null,
+    selectedForecastPeriod:
+      selectedForecastPeriod
+        ? { ...selectedForecastPeriod }
+        : null,
     stops,
     exclusions,
   };

@@ -32,6 +32,8 @@ type OpenMeteoResponse = {
     precipitation_probability?: number[];
     temperature_2m?: number[];
     weather_code?: number[];
+    apparent_temperature?: number[];
+    wind_speed_10m?: number[];
   };
 
   daily?: {
@@ -41,6 +43,11 @@ type OpenMeteoResponse = {
     temperature_2m_max: number[];
     precipitation_probability_max: number[];
     wind_speed_10m_max: number[];
+    uv_index_max?: number[];
+    sunrise?: string[];
+    sunset?: string[];
+    daylight_duration?: number[];
+    precipitation_hours?: number[];
   };
 
   timezone?: string;
@@ -189,6 +196,30 @@ function getRequiredHourlyValue(
   return value;
 }
 
+function getOptionalNumber(
+  values: number[] | undefined,
+  index: number
+): number | undefined {
+  const value = values?.[index];
+
+  return typeof value === "number" &&
+    Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
+function getOptionalString(
+  values: string[] | undefined,
+  index: number
+): string | undefined {
+  const value = values?.[index];
+
+  return typeof value === "string" &&
+    value.length > 0
+    ? value
+    : undefined;
+}
+
 function getForecastPeriod(
   data: OpenMeteoResponse,
   date: string,
@@ -221,11 +252,46 @@ function getForecastPeriod(
       date,
       hour
     );
+  const apparentTemperature =
+    getOptionalNumber(
+      data.hourly?.apparent_temperature,
+      index
+    );
+  const precipitationProbability =
+    getOptionalNumber(
+      data.hourly?.precipitation_probability,
+      index
+    );
+  const windSpeedKmh = getOptionalNumber(
+    data.hourly?.wind_speed_10m,
+    index
+  );
 
   return {
     hour,
     temperature: Math.round(temperature),
     condition: mapWeatherCode(weatherCode),
+    ...(apparentTemperature !== undefined
+      ? {
+          apparentTemperature: Math.round(
+            apparentTemperature
+          ),
+        }
+      : {}),
+    ...(precipitationProbability !== undefined
+      ? {
+          precipitationProbability: Math.round(
+            precipitationProbability
+          ),
+        }
+      : {}),
+    ...(windSpeedKmh !== undefined
+      ? {
+          windSpeedKmh: Math.round(
+            windSpeedKmh
+          ),
+        }
+      : {}),
   };
 }
 
@@ -287,6 +353,28 @@ function mapDailyForecast(
 
           const condition =
             mapWeatherCode(weatherCode);
+          const uvIndexMax = getOptionalNumber(
+            daily.uv_index_max,
+            index
+          );
+          const sunrise = getOptionalString(
+            daily.sunrise,
+            index
+          );
+          const sunset = getOptionalString(
+            daily.sunset,
+            index
+          );
+          const daylightDurationSeconds =
+            getOptionalNumber(
+              daily.daylight_duration,
+              index
+            );
+          const precipitationHours =
+            getOptionalNumber(
+              daily.precipitation_hours,
+              index
+            );
 
           const isHighMountainSafe =
             (condition === "sunny" ||
@@ -309,6 +397,18 @@ function mapDailyForecast(
             windSpeedKmh:
               Math.round(windSpeedKmh),
             isHighMountainSafe,
+            ...(uvIndexMax !== undefined
+              ? { uvIndexMax }
+              : {}),
+            ...(sunrise ? { sunrise } : {}),
+            ...(sunset ? { sunset } : {}),
+            ...(daylightDurationSeconds !==
+            undefined
+              ? { daylightDurationSeconds }
+              : {}),
+            ...(precipitationHours !== undefined
+              ? { precipitationHours }
+              : {}),
             periods: {
               morning: getForecastPeriod(
                 data,
@@ -356,11 +456,19 @@ async function requestSevenDayForecast(): Promise<WeatherForecast> {
         "temperature_2m_max",
         "precipitation_probability_max",
         "wind_speed_10m_max",
+        "uv_index_max",
+        "sunrise",
+        "sunset",
+        "daylight_duration",
+        "precipitation_hours",
       ].join(","),
 
       hourly: [
         "temperature_2m",
         "weather_code",
+        "apparent_temperature",
+        "precipitation_probability",
+        "wind_speed_10m",
       ].join(","),
 
       forecast_days: String(
