@@ -199,6 +199,9 @@ const en: Record<string, string> = {
   "No pudimos cargar el pronóstico semanal.": "We could not load the weekly forecast.",
   "Pronóstico para organizar tu recorrido": "Forecast to organize your route",
   "Continuar en itinerario": "Continue to itinerary",
+  "Preparar esta franja en el itinerario": "Prepare this time slot in the itinerary",
+  "Toca una franja para preparar ese momento en tu itinerario.": "Tap a time slot to prepare that moment in your itinerary.",
+  "Clima seleccionado: {{date}} · {{period}} · {{time}}. Elige qué quieres vivir para completar tu itinerario.": "Weather selected: {{date}} · {{period}} · {{time}}. Choose what you want to experience to complete your itinerary.",
   "Nivel": "Level",
   "Café": "Café",
 

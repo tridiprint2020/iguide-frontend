@@ -6,7 +6,6 @@ import {
   createPortal,
 } from "react-dom";
 import {
-  ArrowRight,
   CalendarDays,
   X,
 } from "lucide-react";
@@ -73,8 +72,13 @@ function formatForecastDate(
 
 function ForecastDayCard({
   day,
+  onSelectPeriod,
 }: {
   day: WeatherForecastDay;
+  onSelectPeriod: (
+    date: string,
+    hour: number
+  ) => void;
 }) {
   if (!day.periods) {
     return null;
@@ -120,12 +124,24 @@ function ForecastDayCard({
           );
 
           return (
-            <div
+            <button
               key={period.id}
+              type="button"
+              onClick={() =>
+                onSelectPeriod(
+                  day.date,
+                  forecastPeriod.hour === 21
+                    ? 19
+                    : forecastPeriod.hour
+                )
+              }
               aria-label={`${tx(period.label)}: ${tx(
                 visual.label
-              )}, ${forecastPeriod.temperature}°`}
+              )}, ${forecastPeriod.temperature}°. ${tx(
+                "Preparar esta franja en el itinerario"
+              )}`}
               style={{
+                width: "100%",
                 minHeight: "42px",
                 display: "grid",
                 gridTemplateColumns:
@@ -134,8 +150,13 @@ function ForecastDayCard({
                 gap: "6px",
                 padding: "6px 7px",
                 borderRadius: "11px",
+                border:
+                  "1px solid rgba(66,232,245,0.08)",
                 background:
                   "rgba(4,6,15,0.48)",
+                font: "inherit",
+                textAlign: "left",
+                cursor: "pointer",
               }}
             >
               <span>
@@ -174,7 +195,7 @@ function ForecastDayCard({
               >
                 {visual.icon}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -336,6 +357,18 @@ export default function HomeWeeklyWeatherDialog({
             >
               {tx("Clima de mañana, tarde y noche")}
             </h2>
+            <p
+              style={{
+                margin: "6px 0 0",
+                color:
+                  "rgba(255,255,255,0.58)",
+                fontSize: "10px",
+              }}
+            >
+              {tx(
+                "Toca una franja para preparar ese momento en tu itinerario."
+              )}
+            </p>
           </div>
 
           <button
@@ -365,9 +398,9 @@ export default function HomeWeeklyWeatherDialog({
           aria-live="polite"
           aria-busy={loading}
           style={{
-            maxHeight: "calc(min(88vh, 720px) - 151px)",
+            maxHeight: "calc(min(88vh, 720px) - 106px)",
             overflowY: "auto",
-            padding: "3px 17px 16px",
+            padding: "3px 17px 18px",
           }}
         >
           {loading && !forecast && (
@@ -445,59 +478,28 @@ export default function HomeWeeklyWeatherDialog({
                 <ForecastDayCard
                   key={day.date}
                   day={day}
+                  onSelectPeriod={(
+                    date,
+                    hour
+                  ) => {
+                    const parameters =
+                      new URLSearchParams({
+                        date,
+                        hour: String(hour),
+                        source: "weather",
+                      });
+
+                    onClose();
+                    navigate(
+                      `/itinerario?${parameters.toString()}`
+                    );
+                  }}
                 />
               ))}
             </div>
           )}
         </div>
 
-        <footer
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            padding: "12px 17px 15px",
-            borderTop:
-              "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <span
-            style={{
-              color:
-                "rgba(255,255,255,0.45)",
-              fontSize: "9px",
-            }}
-          >
-            {tx("Pronóstico para organizar tu recorrido")}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              navigate("/itinerario");
-            }}
-            style={{
-              minHeight: "40px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "7px",
-              padding: "0 14px",
-              border: 0,
-              borderRadius: "12px",
-              background:
-                "linear-gradient(100deg, #FF31D2, #C400B8)",
-              color: "#FFFFFF",
-              fontSize: "11px",
-              fontWeight: 850,
-              cursor: "pointer",
-            }}
-          >
-            {tx("Continuar en itinerario")}
-            <ArrowRight size={15} />
-          </button>
-        </footer>
       </section>
     </div>,
     document.body

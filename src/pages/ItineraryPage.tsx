@@ -100,6 +100,17 @@ const HOUR_OPTIONS = Array.from(
   (_, index) => index + 7
 ); // 7:00 a 20:00
 
+const WEATHER_HANDOFF_HOURS = new Set([
+  9,
+  15,
+  19,
+]);
+
+type WeatherItineraryHandoff = {
+  date: string;
+  hour: number;
+};
+
 const WEEKDAY_LABELS = [
   "L",
   "M",
@@ -122,11 +133,98 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function readWeatherItineraryHandoff(
+  urlValue = window.location.href
+): WeatherItineraryHandoff | null {
+  try {
+    const url = new URL(urlValue);
+
+    if (
+      url.searchParams.get("source") !==
+      "weather"
+    ) {
+      return null;
+    }
+
+    const date =
+      url.searchParams.get("date");
+    const hour = Number(
+      url.searchParams.get("hour")
+    );
+
+    if (
+      !date ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isInteger(hour) ||
+      !WEATHER_HANDOFF_HOURS.has(hour)
+    ) {
+      return null;
+    }
+
+    const [year, month, day] =
+      date.split("-").map(Number);
+    const parsedDate = new Date(
+      year,
+      month - 1,
+      day,
+      12
+    );
+
+    if (toIsoDate(parsedDate) !== date) {
+      return null;
+    }
+
+    return {
+      date,
+      hour,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function formatHour(hour: number): string {
   const period = hour >= 12 ? "pm" : "am";
   const displayHour =
     hour > 12 ? hour - 12 : hour;
   return `${displayHour}:00 ${period}`;
+}
+
+function getWeatherPeriodLabel(
+  hour: number
+): string {
+  if (hour === 9) {
+    return tx("Mañana");
+  }
+
+  if (hour === 15) {
+    return tx("Tarde");
+  }
+
+  return tx("Noche");
+}
+
+function formatHandoffDate(
+  date: string
+): string {
+  const [year, month, day] =
+    date.split("-").map(Number);
+
+  return new Date(
+    year,
+    month - 1,
+    day,
+    12
+  ).toLocaleDateString(
+    getAppLanguage() === "en"
+      ? "en-US"
+      : "es-PE",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }
+  );
 }
 
 function buildMonthGrid(
@@ -264,15 +362,22 @@ function ItineraryPage() {
     } as const;
   }, []);
 
+  const initialWeatherHandoff = useMemo(
+    () => readWeatherItineraryHandoff(),
+    []
+  );
+
   const [selectedDate, setSelectedDate] =
     useState<string | null>(
       initialShared.plan?.selectedDate ??
+        initialWeatherHandoff?.date ??
         null
     );
 
   const [selectedHour, setSelectedHour] =
     useState<number | null>(
       initialShared.plan?.selectedHour ??
+        initialWeatherHandoff?.hour ??
         null
     );
 
@@ -325,7 +430,24 @@ function ItineraryPage() {
       }
 
       if (initialShared.status !== "ready") {
-        return null;
+        if (!initialWeatherHandoff) {
+          return null;
+        }
+
+        return tx(
+          "Clima seleccionado: {{date}} · {{period}} · {{time}}. Elige qué quieres vivir para completar tu itinerario.",
+          {
+            date: formatHandoffDate(
+              initialWeatherHandoff.date
+            ),
+            period: getWeatherPeriodLabel(
+              initialWeatherHandoff.hour
+            ),
+            time: formatHour(
+              initialWeatherHandoff.hour
+            ),
+          }
+        );
       }
 
       const baseNotice = tx(
