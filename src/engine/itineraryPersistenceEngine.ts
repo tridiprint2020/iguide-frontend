@@ -361,7 +361,22 @@ export function saveItineraryPlan(
     JSON.stringify(next)
   );
 
-  return savedPlan;
+  const verifiedPlan = loadSavedItineraries().find(
+    (item) => item.id === savedPlan.id
+  );
+
+  if (
+    !verifiedPlan ||
+    getSnapshotIdentity(
+      verifiedPlan.snapshot
+    ) !== identity
+  ) {
+    throw new Error(
+      "Unable to verify saved itinerary."
+    );
+  }
+
+  return verifiedPlan;
 }
 
 export function deleteSavedItinerary(

@@ -345,6 +345,12 @@ function ItineraryPage() {
   const [planActionBusy, setPlanActionBusy] =
     useState(false);
 
+  const [saveFeedback, setSaveFeedback] =
+    useState<{
+      status: "saved" | "error";
+      message: string;
+    } | null>(null);
+
   const [planNotice, setPlanNotice] =
     useState<string | null>(() => {
       if (
@@ -493,6 +499,7 @@ function ItineraryPage() {
       );
 
     setPlan(itinerary);
+    setSaveFeedback(null);
     setPlanNotice(null);
   }
 
@@ -505,28 +512,41 @@ function ItineraryPage() {
     }
 
     try {
-      saveItineraryPlan(
+      const savedPlan = saveItineraryPlan(
         plan,
         snapshot.preferences
       );
-      setSavedPlans(
-        loadSavedItineraries()
-      );
-      setPlanNotice(
-        tx(
-          "Plan guardado en este celular."
+      const reloadedPlans =
+        loadSavedItineraries();
+
+      if (
+        !reloadedPlans.some(
+          (item) => item.id === savedPlan.id
         )
-      );
+      ) {
+        throw new Error(
+          "Saved itinerary was not found after reload."
+        );
+      }
+
+      setSavedPlans(reloadedPlans);
+      setSaveFeedback({
+        status: "saved",
+        message: tx(
+          "Guardado y verificado en este celular."
+        ),
+      });
     } catch (error) {
       console.error(
         "No se pudo guardar el itinerario:",
         error
       );
-      setPlanNotice(
-        tx(
-          "No se pudo guardar el plan en este celular."
-        )
-      );
+      setSaveFeedback({
+        status: "error",
+        message: tx(
+          "El navegador no confirmó el guardado. Revisa que el almacenamiento de I.GUIDE esté permitido."
+        ),
+      });
     }
   }
 
@@ -632,6 +652,7 @@ function ItineraryPage() {
         .transport
     );
     setPlan(hydration.plan);
+    setSaveFeedback(null);
 
     const baseNotice = tx(
       "Plan guardado abierto con su pronóstico original."
@@ -664,6 +685,7 @@ function ItineraryPage() {
         savedPlan.id
       )
     );
+    setSaveFeedback(null);
     setPlanNotice(
       tx("Plan eliminado.")
     );
@@ -773,6 +795,7 @@ function ItineraryPage() {
             : stop
       ),
     });
+    setSaveFeedback(null);
   }
 
   return (
@@ -900,11 +923,13 @@ function ItineraryPage() {
           </p>
         )}
 
-        <SavedItineraryPlans
-          plans={savedPlans}
-          onOpen={handleOpenSavedPlan}
-          onDelete={handleDeleteSavedPlan}
-        />
+        {!plan && (
+          <SavedItineraryPlans
+            plans={savedPlans}
+            onOpen={handleOpenSavedPlan}
+            onDelete={handleDeleteSavedPlan}
+          />
+        )}
 
         <button
           type="button"
@@ -1348,6 +1373,7 @@ function ItineraryPage() {
             {plan.stops.length > 0 && (
               <ItineraryPlanActions
                 busy={planActionBusy}
+                saveFeedback={saveFeedback}
                 onSave={handleSavePlan}
                 onShare={handleSharePlan}
                 onAddToCalendar={
@@ -1355,6 +1381,12 @@ function ItineraryPage() {
                 }
               />
             )}
+
+            <SavedItineraryPlans
+              plans={savedPlans}
+              onOpen={handleOpenSavedPlan}
+              onDelete={handleDeleteSavedPlan}
+            />
           </>
         )}
 

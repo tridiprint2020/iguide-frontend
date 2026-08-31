@@ -2,10 +2,25 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
 import { createServer } from "vite";
+import { FIXTURE_V1_X8B } from "./fixtures/itinerary-v1-x8b.mjs";
 
 let server;
 let buildItineraryPlan;
 let catalog;
+let loadSavedItineraries;
+let saveItineraryPlan;
+let storage;
+
+const STORAGE_KEY = "iguide.saved-itineraries.v1";
+
+function useWorkingStorage() {
+  storage = new Map();
+  globalThis.localStorage = {
+    getItem: (key) => storage.get(key) ?? null,
+    setItem: (key, value) =>
+      storage.set(key, String(value)),
+  };
+}
 
 const profile = {
   name: "Fixture X8b",
@@ -60,12 +75,7 @@ const forecast = {
 };
 
 before(async () => {
-  const storage = new Map();
-  globalThis.localStorage = {
-    getItem: (key) => storage.get(key) ?? null,
-    setItem: (key, value) =>
-      storage.set(key, String(value)),
-  };
+  useWorkingStorage();
   Object.defineProperty(globalThis, "navigator", {
     configurable: true,
     value: { language: "es-PE" },
@@ -87,6 +97,12 @@ before(async () => {
     ));
   ({ catalog } = await server.ssrLoadModule(
     "/src/data/catalog/index.ts"
+  ));
+  ({
+    loadSavedItineraries,
+    saveItineraryPlan,
+  } = await server.ssrLoadModule(
+    "/src/engine/itineraryPersistenceEngine.ts"
   ));
 });
 
@@ -181,4 +197,85 @@ test("las paradas urbanas consecutivas calculan traslados variables por coordena
     afterFirst.some((minutes) => minutes !== 15),
     JSON.stringify(afterFirst)
   );
+});
+
+test("guardar confirma por lectura posterior y conserva un plan V1 anterior", () => {
+  useWorkingStorage();
+  storage.set(
+    STORAGE_KEY,
+    JSON.stringify([
+      {
+        id: "fixture-v1-x8b",
+        savedAt: 1,
+        snapshot: FIXTURE_V1_X8B,
+      },
+    ])
+  );
+
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-08-31",
+        selectedHour: 15,
+        endMinutes: 19 * 60,
+        priorities: ["photography", "culture"],
+        transport: "walking",
+      },
+    },
+    { forecast, experiences: catalog }
+  );
+
+  assert.ok(plan);
+  const saved = saveItineraryPlan(plan, {
+    priorities: ["photography", "culture"],
+    transport: "walking",
+  });
+  const reloaded = loadSavedItineraries();
+
+  assert.equal(reloaded[0].id, saved.id);
+  assert.ok(
+    reloaded.some(
+      (item) => item.id === "fixture-v1-x8b"
+    )
+  );
+  assert.equal(
+    reloaded.find(
+      (item) => item.id === "fixture-v1-x8b"
+    )?.snapshot.schemaVersion,
+    2
+  );
+});
+
+test("guardar falla si el navegador ignora la escritura", () => {
+  globalThis.localStorage = {
+    getItem: () => null,
+    setItem: () => undefined,
+  };
+
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-08-31",
+        selectedHour: 15,
+        endMinutes: 19 * 60,
+        priorities: ["surprise"],
+        transport: "walking",
+      },
+    },
+    { forecast, experiences: catalog }
+  );
+
+  assert.ok(plan);
+  assert.throws(
+    () =>
+      saveItineraryPlan(plan, {
+        priorities: ["surprise"],
+        transport: "walking",
+      }),
+    /verify/i
+  );
+
+  useWorkingStorage();
 });

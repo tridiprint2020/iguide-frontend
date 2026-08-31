@@ -9,6 +9,10 @@ import {
 
 type ItineraryPlanActionsProps = {
   busy: boolean;
+  saveFeedback: {
+    status: "saved" | "error";
+    message: string;
+  } | null;
   onSave: () => void;
   onShare: () => Promise<void>;
   onAddToCalendar: () => void;
@@ -29,6 +33,7 @@ const ACTION_STYLE = {
 
 export function ItineraryPlanActions({
   busy,
+  saveFeedback,
   onSave,
   onShare,
   onAddToCalendar,
@@ -66,7 +71,9 @@ export function ItineraryPlanActions({
             margin: "0 auto 4px",
           }}
         />
-        {tx("Guardar")}
+        {saveFeedback?.status === "saved"
+          ? tx("Guardado ✓")
+          : tx("Guardar")}
       </button>
 
       <button
@@ -114,6 +121,41 @@ export function ItineraryPlanActions({
         />
         {tx("Calendario")}
       </button>
+
+      {saveFeedback && (
+        <p
+          role={
+            saveFeedback.status === "error"
+              ? "alert"
+              : "status"
+          }
+          aria-live="polite"
+          style={{
+            gridColumn: "1 / -1",
+            margin: "1px 0 0",
+            padding: "9px 11px",
+            borderRadius: "11px",
+            border:
+              saveFeedback.status === "saved"
+                ? "1px solid rgba(57,231,255,0.2)"
+                : "1px solid rgba(255,101,220,0.24)",
+            background:
+              saveFeedback.status === "saved"
+                ? "rgba(57,231,255,0.08)"
+                : "rgba(255,0,200,0.08)",
+            color:
+              saveFeedback.status === "saved"
+                ? "#9AF4FF"
+                : "#FFB4EB",
+            fontSize: "10px",
+            fontWeight: 750,
+            lineHeight: 1.4,
+            textAlign: "center",
+          }}
+        >
+          {saveFeedback.message}
+        </p>
+      )}
     </section>
   );
 }
