@@ -7,6 +7,7 @@ import { FIXTURE_V1_X8B } from "./fixtures/itinerary-v1-x8b.mjs";
 let server;
 let buildItineraryPlan;
 let catalog;
+let isWetRisky;
 let loadSavedItineraries;
 let saveItineraryPlan;
 let storage;
@@ -97,6 +98,9 @@ before(async () => {
     ));
   ({ catalog } = await server.ssrLoadModule(
     "/src/data/catalog/index.ts"
+  ));
+  ({ isWetRisky } = await server.ssrLoadModule(
+    "/src/engine/experienceSafetyEngine.ts"
   ));
   ({
     loadSavedItineraries,
@@ -196,6 +200,84 @@ test("las paradas urbanas consecutivas calculan traslados variables por coordena
   assert.ok(
     afterFirst.some((minutes) => minutes !== 15),
     JSON.stringify(afterFirst)
+  );
+});
+
+test("una mañana lluviosa reutiliza seguridad y excluye terrenos sensibles con razón", () => {
+  const rainyMorning = {
+    ...forecast,
+    precipitationProbability: 85,
+    periods: {
+      ...forecast.periods,
+      morning: {
+        ...forecast.periods.morning,
+        condition: "rain",
+        precipitationProbability: 85,
+      },
+    },
+  };
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-08-31",
+        selectedHour: 9,
+        endMinutes: 12 * 60,
+        priorities: ["surprise"],
+        transport: "walking",
+      },
+    },
+    {
+      forecast: rainyMorning,
+      experiences: catalog,
+    }
+  );
+
+  assert.ok(plan);
+  assert.ok(
+    plan.exclusions.some(
+      (item) =>
+        item.explanation.reasonCode ===
+        "weather-wet-risk"
+    )
+  );
+  assert.ok(
+    plan.stops.every(
+      (stop) => !isWetRisky(stop.experience)
+    )
+  );
+});
+
+test("sin pronóstico el itinerario conserva la política prudente", () => {
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-10-20",
+        selectedHour: 15,
+        endMinutes: 18 * 60,
+        priorities: ["surprise"],
+        transport: "walking",
+      },
+    },
+    {
+      forecast: null,
+      experiences: catalog,
+    }
+  );
+
+  assert.ok(plan);
+  assert.ok(
+    plan.exclusions.some(
+      (item) =>
+        item.explanation.reasonCode ===
+        "weather-unknown-risk"
+    )
+  );
+  assert.ok(
+    plan.stops.every(
+      (stop) => !isWetRisky(stop.experience)
+    )
   );
 });
 

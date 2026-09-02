@@ -58,6 +58,10 @@ import type {
   WeatherForecast,
   WeatherForecastDay,
 } from "../engine/weatherEngine";
+import {
+  getWeatherPeriodDefinition,
+  readWeatherItineraryHandoff,
+} from "../engine/weatherPeriodEngine";
 
 import type {
   ItineraryAnswers,
@@ -150,6 +154,29 @@ function formatHour(hour: number): string {
     {
       hour: "numeric",
       minute: "2-digit",
+    }
+  );
+}
+
+function formatHandoffDate(
+  date: string
+): string {
+  const [year, month, day] =
+    date.split("-").map(Number);
+
+  return new Date(
+    year,
+    month - 1,
+    day,
+    12
+  ).toLocaleDateString(
+    getAppLanguage() === "en"
+      ? "en-US"
+      : "es-PE",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
     }
   );
 }
@@ -289,21 +316,34 @@ function ItineraryPage() {
     } as const;
   }, []);
 
+  const initialWeatherHandoff = useMemo(
+    () =>
+      readWeatherItineraryHandoff(
+        window.location.search
+      ),
+    []
+  );
+
   const [selectedDate, setSelectedDate] =
     useState<string | null>(
       initialShared.plan?.selectedDate ??
+        initialWeatherHandoff?.date ??
         null
     );
 
   const [selectedHour, setSelectedHour] =
     useState<number | null>(
       initialShared.plan?.selectedHour ??
+        initialWeatherHandoff
+          ?.selectedHour ??
         null
     );
 
   const [selectedEndMinutes, setSelectedEndMinutes] =
     useState<number | null>(
-      initialShared.plan?.endMinutes ?? null
+      initialShared.plan?.endMinutes ??
+        initialWeatherHandoff?.endMinutes ??
+        null
     );
 
   const [wants, setWants] =
@@ -364,7 +404,31 @@ function ItineraryPage() {
       }
 
       if (initialShared.status !== "ready") {
-        return null;
+        if (!initialWeatherHandoff) {
+          return null;
+        }
+
+        const definition =
+          getWeatherPeriodDefinition(
+            initialWeatherHandoff.period
+          );
+
+        return tx(
+          "Clima seleccionado: {{date}} · {{period}} · {{start}}–{{end}}. Elige qué quieres vivir y Hospes organizará esa franja.",
+          {
+            date: formatHandoffDate(
+              initialWeatherHandoff.date
+            ),
+            period: tx(definition.label),
+            start: formatHour(
+              initialWeatherHandoff.selectedHour
+            ),
+            end: formatHour(
+              initialWeatherHandoff.endMinutes /
+                60
+            ),
+          }
+        );
       }
 
       const baseNotice = tx(

@@ -6,7 +6,6 @@ import {
   createPortal,
 } from "react-dom";
 import {
-  ArrowRight,
   CalendarDays,
   X,
 } from "lucide-react";
@@ -14,13 +13,17 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import {
-  getWeatherVisual,
-} from "../../engine/weatherEngine";
 import type {
   WeatherForecast,
   WeatherForecastDay,
 } from "../../engine/weatherEngine";
+import {
+  createWeatherItinerarySearch,
+  getWeatherPeriodViewModels,
+} from "../../engine/weatherPeriodEngine";
+import type {
+  WeatherPeriodKey,
+} from "../../engine/weatherPeriodEngine";
 import {
   fetchSevenDayForecast,
 } from "../../engine/weatherService";
@@ -32,21 +35,6 @@ import {
 type Props = {
   onClose: () => void;
 };
-
-const PERIODS = [
-  {
-    id: "morning" as const,
-    label: "Mañana",
-  },
-  {
-    id: "afternoon" as const,
-    label: "Tarde",
-  },
-  {
-    id: "night" as const,
-    label: "Noche",
-  },
-];
 
 function formatForecastDate(
   date: string
@@ -73,14 +61,16 @@ function formatForecastDate(
 
 function ForecastDayCard({
   day,
+  onSelectPeriod,
 }: {
   day: WeatherForecastDay;
+  onSelectPeriod: (
+    date: string,
+    period: WeatherPeriodKey
+  ) => void;
 }) {
-  if (!day.periods) {
-    return null;
-  }
-
-  const periods = day.periods;
+  const periods =
+    getWeatherPeriodViewModels(day);
 
   return (
     <article
@@ -112,21 +102,40 @@ function ForecastDayCard({
           gap: "7px",
         }}
       >
-        {PERIODS.map((period) => {
-          const forecastPeriod =
-            periods[period.id];
-          const visual = getWeatherVisual(
-            forecastPeriod.condition
-          );
+        {periods.map((period) => {
+          const statusColor =
+            period.decision.action ===
+            "recommended"
+              ? "#7EF7C9"
+              : period.decision.action ===
+                  "adapted"
+                ? "#FFD166"
+                : "rgba(255,255,255,0.56)";
 
           return (
-            <div
-              key={period.id}
-              aria-label={`${tx(period.label)}: ${tx(
-                visual.label
-              )}, ${forecastPeriod.temperature}°`}
+            <button
+              key={period.definition.key}
+              type="button"
+              onClick={() =>
+                onSelectPeriod(
+                  day.date,
+                  period.definition.key
+                )
+              }
+              aria-label={`${tx(
+                period.definition.label
+              )}: ${tx(
+                period.conditionLabel
+              )}, ${
+                period.temperature ?? "--"
+              }°. ${tx(
+                period.statusLabel
+              )}. ${tx(
+                "Preparar esta franja en el itinerario"
+              )}`}
               style={{
-                minHeight: "42px",
+                width: "100%",
+                minHeight: "62px",
                 display: "grid",
                 gridTemplateColumns:
                   "minmax(0, 1fr) auto",
@@ -134,8 +143,13 @@ function ForecastDayCard({
                 gap: "6px",
                 padding: "6px 7px",
                 borderRadius: "11px",
+                border:
+                  "1px solid rgba(66,232,245,0.08)",
                 background:
                   "rgba(4,6,15,0.48)",
+                font: "inherit",
+                textAlign: "left",
+                cursor: "pointer",
               }}
             >
               <span>
@@ -150,7 +164,9 @@ function ForecastDayCard({
                     textTransform: "uppercase",
                   }}
                 >
-                  {tx(period.label)}
+                  {tx(
+                    period.definition.label
+                  )}
                 </span>
                 <strong
                   style={{
@@ -160,21 +176,35 @@ function ForecastDayCard({
                     fontSize: "14px",
                   }}
                 >
-                  {forecastPeriod.temperature}°
+                  {period.temperature ?? "--"}°
                 </strong>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: "3px",
+                    color: statusColor,
+                    fontSize: "7px",
+                    fontWeight: 750,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {tx(period.statusLabel)}
+                </span>
               </span>
 
               <span
                 aria-hidden="true"
-                title={tx(visual.label)}
+                title={tx(
+                  period.conditionLabel
+                )}
                 style={{
                   fontSize: "21px",
                   lineHeight: 1,
                 }}
               >
-                {visual.icon}
+                {period.icon}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -336,6 +366,18 @@ export default function HomeWeeklyWeatherDialog({
             >
               {tx("Clima de mañana, tarde y noche")}
             </h2>
+            <p
+              style={{
+                margin: "6px 0 0",
+                color:
+                  "rgba(255,255,255,0.58)",
+                fontSize: "10px",
+              }}
+            >
+              {tx(
+                "Toca una franja para preparar ese momento en tu itinerario."
+              )}
+            </p>
           </div>
 
           <button
@@ -365,9 +407,9 @@ export default function HomeWeeklyWeatherDialog({
           aria-live="polite"
           aria-busy={loading}
           style={{
-            maxHeight: "calc(min(88vh, 720px) - 151px)",
+            maxHeight: "calc(min(88vh, 720px) - 106px)",
             overflowY: "auto",
-            padding: "3px 17px 16px",
+            padding: "3px 17px 18px",
           }}
         >
           {loading && !forecast && (
@@ -445,59 +487,27 @@ export default function HomeWeeklyWeatherDialog({
                 <ForecastDayCard
                   key={day.date}
                   day={day}
+                  onSelectPeriod={(
+                    date,
+                    period
+                  ) => {
+                    const search =
+                      createWeatherItinerarySearch(
+                        date,
+                        period
+                      );
+
+                    onClose();
+                    navigate(
+                      `/itinerario?${search}`
+                    );
+                  }}
                 />
               ))}
             </div>
           )}
         </div>
 
-        <footer
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            padding: "12px 17px 15px",
-            borderTop:
-              "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <span
-            style={{
-              color:
-                "rgba(255,255,255,0.45)",
-              fontSize: "9px",
-            }}
-          >
-            {tx("Pronóstico para organizar tu recorrido")}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              navigate("/itinerario");
-            }}
-            style={{
-              minHeight: "40px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "7px",
-              padding: "0 14px",
-              border: 0,
-              borderRadius: "12px",
-              background:
-                "linear-gradient(100deg, #FF31D2, #C400B8)",
-              color: "#FFFFFF",
-              fontSize: "11px",
-              fontWeight: 850,
-              cursor: "pointer",
-            }}
-          >
-            {tx("Continuar en itinerario")}
-            <ArrowRight size={15} />
-          </button>
-        </footer>
       </section>
     </div>,
     document.body

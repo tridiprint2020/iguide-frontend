@@ -99,7 +99,7 @@ export function isWetRisky(
   );
 }
 
-function hasWetWeather(
+export function hasWetWeather(
   weather: WeatherStatus
 ): boolean {
   return (
