@@ -96,6 +96,15 @@ git diff --stat main..HEAD -- package-lock.json
       de migración permanecen intactos salvo autorización expresa.
 - [ ] G7. La rama nace de `main`, permite fast-forward y no tiene ancestría AR.
 
+## H. Huariques — cuando el preview incluya esta función
+
+- [ ] H1. Home muestra «Descubrir huariques» y abre el filtro correspondiente.
+- [ ] H2. Solo aparecen locales con razón, fecha y fuente verificadas.
+- [ ] H3. El huarique conserva su tipo y toda la información del local.
+- [ ] H4. La ficha explica la razón y el plato recomendado si existe.
+- [ ] H5. Sin fichas verificadas, la app lo dice y ofrece restaurantes cercanos.
+- [ ] H6. Todo funciona en español e inglés.
+
 ## Fixture V1 X8b
 
 El snapshot real vive en `tests/fixtures/itinerary-v1-x8b.mjs`. Nunca se
@@ -109,7 +118,8 @@ modifica. Debe migrar `priority: "gastronomy"` a
 - El baseline contiene 11 errores y 5 warnings de lint heredados.
 - El bundle necesita división de código.
 - Los Guardianes aún no están integrados.
-- Huariques, historias locales y el diseño claro tipo Instagram están pendientes.
+- Huariques v1 está implementado en esta rama, sin negocios etiquetados hasta
+  que el Fundador apruebe la evidencia. Historias y diseño Instagram siguen pendientes.
 - La telemetría sigue desconectada hasta contar con consentimiento y política.
 
 ## Historial de producción

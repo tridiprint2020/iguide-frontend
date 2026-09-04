@@ -74,6 +74,35 @@ function localizeExperience(
           );
         }
 
+        if (
+          property === "huarique" &&
+          value &&
+          typeof value === "object"
+        ) {
+          const huarique = value as {
+            reason?: unknown;
+            signatureDish?: unknown;
+          };
+
+          return {
+            ...huarique,
+            ...(typeof huarique.reason === "string"
+              ? {
+                  reason: tx(
+                    huarique.reason.trim()
+                  ),
+                }
+              : {}),
+            ...(typeof huarique.signatureDish === "string"
+              ? {
+                  signatureDish: tx(
+                    huarique.signatureDish.trim()
+                  ),
+                }
+              : {}),
+          };
+        }
+
         return value;
       },
     }

@@ -2,6 +2,7 @@ import {
   Camera,
   MapPin,
   PartyPopper,
+  Sparkles,
   Utensils,
 } from "lucide-react";
 
@@ -356,6 +357,16 @@ function HomeLayout() {
         navigate(
           "/mapa?nearby=food"
         ),
+    },
+
+    {
+      id: "huariques",
+      title: tx("Descubrir huariques"),
+      subtitle: tx("Sabores locales con historia, verificados por I.GUIDE"),
+      icon: Sparkles,
+      tone: "cyan" as const,
+      onClick: () =>
+        navigate("/mapa?nearby=huariques"),
     },
 
     {

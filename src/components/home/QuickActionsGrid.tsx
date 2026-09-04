@@ -66,13 +66,17 @@ function QuickActionsGrid({
       }}
     >
       {actions.map(
-        (action) => (
+        (action, index) => (
           <QuickActionCard
             key={
               action.id
             }
             action={
               action
+            }
+            fullWidth={
+              actions.length % 2 === 1 &&
+              index === actions.length - 1
             }
           />
         )
@@ -84,10 +88,13 @@ function QuickActionsGrid({
 type QuickActionCardProps = {
   action:
     QuickAction;
+  fullWidth:
+    boolean;
 };
 
 function QuickActionCard({
   action,
+  fullWidth,
 }: QuickActionCardProps) {
   const isCyan =
     action.tone ===
@@ -119,6 +126,11 @@ function QuickActionCard({
       }
       style={{
         position: "relative",
+
+        gridColumn:
+          fullWidth
+            ? "1 / -1"
+            : undefined,
 
         width: "100%",
 

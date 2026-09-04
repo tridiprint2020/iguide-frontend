@@ -102,6 +102,15 @@ export interface ExpeditionExperience extends PublishableExperience {
   affinity: AffinityScores; // Mantenido intacto para preservar compatibilidad legacy
 }
 
+export interface HuariqueProfile {
+  /** Solo una ficha contrastada puede exponerse públicamente como huarique. */
+  verified: true;
+  reason: string;
+  signatureDish?: string;
+  verifiedAt: string;
+  evidenceSource: string;
+}
+
 // Un solo grupo para restaurante/café/bar/nightclub, con subtype para el matiz
 export interface VenueExperience extends PublishableExperience {
   type: "restaurant" | "cafe" | "bar" | "nightclub";
@@ -112,6 +121,8 @@ export interface VenueExperience extends PublishableExperience {
   admissionFee?: number;
   hasDelivery?: boolean;
   menuHighlights?: string[];
+  /** Huarique es una cualidad editorial del local, no un nuevo tipo. */
+  huarique?: HuariqueProfile;
 }
 
 export interface HotelExperience extends PublishableExperience {

@@ -45,6 +45,9 @@ import {
 import {
   getHospesMessage,
 } from "../engine/hospesContextEngine";
+import {
+  getVerifiedHuariqueProfile,
+} from "../engine/huariqueEngine";
 
 import type {
   Experience,
@@ -257,6 +260,11 @@ function Expedition() {
         currentTrack
           ?.timeline ?? [],
     });
+
+  const huarique =
+    getVerifiedHuariqueProfile(
+      expedition
+    );
 
   const distance =
     readTextField(
@@ -653,6 +661,42 @@ function Expedition() {
             >
               {expedition.description}
             </p>
+          )}
+
+          {huarique && (
+            <aside
+              style={{
+                margin: "9px 0 10px",
+                padding: "10px",
+                borderRadius: "13px",
+                border: "1px solid rgba(255,61,232,0.24)",
+                background: "linear-gradient(145deg, rgba(255,61,232,0.10), rgba(57,231,255,0.06))",
+              }}
+            >
+              <strong
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  color: "#FF74FF",
+                  fontSize: "10px",
+                  letterSpacing: "0.07em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <Sparkles size={13} />
+                {tx("Huarique verificado")}
+              </strong>
+              <p style={{ margin: "6px 0 0", color: "rgba(255,255,255,0.76)", fontSize: "11px", lineHeight: 1.42 }}>
+                <b>{tx("Por qué es un huarique")}:</b>{" "}
+                {huarique.reason}
+              </p>
+              {huarique.signatureDish && (
+                <p style={{ margin: "5px 0 0", color: CYAN, fontSize: "10px", fontWeight: 750 }}>
+                  {tx("Plato recomendado")}: {huarique.signatureDish}
+                </p>
+              )}
+            </aside>
           )}
 
           <div

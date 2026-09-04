@@ -61,6 +61,12 @@ import {
 } from "../engine/experiencePresentation";
 
 import {
+  getVerifiedHuariqueProfile,
+  getVerifiedHuariques,
+  isVerifiedHuarique,
+} from "../engine/huariqueEngine";
+
+import {
   loadUserProfile,
 } from "../data/user";
 
@@ -244,6 +250,10 @@ function normalizeSearchValue(
 function buildExperienceSearchText(
   experience: Experience
 ): string {
+  const huarique =
+    getVerifiedHuariqueProfile(
+      experience
+    );
   const searchableExperience =
     experience as Experience & {
       tags?: string[];
@@ -261,6 +271,11 @@ function buildExperienceSearchText(
       searchableExperience.description,
       searchableExperience.address,
       searchableExperience.neighborhood,
+      huarique
+        ? tx("Huarique verificado")
+        : null,
+      huarique?.reason,
+      huarique?.signatureDish,
       ...(searchableExperience.tags ?? []),
     ]
       .filter(Boolean)
@@ -273,6 +288,9 @@ function MapPage() {
   const [searchParams] = useSearchParams();
   const foodNearbyMode =
     searchParams.get("nearby") === "food";
+  const huariqueNearbyMode =
+    searchParams.get("nearby") ===
+    "huariques";
   const focusReturnPointMode =
     searchParams.get("return") === "1";
   const {
@@ -292,6 +310,9 @@ function MapPage() {
 
   const [onlyUnvisited, setOnlyUnvisited] =
     useState(false);
+
+  const [onlyHuariques, setOnlyHuariques] =
+    useState(huariqueNearbyMode);
 
   /*
    * Los recuerdos se cargan solo cuando el usuario los pide.
@@ -472,6 +493,7 @@ function MapPage() {
     setActiveFilters([]);
     setOnlyFavorites(false);
     setOnlyUnvisited(false);
+    setOnlyHuariques(false);
   }
 
   function removeFilter(
@@ -508,6 +530,12 @@ function MapPage() {
               experience.experienceId
             );
 
+          const matchesHuarique =
+            !onlyHuariques ||
+            isVerifiedHuarique(
+              experience
+            );
+
           const normalizedQuery =
             normalizeSearchValue(
               searchQuery
@@ -525,6 +553,7 @@ function MapPage() {
             matchesType &&
             matchesFavorite &&
             matchesUnvisited &&
+            matchesHuarique &&
             matchesSearch
           );
         }
@@ -534,6 +563,7 @@ function MapPage() {
       activeFilters,
       favoriteIds,
       onlyFavorites,
+      onlyHuariques,
       onlyUnvisited,
       searchQuery,
       visitedIds,
@@ -589,6 +619,15 @@ function MapPage() {
 
       return counts;
     }, [activeCatalog]);
+
+  const huariqueCount =
+    useMemo(
+      () =>
+        getVerifiedHuariques(
+          activeCatalog
+        ).length,
+      [activeCatalog]
+    );
 
   const historicalMemories =
     useMemo<HistoricalMemory[]>(() => {
@@ -851,7 +890,8 @@ function MapPage() {
   const hasActiveFilters =
     activeFilters.length > 0 ||
     onlyFavorites ||
-    onlyUnvisited;
+    onlyUnvisited ||
+    onlyHuariques;
 
   return (
     <main
@@ -954,7 +994,9 @@ function MapPage() {
             lineHeight: 1.05,
           }}
         >
-          {foodNearbyMode
+          {onlyHuariques
+            ? tx("Huariques de Huancayo")
+            : foodNearbyMode
             ? tx("¿Dónde comer algo rico cerca?")
             : tx("Explora cerca de ti")}
         </h1>
@@ -967,11 +1009,59 @@ function MapPage() {
             fontSize: "13px",
           }}
         >
-          {foodNearbyMode
+          {onlyHuariques
+            ? tx("Lugares locales con historia y evidencia, sin dejar de ser restaurantes, cafés o bares.")
+            : foodNearbyMode
             ? tx("Mostramos restaurantes y cafés para elegir desde tu ubicación.")
             : tx("Busca por nombre, filtra e inicia una misión.")}
         </p>
       </header>
+
+      {onlyHuariques &&
+        huariqueCount === 0 && (
+          <section
+            role="status"
+            style={{
+              width: "100%",
+              maxWidth: "760px",
+              boxSizing: "border-box",
+              margin: "0 auto 12px",
+              padding: "14px",
+              borderRadius: "16px",
+              border: "1px solid rgba(255,61,232,0.24)",
+              background: "linear-gradient(145deg, rgba(255,61,232,0.10), rgba(14,15,29,0.96))",
+              textAlign: "center",
+            }}
+          >
+            <Sparkles size={22} color={MAGENTA} aria-hidden="true" />
+            <strong style={{ display: "block", marginTop: "6px", fontSize: "13px" }}>
+              {tx("Aún estamos verificando los primeros huariques de Huancayo.")}
+            </strong>
+            <p style={{ margin: "5px 0 10px", color: Theme.Colors.textSoft, fontSize: "11px" }}>
+              {tx("Mientras tanto, puedes explorar restaurantes y cafés cercanos.")}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setOnlyHuariques(false);
+                setActiveFilters(["restaurant", "cafe"]);
+              }}
+              style={{
+                minHeight: "38px",
+                padding: "8px 13px",
+                border: "none",
+                borderRadius: "12px",
+                background: `linear-gradient(145deg, ${MAGENTA}, #C90079)`,
+                color: "#FFFFFF",
+                fontSize: "11px",
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              {tx("Ver restaurantes cercanos")}
+            </button>
+          </section>
+        )}
 
       <section
         style={{
@@ -1293,6 +1383,17 @@ function MapPage() {
           scrollbarWidth: "none",
         }}
       >
+        <QuickFilterButton
+          active={onlyHuariques}
+          icon={Utensils}
+          label={`${tx("Huariques")} (${huariqueCount})`}
+          onClick={() =>
+            setOnlyHuariques(
+              (current) => !current
+            )
+          }
+        />
+
         <QuickFilterButton
           active={onlyUnvisited}
           icon={Sparkles}

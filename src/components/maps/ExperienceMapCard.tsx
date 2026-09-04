@@ -1,6 +1,7 @@
 import {
   Clock3,
   MapPin,
+  Sparkles,
   Star,
 } from "lucide-react";
 
@@ -19,6 +20,9 @@ import {
   getMemoryCardDescriptor,
   getListingRatingLabel,
 } from "../../engine/experiencePresentation";
+import {
+  getVerifiedHuariqueProfile,
+} from "../../engine/huariqueEngine";
 
 type Props = {
   experience: Experience;
@@ -75,6 +79,11 @@ function ExperienceMapCard({
 
   const ratingLabel =
     getListingRatingLabel(experience);
+
+  const huarique =
+    getVerifiedHuariqueProfile(
+      experience
+    );
 
   return (
     <article
@@ -234,6 +243,41 @@ function ExperienceMapCard({
           surface="light"
         />
       </header>
+
+      {huarique && (
+        <aside
+          style={{
+            marginTop: "10px",
+            padding: "8px 9px",
+            borderRadius: "11px",
+            border: "1px solid rgba(212,0,141,0.18)",
+            background: "linear-gradient(145deg, rgba(255,61,232,0.09), rgba(0,175,194,0.06))",
+          }}
+        >
+          <strong
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              color: "#C00082",
+              fontSize: "9px",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+            }}
+          >
+            <Sparkles size={11} />
+            {tx("Huarique verificado")}
+          </strong>
+          <p style={{ margin: "4px 0 0", color: "rgba(19,19,26,0.72)", fontSize: "9.5px", lineHeight: 1.38 }}>
+            {huarique.reason}
+          </p>
+          {huarique.signatureDish && (
+            <small style={{ display: "block", marginTop: "4px", color: "#007F90", fontSize: "8.5px", fontWeight: 800 }}>
+              {tx("Plato recomendado")}: {huarique.signatureDish}
+            </small>
+          )}
+        </aside>
+      )}
 
       <p
         style={{
