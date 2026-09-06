@@ -48,6 +48,9 @@ import {
 import {
   getVerifiedHuariqueProfile,
 } from "../engine/huariqueEngine";
+import {
+  getExperienceScheduleLabel,
+} from "../engine/experienceScheduleEngine";
 
 import type {
   Experience,
@@ -290,11 +293,19 @@ function Expedition() {
       "duration"
     );
 
+  const averagePricePen =
+    "averagePricePen" in expedition &&
+    typeof expedition.averagePricePen === "number"
+      ? expedition.averagePricePen
+      : null;
+
   const price =
-    readTextField(
-      expedition,
-      "price"
-    );
+    readTextField(expedition, "price") ??
+    (averagePricePen !== null
+      ? tx("S/ {{price}} aprox.", {
+          price: averagePricePen,
+        })
+      : null);
 
   const difficulty =
     readTextField(
@@ -303,12 +314,10 @@ function Expedition() {
     );
 
   const openingHours =
-    readTextField(
-      expedition,
-      "openingHours"
-    );
+    getExperienceScheduleLabel(expedition);
 
   const localTip =
+    huarique?.hospesTip ??
     readTextField(
       expedition,
       "hospes"
@@ -326,6 +335,15 @@ function Expedition() {
         expedition.city,
       icon: MapPin,
     },
+    ...(expedition.address
+      ? [
+          {
+            label: tx("Dirección"),
+            value: expedition.address,
+            icon: MapPin,
+          } satisfies InfoItem,
+        ]
+      : []),
     {
       label: tx("Tipo"),
       value:
@@ -694,6 +712,11 @@ function Expedition() {
               {huarique.signatureDish && (
                 <p style={{ margin: "5px 0 0", color: CYAN, fontSize: "10px", fontWeight: 750 }}>
                   {tx("Plato recomendado")}: {huarique.signatureDish}
+                </p>
+              )}
+              {huarique.hospesTip && (
+                <p style={{ margin: "5px 0 0", color: "#FFB8F2", fontSize: "10px", fontWeight: 750 }}>
+                  {tx("Consejo de Hospes")}: {huarique.hospesTip}
                 </p>
               )}
             </aside>

@@ -41,6 +41,9 @@ import {
 import type {
   MealSlot,
 } from "./itineraryTimePolicyEngine";
+import {
+  getExperienceOpeningWindow,
+} from "./experienceScheduleEngine";
 
 const MAX_STOPS = 5;
 const MINUTES_PER_RECOMMENDED_STOP = 150;
@@ -140,45 +143,6 @@ function getTravelMinutes(
     },
     transport
   );
-}
-
-function getOpeningWindow(
-  experience: Experience
-): {
-  opensAt: number;
-  closesAt: number;
-} | null {
-  if (
-    !("openingHours" in experience) ||
-    typeof experience.openingHours !==
-      "string"
-  ) {
-    return null;
-  }
-
-  const match =
-    experience.openingHours.match(
-      /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/
-    );
-
-  if (!match) return null;
-
-  const opensAt =
-    Number(match[1]) * 60 +
-    Number(match[2]);
-
-  let closesAt =
-    Number(match[3]) * 60 +
-    Number(match[4]);
-
-  if (closesAt <= opensAt) {
-    closesAt += 24 * 60;
-  }
-
-  return {
-    opensAt,
-    closesAt,
-  };
 }
 
 function createSelectedDate(
@@ -764,7 +728,24 @@ export function buildItineraryPlan(
     }
 
     const openingWindow =
-      getOpeningWindow(experience);
+      getExperienceOpeningWindow(
+        experience,
+        answers.selectedDate
+      );
+
+    if (
+      openingWindow.hasSchedule &&
+      !openingWindow.isScheduledToday
+    ) {
+      exclusions.push(
+        createExclusion(
+          experience,
+          "outside-opening-hours",
+          { closedToday: true }
+        )
+      );
+      continue;
+    }
     let visitStart =
       cursor + travelMinutes;
     let selectedMealSlot: MealSlot | null = null;
@@ -776,7 +757,8 @@ export function buildItineraryPlan(
       const mealWindow = findNextMealWindow(
         experience.type,
         visitStart,
-        usedMealSlots
+        usedMealSlots,
+        experience.mealSlots
       );
 
       if (!mealWindow) {
@@ -807,7 +789,7 @@ export function buildItineraryPlan(
     }
 
     if (
-      openingWindow &&
+      openingWindow.hasSchedule &&
       visitStart < openingWindow.opensAt
     ) {
       visitStart = openingWindow.opensAt;
@@ -817,7 +799,7 @@ export function buildItineraryPlan(
       visitStart + visitMinutes;
 
     if (
-      openingWindow &&
+      openingWindow.hasSchedule &&
       (visitStart >=
         openingWindow.closesAt ||
         visitEnd >

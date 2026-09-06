@@ -27,6 +27,7 @@ function createExperience(overrides = {}) {
       verified: true,
       reason: "Receta local documentada y atención de sus propietarios.",
       signatureDish: "Mondongo",
+      hospesTip: "Pide la bebida de la casa.",
       verifiedAt: "2026-09-03",
       evidenceSource: "ACTA-TEST-001",
     },
@@ -115,6 +116,7 @@ test("los textos públicos de Huariques v1 existen en inglés", () => {
     "Huarique verificado",
     "Por qué es un huarique",
     "Plato recomendado",
+    "Consejo de Hospes",
     "Aún estamos verificando los primeros huariques de Huancayo.",
     "Mientras tanto, puedes explorar restaurantes y cafés cercanos.",
     "Ver restaurantes cercanos",
@@ -123,6 +125,13 @@ test("los textos públicos de Huariques v1 existen en inglés", () => {
   for (const key of requiredKeys) {
     assert.equal(typeof en[key], "string", `Falta traducción: ${key}`);
   }
+});
+
+test("el perfil editorial traduce también el consejo de Hospes", () => {
+  assert.equal(
+    typeof en["Consejo de Hospes"],
+    "string"
+  );
 });
 
 test("Home y Mapa conectan el acceso con la colección verificada", () => {

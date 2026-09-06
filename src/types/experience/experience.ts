@@ -32,6 +32,27 @@ export type WeatherSensitivity =
   | "medium"
   | "high";
 
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export type PaymentMethod =
+  | "cash"
+  | "yape"
+  | "card";
+
+export type MealServiceSlot =
+  | "breakfast"
+  | "lunch"
+  | "snack"
+  | "dinner";
+
+export interface WeeklyOpeningSchedule {
+  days: Weekday[];
+  opensAt: string;
+  closesAt: string;
+  closedOnHolidays?: boolean;
+  closesWhenSoldOut?: boolean;
+}
+
 export interface AffinityScores {
   firstTimeVisitor: number;
   family: number;
@@ -49,6 +70,7 @@ export interface BaseExperience {
   slug: string;
   title: string;
   city: string;
+  address?: string;
   image: string;
   description: string;
   latitude: number;
@@ -107,6 +129,7 @@ export interface HuariqueProfile {
   verified: true;
   reason: string;
   signatureDish?: string;
+  hospesTip?: string;
   verifiedAt: string;
   evidenceSource: string;
 }
@@ -121,6 +144,11 @@ export interface VenueExperience extends PublishableExperience {
   admissionFee?: number;
   hasDelivery?: boolean;
   menuHighlights?: string[];
+  averagePricePen?: number;
+  weeklySchedule?: WeeklyOpeningSchedule;
+  mealSlots?: MealServiceSlot[];
+  paymentMethods?: PaymentMethod[];
+  reservationRequired?: boolean;
   /** Huarique es una cualidad editorial del local, no un nuevo tipo. */
   huarique?: HuariqueProfile;
 }

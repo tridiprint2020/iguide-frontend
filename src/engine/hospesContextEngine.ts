@@ -3,6 +3,9 @@ import type { TimelineItem } from "../types/tracking/tracking";
 import type { HospesMessage } from "../types/hospes";
 import type { WeatherStatus } from "./weatherEngine";
 import { tx } from "../i18n";
+import {
+  getExperienceOpeningStatus,
+} from "./experienceScheduleEngine";
 
 export type HospesScreen =
   | "home"
@@ -37,13 +40,6 @@ export type HospesContext = {
   progress?: HospesProgress;
 
   currentDate?: Date;
-};
-
-type OpeningStatus = {
-  hasSchedule: boolean;
-  isOpen: boolean;
-  opensAt?: string;
-  closesAt?: string;
 };
 
 const BRAND_COLOR =
@@ -108,116 +104,6 @@ function getTimeLabel(
   }
 
   return tx("esta noche");
-}
-
-function getOpeningStatus(
-  experience:
-    | Experience
-    | null
-    | undefined,
-
-  currentDate: Date
-): OpeningStatus {
-  if (
-    !experience ||
-    !(
-      "openingHours" in
-      experience
-    ) ||
-    typeof experience
-      .openingHours !==
-      "string"
-  ) {
-    return {
-      hasSchedule: false,
-      isOpen: true,
-    };
-  }
-
-  const normalized =
-    experience.openingHours
-      .trim();
-
-  const match =
-    normalized.match(
-      /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/
-    );
-
-  if (!match) {
-    return {
-      hasSchedule: false,
-      isOpen: true,
-    };
-  }
-
-  const openHour =
-    Number(match[1]);
-
-  const openMinute =
-    Number(match[2]);
-
-  const closeHour =
-    Number(match[3]);
-
-  const closeMinute =
-    Number(match[4]);
-
-  const currentMinutes =
-    currentDate.getHours() *
-      60 +
-    currentDate.getMinutes();
-
-  const openMinutes =
-    openHour * 60 +
-    openMinute;
-
-  const closeMinutes =
-    closeHour * 60 +
-    closeMinute;
-
-  const isOpen =
-    closeMinutes >=
-    openMinutes
-      ? currentMinutes >=
-          openMinutes &&
-        currentMinutes <=
-          closeMinutes
-      : currentMinutes >=
-          openMinutes ||
-        currentMinutes <=
-          closeMinutes;
-
-  return {
-    hasSchedule: true,
-
-    isOpen,
-
-    opensAt:
-      `${String(
-        openHour
-      ).padStart(
-        2,
-        "0"
-      )}:${String(
-        openMinute
-      ).padStart(
-        2,
-        "0"
-      )}`,
-
-    closesAt:
-      `${String(
-        closeHour
-      ).padStart(
-        2,
-        "0"
-      )}:${String(
-        closeMinute
-      ).padStart(
-        2,
-        "0"
-      )}`,
-  };
 }
 
 export function getHospesMessage(
@@ -291,7 +177,7 @@ export function getHospesMessage(
     );
 
   const openingStatus =
-    getOpeningStatus(
+    getExperienceOpeningStatus(
       experience,
       currentDate
     );
@@ -618,15 +504,18 @@ export function getHospesMessage(
             ),
 
           message:
-            tx(
-              "{{title}} abre a las {{time}}. Puedes guardar el plan o explorar otra experiencia cercana mientras tanto.",
-              {
-                title:
-                  experience.title,
-                time:
-                  openingStatus.opensAt,
-              }
-            ),
+            openingStatus.isScheduledToday
+              ? tx(
+                  "{{title}} abre a las {{time}}. Puedes guardar el plan o explorar otra experiencia cercana mientras tanto.",
+                  {
+                    title: experience.title,
+                    time: openingStatus.opensAt,
+                  }
+                )
+              : tx(
+                  "{{title}} no atiende hoy. Puedes guardarlo para otro día o explorar una alternativa cercana.",
+                  { title: experience.title }
+                ),
 
           icon: "🕒",
 

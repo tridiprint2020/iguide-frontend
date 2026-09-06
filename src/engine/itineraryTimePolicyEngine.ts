@@ -36,6 +36,11 @@ const CAFE_WINDOWS: MealWindow[] = [
   },
 ];
 
+const ALL_MEAL_WINDOWS: MealWindow[] = [
+  ...CAFE_WINDOWS,
+  ...RESTAURANT_WINDOWS,
+].sort((a, b) => a.startMinutes - b.startMinutes);
+
 function getFoodWindows(
   experienceType: string
 ): MealWindow[] {
@@ -66,11 +71,16 @@ export function getMealSlot(
 export function findNextMealWindow(
   experienceType: string,
   earliestMinutes: number,
-  usedSlots: ReadonlySet<MealSlot>
+  usedSlots: ReadonlySet<MealSlot>,
+  allowedSlots?: readonly MealSlot[]
 ): MealWindow | null {
-  for (const window of getFoodWindows(
-    experienceType
-  )) {
+  const windows = allowedSlots
+    ? ALL_MEAL_WINDOWS.filter((window) =>
+        allowedSlots.includes(window.slot)
+      )
+    : getFoodWindows(experienceType);
+
+  for (const window of windows) {
     if (
       usedSlots.has(window.slot) ||
       earliestMinutes >= window.endMinutes

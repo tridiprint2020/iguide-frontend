@@ -271,9 +271,9 @@ estimatedVisitMinutes: 60
 {
     experienceId:"RES-0007",
 
-    slug:"girasoles",
+    slug:"los-girasoles",
 
-    title:"Girasoles",
+    title:"Los Girasoles",
 
     type:"restaurant",
 
@@ -281,34 +281,68 @@ estimatedVisitMinutes: 60
 
     image: placeholder,
 
+    address:"Moquegua 135, Huancayo 12004",
+
     description:
-      "Restaurante tradicional reconocido por su pachamanca y platos típicos del Valle del Mantaro.",
+      "Gastronomía del Valle del Mantaro dentro de la ciudad, con pachamanca, carnero al palo y trucha.",
 
-    latitude:-12.064796348202057, 
+    latitude:-12.064901145614282,
 
-    longitude:-75.21502859441074,
+    longitude:-75.21501080463344,
+
+    link:"https://www.google.com/maps/dir/?api=1&destination=-12.064901145614282,-75.21501080463344",
 
     certificationRadiusMeters: 20,
 
-    rating:5.7,
-
     tags:[
-        "tradicional",
+        "pachamanca",
+        "carnero al palo",
+        "trucha",
         "familia",
         "almuerzo"
     ],
 
-    cuisine:"tradicional",
+    interests:["gastronomy", "family"],
+
+    cuisine:"gastronomía del Valle",
 
     priceRange:"mid",
 
-    openingHours:"09:00-21:00",
+    openingHours:"09:00-20:00",
+    weeklySchedule:{
+      days:[0,1,2,3,4,5,6],
+      opensAt:"09:00",
+      closesAt:"20:00"
+    },
+    mealSlots:["lunch"],
+    averagePricePen:50,
+    paymentMethods:["cash","yape","card"],
+    reservationRequired:false,
     hasDelivery: false,
 admissionFee: 0,
 coverImage: placeholder, // O string vacío ""
 gallery: [],
 isActive: true,
-estimatedVisitMinutes: 60
+lastUpdated:"2026-09-05",
+estimatedVisitMinutes: 90,
+environment:"mixed",
+weatherSensitivity:"low",
+terrain:"paved",
+listingStatus:"editorial",
+menuHighlights:[
+  "Carnero al palo",
+  "Pachamanca de tres sabores con humitas extra",
+  "Papa a la Huancaína",
+  "Cebiche de trucha"
+],
+huarique:{
+  verified:true,
+  reason:"Si no tienes tiempo de ir a Ingenio o Sapallanga por una pachamanca, aquí puedes probar gastronomía del Valle dentro de la ciudad.",
+  signatureDish:"Pachamanca de tres sabores con humitas extra",
+  hospesTip:"Pide humitas extra; las adorarás.",
+  verifiedAt:"2026-09-05",
+  evidenceSource:"Confirmación del Fundador basada en visita personal realizada aproximadamente tres semanas antes del 2026-09-05."
+}
 
 },
 {
@@ -353,5 +387,195 @@ gallery: [],
 isActive: true,
 estimatedVisitMinutes: 60
 
+},
+{
+  experienceId:"RES-0009",
+  slug:"el-padrinazo",
+  title:"El Padrinazo",
+  type:"restaurant",
+  city:"Huancayo",
+  address:"Jr. Calixto 317, Huancayo",
+  image:placeholder,
+  coverImage:placeholder,
+  gallery:[],
+  description:"Restaurante de comida local frecuentado por comerciantes del Mercado Central, con caldos y porciones abundantes de platos del valle.",
+  latitude:-12.069155261880008,
+  longitude:-75.20726025397761,
+  link:"https://www.google.com/maps/dir/?api=1&destination=-12.069155261880008,-75.20726025397761",
+  certificationRadiusMeters:20,
+  tags:["comida local","caldos","mondongo","sancochado","chicharrón colorado"],
+  interests:["gastronomy"],
+  cuisine:"comida local del Valle del Mantaro",
+  priceRange:"budget",
+  openingHours:"07:00-15:00",
+  weeklySchedule:{
+    days:[1,2,3,4,5,6],
+    opensAt:"07:00",
+    closesAt:"15:00",
+    closedOnHolidays:true
+  },
+  mealSlots:["breakfast","lunch"],
+  averagePricePen:30,
+  paymentMethods:["cash","yape"],
+  reservationRequired:false,
+  hasDelivery:false,
+  menuHighlights:["Mondongo","Sancochado","Chicharrón Colorado"],
+  isActive:true,
+  lastUpdated:"2026-09-05",
+  estimatedVisitMinutes:45,
+  environment:"indoor",
+  weatherSensitivity:"low",
+  terrain:"paved",
+  listingStatus:"editorial",
+  huarique:{
+    verified:true,
+    reason:"Es uno de los preferidos de los comerciantes del Mercado Central por sus porciones contundentes y presas dignas del valle.",
+    signatureDish:"Mondongo, sancochado y chicharrón colorado",
+    hospesTip:"En el almuerzo puedes pedir yapa de refresco.",
+    verifiedAt:"2026-09-05",
+    evidenceSource:"Confirmación del Fundador basada en visita personal realizada aproximadamente seis semanas antes del 2026-09-05."
+  }
+},
+{
+  experienceId:"RES-0010",
+  slug:"el-braserito",
+  title:"El Braserito",
+  type:"restaurant",
+  city:"Huancayo",
+  address:"Jr. Huánuco 486, Huancayo",
+  image:placeholder,
+  coverImage:placeholder,
+  gallery:[],
+  description:"Anticuchería de buena sazón, variedad, salsas sabrosas y aperitivos a precio justo.",
+  latitude:-12.073709750427867,
+  longitude:-75.20812441988363,
+  link:"https://www.google.com/maps/dir/?api=1&destination=-12.073709750427867,-75.20812441988363",
+  certificationRadiusMeters:20,
+  tags:["anticuchos","rachi","molleja","parrilla","noche"],
+  interests:["gastronomy","nightlife"],
+  cuisine:"anticuchería",
+  priceRange:"budget",
+  openingHours:"16:00-22:30",
+  weeklySchedule:{
+    days:[0,1,2,3,4,5,6],
+    opensAt:"16:00",
+    closesAt:"22:30",
+    closedOnHolidays:true
+  },
+  mealSlots:["dinner"],
+  averagePricePen:30,
+  paymentMethods:["cash","yape","card"],
+  reservationRequired:false,
+  hasDelivery:false,
+  menuHighlights:["Anticucho","Rachi","Molleja","Plato mixto"],
+  isActive:true,
+  lastUpdated:"2026-09-05",
+  estimatedVisitMinutes:60,
+  environment:"indoor",
+  weatherSensitivity:"low",
+  terrain:"paved",
+  listingStatus:"editorial",
+  huarique:{
+    verified:true,
+    reason:"Tiene buena sazón y variedad a buen precio, con salsas sabrosas y buenos aperitivos.",
+    signatureDish:"Plato mixto de anticucho con rachi y molleja",
+    hospesTip:"Prueba el uvachado como digestivo.",
+    verifiedAt:"2026-09-05",
+    evidenceSource:"Confirmación del Fundador basada en visita personal realizada aproximadamente tres semanas antes del 2026-09-05."
+  }
+},
+{
+  experienceId:"RES-0011",
+  slug:"restaurant-campestre-valle-azul",
+  title:"Restaurant Campestre Valle Azul",
+  type:"restaurant",
+  city:"Quichuay",
+  address:"Av. Juan Morales Vivanco 390, Quichuay 12205",
+  image:placeholder,
+  coverImage:placeholder,
+  gallery:[],
+  description:"Restaurante campestre del Valle del Mantaro reconocido por mantener su sabor y calidad, especialmente en la trucha preparada de distintas maneras.",
+  latitude:-11.8900916,
+  longitude:-75.2905327,
+  link:"https://www.google.com/maps/dir/?api=1&destination=-11.89009160,-75.29053270",
+  certificationRadiusMeters:60,
+  tags:["trucha","pachamanca","cuy","conejo","comida campestre","familia"],
+  interests:["gastronomy","family"],
+  cuisine:"gastronomía del Valle del Mantaro",
+  priceRange:"mid",
+  openingHours:"11:00-18:00",
+  weeklySchedule:{
+    days:[0,1,2,3,4,5,6],
+    opensAt:"11:00",
+    closesAt:"18:00"
+  },
+  mealSlots:["lunch"],
+  averagePricePen:40,
+  paymentMethods:["cash","yape","card"],
+  reservationRequired:false,
+  hasDelivery:false,
+  menuHighlights:["Trucha en diferentes preparaciones","Papa a la Huancaína","Cebiche de trucha","Caldo de gallina","Chicharrón de alcachofa","Picante de cuy","Conejo chactado","Pachamanca"],
+  isActive:true,
+  lastUpdated:"2026-09-05",
+  estimatedVisitMinutes:150,
+  environment:"mixed",
+  weatherSensitivity:"medium",
+  terrain:"paved",
+  listingStatus:"editorial",
+  huarique:{
+    verified:true,
+    reason:"Entre muchos locales del valle, ha mantenido su sabor y su calidad; los conocedores locales lo consideran una elección confiable, especialmente por su trucha en todos sus sabores.",
+    signatureDish:"Trucha en sus diferentes preparaciones",
+    hospesTip:"Llega alrededor de la 1:00 p. m.; los fines de semana suele llenarse. Prueba sin miedo todo el menú.",
+    verifiedAt:"2026-09-05",
+    evidenceSource:"Confirmación del Fundador basada en visita personal realizada aproximadamente dos meses antes del 2026-09-05. Dirección y coordenadas contrastadas con fuentes públicas; falta validación GPS en la puerta."
+  }
+},
+{
+  experienceId:"RES-0012",
+  slug:"la-casa-los-conquistadores",
+  title:"La Casa – Los Conquistadores",
+  type:"restaurant",
+  city:"Huancayo",
+  address:"Jr. Calixto 598, Huancayo",
+  image:placeholder,
+  coverImage:placeholder,
+  gallery:[],
+  description:"Pollería local con pollo a la brasa, atención práctica y precio justo.",
+  latitude:-12.069785889274364,
+  longitude:-75.20839458880786,
+  link:"https://www.google.com/maps/dir/?api=1&destination=-12.069785889274364,-75.20839458880786",
+  certificationRadiusMeters:20,
+  tags:["pollo a la brasa","pollería","familia","almuerzo","cena"],
+  interests:["gastronomy","family"],
+  cuisine:"pollería",
+  priceRange:"budget",
+  openingHours:"12:00-22:30",
+  weeklySchedule:{
+    days:[0,1,2,3,4,5,6],
+    opensAt:"12:00",
+    closesAt:"22:30"
+  },
+  mealSlots:["lunch","dinner"],
+  averagePricePen:25,
+  paymentMethods:["cash","yape","card"],
+  reservationRequired:false,
+  hasDelivery:true,
+  menuHighlights:["Pollo a la brasa"],
+  isActive:true,
+  lastUpdated:"2026-09-05",
+  estimatedVisitMinutes:60,
+  environment:"indoor",
+  weatherSensitivity:"low",
+  terrain:"paved",
+  listingStatus:"editorial",
+  huarique:{
+    verified:true,
+    reason:"Ofrece pollo a la brasa bien servido y a precio justo, cumpliendo lo que un cliente local espera sin pagar sobreprecio.",
+    signatureDish:"Pollo a la brasa",
+    hospesTip:"Pide el ají verde. Si buscas mayor rotación del producto, llega cerca de las 2:00 p. m. o las 8:00 p. m.",
+    verifiedAt:"2026-09-05",
+    evidenceSource:"Confirmación del Fundador basada en visita personal realizada aproximadamente una semana antes del 2026-09-05."
+  }
 },
 ];

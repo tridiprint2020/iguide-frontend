@@ -23,6 +23,9 @@ import {
 import {
   getVerifiedHuariqueProfile,
 } from "../../engine/huariqueEngine";
+import {
+  getExperienceScheduleLabel,
+} from "../../engine/experienceScheduleEngine";
 
 type Props = {
   experience: Experience;
@@ -73,8 +76,12 @@ function ExperienceMapCard({
     );
 
   const openingHours =
-    "openingHours" in experience
-      ? experience.openingHours
+    getExperienceScheduleLabel(experience);
+
+  const averagePricePen =
+    "averagePricePen" in experience &&
+    typeof experience.averagePricePen === "number"
+      ? experience.averagePricePen
       : null;
 
   const ratingLabel =
@@ -216,6 +223,19 @@ function ExperienceMapCard({
               {experience.city}
             </span>
 
+            {experience.address && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "3px",
+                }}
+              >
+                <MapPin size={11} color="#00AFC2" />
+                {experience.address}
+              </span>
+            )}
+
             {ratingLabel && (
               <span
                 style={{
@@ -276,6 +296,11 @@ function ExperienceMapCard({
               {tx("Plato recomendado")}: {huarique.signatureDish}
             </small>
           )}
+          {huarique.hospesTip && (
+            <small style={{ display: "block", marginTop: "4px", color: "#A20071", fontSize: "8.5px", fontWeight: 800 }}>
+              {tx("Consejo de Hospes")}: {huarique.hospesTip}
+            </small>
+          )}
         </aside>
       )}
 
@@ -295,7 +320,8 @@ function ExperienceMapCard({
       </p>
 
       {(openingHours ||
-        experience.estimatedVisitMinutes) && (
+        experience.estimatedVisitMinutes ||
+        averagePricePen !== null) && (
         <div
           style={{
             display: "flex",
@@ -340,6 +366,25 @@ function ExperienceMapCard({
               }}
             >
               {experience.estimatedVisitMinutes} min
+            </span>
+          )}
+
+          {averagePricePen !== null && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "5px 7px",
+                borderRadius: "999px",
+                background: "rgba(255,61,232,0.08)",
+                color: "#A20071",
+                fontSize: "9px",
+                fontWeight: 800,
+              }}
+            >
+              {tx("S/ {{price}} aprox.", {
+                price: averagePricePen,
+              })}
             </span>
           )}
 

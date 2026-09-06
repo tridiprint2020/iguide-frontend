@@ -82,6 +82,7 @@ function localizeExperience(
           const huarique = value as {
             reason?: unknown;
             signatureDish?: unknown;
+            hospesTip?: unknown;
           };
 
           return {
@@ -97,6 +98,13 @@ function localizeExperience(
               ? {
                   signatureDish: tx(
                     huarique.signatureDish.trim()
+                  ),
+                }
+              : {}),
+            ...(typeof huarique.hospesTip === "string"
+              ? {
+                  hospesTip: tx(
+                    huarique.hospesTip.trim()
                   ),
                 }
               : {}),
