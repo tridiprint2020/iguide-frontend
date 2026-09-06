@@ -161,6 +161,11 @@ const TYPE_FILTERS: TypeFilter[] = [
     label: "Restaurantes",
   },
   {
+    type: "food_route",
+    icon: MapPinned,
+    label: "Rutas gastronómicas",
+  },
+  {
     type: "cafe",
     icon: Coffee,
     label: "Cafés",
@@ -995,7 +1000,7 @@ function MapPage() {
           }}
         >
           {onlyHuariques
-            ? tx("Huariques de Huancayo")
+            ? tx("Huariques del Valle del Mantaro")
             : foodNearbyMode
             ? tx("¿Dónde comer algo rico cerca?")
             : tx("Explora cerca de ti")}
@@ -1010,7 +1015,7 @@ function MapPage() {
           }}
         >
           {onlyHuariques
-            ? tx("Lugares locales con historia y evidencia, sin dejar de ser restaurantes, cafés o bares.")
+            ? tx("Locales y rutas gastronómicas con historia y evidencia, sin perder su identidad original.")
             : foodNearbyMode
             ? tx("Mostramos restaurantes y cafés para elegir desde tu ubicación.")
             : tx("Busca por nombre, filtra e inicia una misión.")}
@@ -1035,7 +1040,7 @@ function MapPage() {
           >
             <Sparkles size={22} color={MAGENTA} aria-hidden="true" />
             <strong style={{ display: "block", marginTop: "6px", fontSize: "13px" }}>
-              {tx("Aún estamos verificando los primeros huariques de Huancayo.")}
+              {tx("Aún estamos verificando los primeros huariques del Valle del Mantaro.")}
             </strong>
             <p style={{ margin: "5px 0 10px", color: Theme.Colors.textSoft, fontSize: "11px" }}>
               {tx("Mientras tanto, puedes explorar restaurantes y cafés cercanos.")}

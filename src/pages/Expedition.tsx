@@ -125,6 +125,8 @@ function getTypeLabel(
       return tx("Artesanía");
     case "event":
       return tx("Evento");
+    case "food_route":
+      return tx("Ruta gastronómica");
     case "expedition":
     default:
       return tx("Misión local");
@@ -305,6 +307,11 @@ function Expedition() {
       ? tx("S/ {{price}} aprox.", {
           price: averagePricePen,
         })
+      : "priceFromPen" in expedition &&
+          typeof expedition.priceFromPen === "number"
+        ? tx("Desde S/ {{price}}", {
+            price: expedition.priceFromPen,
+          })
       : null);
 
   const difficulty =

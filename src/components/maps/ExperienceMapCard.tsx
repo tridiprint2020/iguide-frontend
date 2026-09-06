@@ -50,6 +50,7 @@ const TYPE_LABELS: Record<
   festival: "Festividad",
   craft: "Artesanía",
   event: "Evento",
+  food_route: "Ruta gastronómica",
 };
 
 function ExperienceMapCard({
@@ -82,6 +83,11 @@ function ExperienceMapCard({
     "averagePricePen" in experience &&
     typeof experience.averagePricePen === "number"
       ? experience.averagePricePen
+      : null;
+  const priceFromPen =
+    "priceFromPen" in experience &&
+    typeof experience.priceFromPen === "number"
+      ? experience.priceFromPen
       : null;
 
   const ratingLabel =
@@ -321,7 +327,8 @@ function ExperienceMapCard({
 
       {(openingHours ||
         experience.estimatedVisitMinutes ||
-        averagePricePen !== null) && (
+        averagePricePen !== null ||
+        priceFromPen !== null) && (
         <div
           style={{
             display: "flex",
@@ -384,6 +391,25 @@ function ExperienceMapCard({
             >
               {tx("S/ {{price}} aprox.", {
                 price: averagePricePen,
+              })}
+            </span>
+          )}
+
+          {priceFromPen !== null && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "5px 7px",
+                borderRadius: "999px",
+                background: "rgba(255,61,232,0.08)",
+                color: "#A20071",
+                fontSize: "9px",
+                fontWeight: 800,
+              }}
+            >
+              {tx("Desde S/ {{price}}", {
+                price: priceFromPen,
               })}
             </span>
           )}

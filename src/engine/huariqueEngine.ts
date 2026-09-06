@@ -1,5 +1,6 @@
 import type {
   Experience,
+  FoodRouteExperience,
   HuariqueProfile,
   VenueExperience,
 } from "../types/experience";
@@ -9,10 +10,11 @@ const VENUE_TYPES = new Set<Experience["type"]>([
   "cafe",
   "bar",
   "nightclub",
+  "food_route",
 ]);
 
 export type VerifiedHuariqueExperience =
-  VenueExperience & {
+  (VenueExperience | FoodRouteExperience) & {
     huarique: HuariqueProfile;
   };
 
@@ -34,7 +36,7 @@ export function getVerifiedHuariqueProfile(
   }
 
   const profile = (
-    experience as VenueExperience
+    experience as VenueExperience | FoodRouteExperience
   ).huarique;
 
   if (

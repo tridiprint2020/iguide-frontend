@@ -70,7 +70,7 @@ after(async () => {
   await server?.close();
 });
 
-test("el catálogo expone exactamente los cinco huariques verificados por el Fundador", () => {
+test("el catálogo expone cinco locales y una ruta verificados por el Fundador", () => {
   const huariques = getVerifiedHuariques(catalog);
 
   assert.deepEqual(
@@ -81,17 +81,104 @@ test("el catálogo expone exactamente los cinco huariques verificados por el Fun
       "El Braserito",
       "Restaurant Campestre Valle Azul",
       "La Casa – Los Conquistadores",
+      "Ruta del lechón de Chupaca",
     ]
   );
   assert.ok(
     huariques.every(
       (experience) =>
-        experience.type === "restaurant" &&
+        ["restaurant", "food_route"].includes(experience.type) &&
         experience.huarique.verified === true &&
         experience.address &&
         experience.weeklySchedule &&
         experience.estimatedVisitMinutes
     )
+  );
+});
+
+test("la Ruta del lechón conserva su identidad colectiva y su precio desde cinco soles", () => {
+  const route = catalog.find(
+    (experience) => experience.slug === "ruta-del-lechon-de-chupaca"
+  );
+
+  assert.ok(route);
+  assert.equal(route.type, "food_route");
+  assert.equal(route.vendorModel, "collective");
+  assert.equal(route.priceFromPen, 5);
+  assert.equal(route.estimatedVisitMinutes, 120);
+  assert.equal(
+    getExperienceScheduleLabel(route),
+    "Sáb–Dom · 07:00–14:00 · hasta agotar existencias"
+  );
+});
+
+test("la Ruta del lechón entra el sábado por la mañana y queda fuera un martes", () => {
+  const route = catalog.find(
+    (experience) => experience.slug === "ruta-del-lechon-de-chupaca"
+  );
+  assert.ok(route);
+
+  const saturdayPlan = buildItineraryPlan(
+    createContext({
+      selectedDate: "2026-09-05",
+      selectedHour: 7,
+      endMinutes: 11 * 60,
+      location: {
+        latitude: route.latitude,
+        longitude: route.longitude,
+      },
+    }),
+    { forecast: null, experiences: [route] }
+  );
+  const tuesdayPlan = buildItineraryPlan(
+    createContext({
+      selectedDate: "2026-09-08",
+      selectedHour: 7,
+      endMinutes: 11 * 60,
+      location: {
+        latitude: route.latitude,
+        longitude: route.longitude,
+      },
+    }),
+    { forecast: null, experiences: [route] }
+  );
+
+  assert.ok(saturdayPlan);
+  assert.equal(
+    saturdayPlan.stops[0]?.experience.slug,
+    "ruta-del-lechon-de-chupaca"
+  );
+  assert.ok(tuesdayPlan);
+  assert.equal(tuesdayPlan.stops.length, 0);
+  assert.equal(
+    tuesdayPlan.exclusions[0]?.explanation.reasonCode,
+    "outside-opening-hours"
+  );
+});
+
+test("la Ruta del lechón todavía puede organizarse al mediodía si quedan existencias", () => {
+  const route = catalog.find(
+    (experience) => experience.slug === "ruta-del-lechon-de-chupaca"
+  );
+  assert.ok(route);
+
+  const plan = buildItineraryPlan(
+    createContext({
+      selectedDate: "2026-09-05",
+      selectedHour: 11,
+      endMinutes: 14 * 60,
+      location: {
+        latitude: route.latitude,
+        longitude: route.longitude,
+      },
+    }),
+    { forecast: null, experiences: [route] }
+  );
+
+  assert.ok(plan);
+  assert.equal(
+    plan.stops[0]?.experience.slug,
+    "ruta-del-lechon-de-chupaca"
   );
 });
 

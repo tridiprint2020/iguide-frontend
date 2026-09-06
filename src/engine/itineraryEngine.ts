@@ -261,7 +261,7 @@ function matchesPriority(
   }
 
   if (priority === "gastronomy") {
-    return ["restaurant", "cafe"].includes(
+    return ["restaurant", "cafe", "food_route"].includes(
       experience.type
     );
   }
@@ -752,7 +752,8 @@ export function buildItineraryPlan(
 
     if (
       experience.type === "restaurant" ||
-      experience.type === "cafe"
+      experience.type === "cafe" ||
+      experience.type === "food_route"
     ) {
       const mealWindow = findNextMealWindow(
         experience.type,

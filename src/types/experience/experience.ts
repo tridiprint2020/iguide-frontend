@@ -4,7 +4,8 @@ import type { Interest } from "../interest"; // 🏛️ Importación del tipo ba
 export type ExperienceType =
 
   | "expedition" | "restaurant" | "cafe" | "bar" | "nightclub"
-  | "hotel" | "museum" | "festival" | "craft" | "event";
+  | "hotel" | "museum" | "festival" | "craft" | "event"
+  | "food_route";
 
 export type PlaceCategory =
   | ExperienceType
@@ -153,6 +154,17 @@ export interface VenueExperience extends PublishableExperience {
   huarique?: HuariqueProfile;
 }
 
+export interface FoodRouteExperience extends PublishableExperience {
+  type: "food_route";
+  vendorModel: "collective";
+  priceFromPen: number;
+  weeklySchedule: WeeklyOpeningSchedule;
+  mealSlots: MealServiceSlot[];
+  paymentMethods?: PaymentMethod[];
+  menuHighlights?: string[];
+  huarique: HuariqueProfile;
+}
+
 export interface HotelExperience extends PublishableExperience {
   type: "hotel";
   priceRange?: "budget" | "mid" | "premium";
@@ -215,7 +227,8 @@ export type Experience =
   | MuseumExperience
   | FestivalExperience
   | CraftExperience
-  | EventExperience;
+  | EventExperience
+  | FoodRouteExperience;
 
 export function isExpedition(
   experience: Experience

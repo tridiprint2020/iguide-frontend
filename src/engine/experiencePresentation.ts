@@ -23,6 +23,7 @@ const PLACE_CATEGORY_LABELS: Record<
   festival: "Festival",
   craft: "Artesanía",
   event: "Evento",
+  food_route: "Ruta gastronómica",
   icecream_shop: "Heladería",
   art_experience: "Arte y experiencias",
 };

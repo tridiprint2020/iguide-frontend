@@ -9,6 +9,7 @@ import { museums } from "../experiences/museums/museums";
 import { festivals } from "../experiences/festivals/festivals";
 import { events } from "../experiences/events/events";
 import { crafts } from "../experiences/crafts/crafts";
+import { foodRoutes } from "../experiences/foodRoutes/foodRoutes";
 
 import {
   getAppLanguage,
@@ -127,6 +128,7 @@ const baseCatalog: Experience[] = [
     ...festivals,
     ...events,
     ...crafts,
+    ...foodRoutes,
 ];
 
 export const catalog: Experience[] =

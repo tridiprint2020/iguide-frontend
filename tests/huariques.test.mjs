@@ -73,6 +73,19 @@ test("un lugar no gastronómico nunca se publica como huarique", () => {
   );
 });
 
+test("una ruta gastronómica colectiva sí puede ser un huarique verificado", () => {
+  assert.equal(
+    isVerifiedHuarique(
+      createExperience({
+        type: "food_route",
+        vendorModel: "collective",
+        priceFromPen: 5,
+      })
+    ),
+    true
+  );
+});
+
 test("un local inactivo no aparece aunque haya sido verificado", () => {
   assert.equal(
     isVerifiedHuarique(
@@ -117,6 +130,8 @@ test("los textos públicos de Huariques v1 existen en inglés", () => {
     "Por qué es un huarique",
     "Plato recomendado",
     "Consejo de Hospes",
+    "Ruta gastronómica",
+    "Rutas gastronómicas",
     "Aún estamos verificando los primeros huariques de Huancayo.",
     "Mientras tanto, puedes explorar restaurantes y cafés cercanos.",
     "Ver restaurantes cercanos",
