@@ -7,6 +7,8 @@ import { FIXTURE_V1_X8B } from "./fixtures/itinerary-v1-x8b.mjs";
 let server;
 let buildItineraryPlan;
 let catalog;
+let getRecommendations;
+let getProfilePreferenceScore;
 let isWetRisky;
 let loadSavedItineraries;
 let saveItineraryPlan;
@@ -99,6 +101,14 @@ before(async () => {
   ({ catalog } = await server.ssrLoadModule(
     "/src/data/catalog/index.ts"
   ));
+  ({ getRecommendations } =
+    await server.ssrLoadModule(
+      "/src/engine/recommendationEngine.ts"
+    ));
+  ({ getProfilePreferenceScore } =
+    await server.ssrLoadModule(
+      "/src/engine/experienceIntentEngine.ts"
+    ));
   ({ isWetRisky } = await server.ssrLoadModule(
     "/src/engine/experienceSafetyEngine.ts"
   ));
@@ -360,4 +370,286 @@ test("guardar falla si el navegador ignora la escritura", () => {
   );
 
   useWorkingStorage();
+});
+
+test("comer local es un contrato duro y nunca recomienda el Cerrito", () => {
+  const cerrito = catalog.find(
+    (experience) =>
+      experience.experienceId === "EXP-0003"
+  );
+  const polleria = catalog.find(
+    (experience) =>
+      experience.experienceId === "RES-0012"
+  );
+
+  assert.ok(cerrito);
+  assert.ok(polleria);
+
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      location: {
+        latitude: polleria.latitude,
+        longitude: polleria.longitude,
+      },
+      answers: {
+        selectedDate: "2026-09-13",
+        selectedHour: 11,
+        endMinutes: 14 * 60,
+        priorities: ["gastronomy"],
+        transport: "walking",
+      },
+    },
+    {
+      forecast,
+      experiences: [cerrito, polleria],
+    }
+  );
+
+  assert.ok(plan);
+  assert.deepEqual(
+    plan.stops.map(
+      (stop) => stop.experience.experienceId
+    ),
+    ["RES-0012"]
+  );
+  assert.equal(
+    plan.stops[0].explanation.reasonCode,
+    "interest-match"
+  );
+});
+
+test("sin comida válida Hospes devuelve un plan vacío en vez de inventar afinidad", () => {
+  const cerrito = catalog.find(
+    (experience) =>
+      experience.experienceId === "EXP-0003"
+  );
+
+  assert.ok(cerrito);
+
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-09-13",
+        selectedHour: 11,
+        endMinutes: 14 * 60,
+        priorities: ["gastronomy"],
+        transport: "walking",
+      },
+    },
+    { forecast, experiences: [cerrito] }
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.stops.length, 0);
+});
+
+test("historia y cultura reconoce la identidad cultural sin aceptar un mirador", () => {
+  const cerrito = catalog.find(
+    (experience) =>
+      experience.experienceId === "EXP-0003"
+  );
+  const parque = catalog.find(
+    (experience) =>
+      experience.experienceId === "EXP-0004"
+  );
+
+  assert.ok(cerrito);
+  assert.ok(parque);
+
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-09-13",
+        selectedHour: 9,
+        endMinutes: 14 * 60,
+        priorities: ["culture"],
+        transport: "walking",
+      },
+    },
+    { forecast, experiences: [cerrito, parque] }
+  );
+
+  assert.ok(plan);
+  assert.deepEqual(
+    plan.stops.map(
+      (stop) => stop.experience.experienceId
+    ),
+    ["EXP-0004"]
+  );
+});
+
+test("el motor general usa el mismo contrato duro de comer local", () => {
+  const recommendations = getRecommendations({
+    profile,
+    answers: {
+      selectedDate: "2026-09-13",
+      selectedHour: 11,
+      endMinutes: 14 * 60,
+      priorities: ["gastronomy"],
+      transport: "walking",
+    },
+  });
+
+  assert.ok(recommendations.length > 0);
+  assert.ok(
+    recommendations.every((experience) =>
+      ["restaurant", "cafe", "food_route"].includes(
+        experience.type
+      )
+    )
+  );
+});
+
+test("la afinidad gastronómica legacy no convierte una expedición en comida", () => {
+  const cerrito = catalog.find(
+    (experience) =>
+      experience.experienceId === "EXP-0003"
+  );
+  const polleria = catalog.find(
+    (experience) =>
+      experience.experienceId === "RES-0012"
+  );
+
+  assert.ok(cerrito);
+  assert.ok(polleria);
+  assert.equal(
+    getProfilePreferenceScore(
+      cerrito,
+      ["gastronomy"]
+    ),
+    0
+  );
+  assert.ok(
+    getProfilePreferenceScore(
+      polleria,
+      ["gastronomy"]
+    ) > 0
+  );
+});
+
+test("vida nocturna, artesanía y fiestas respetan categorías exactas", () => {
+  const contracts = [
+    {
+      priority: "nightlife",
+      acceptedTypes: ["bar", "nightclub"],
+    },
+    {
+      priority: "crafts",
+      acceptedTypes: ["craft"],
+    },
+    {
+      priority: "festivals",
+      acceptedTypes: ["festival", "event"],
+    },
+  ];
+
+  for (const contract of contracts) {
+    const recommendations = getRecommendations({
+      profile,
+      answers: {
+        selectedDate: "2026-09-13",
+        selectedHour: 19,
+        endMinutes: 21 * 60,
+        priorities: [contract.priority],
+        transport: "walking",
+      },
+    });
+
+    assert.ok(
+      recommendations.length > 0,
+      contract.priority
+    );
+    assert.ok(
+      recommendations.every((experience) =>
+        contract.acceptedTypes.includes(
+          experience.type
+        )
+      ),
+      contract.priority
+    );
+  }
+});
+
+test("Sorpréndeme explica compatibilidad y no finge coincidencia de interés", () => {
+  const cerrito = catalog.find(
+    (experience) =>
+      experience.experienceId === "EXP-0003"
+  );
+
+  assert.ok(cerrito);
+
+  const plan = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-09-13",
+        selectedHour: 9,
+        endMinutes: 12 * 60,
+        priorities: ["surprise"],
+        transport: "walking",
+      },
+    },
+    { forecast, experiences: [cerrito] }
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.stops.length, 1);
+  assert.equal(
+    plan.stops[0].explanation.reasonCode,
+    "weather-compatible"
+  );
+});
+
+test("la ubicación conocida calcula también el primer traslado de una expedición", () => {
+  const cerrito = catalog.find(
+    (experience) =>
+      experience.experienceId === "EXP-0003"
+  );
+
+  assert.ok(cerrito);
+
+  const withLocation = buildItineraryPlan(
+    {
+      profile,
+      location: {
+        latitude: cerrito.latitude,
+        longitude: cerrito.longitude,
+      },
+      answers: {
+        selectedDate: "2026-09-13",
+        selectedHour: 9,
+        endMinutes: 12 * 60,
+        priorities: ["photography"],
+        transport: "walking",
+      },
+    },
+    { forecast, experiences: [cerrito] }
+  );
+  const withoutLocation = buildItineraryPlan(
+    {
+      profile,
+      answers: {
+        selectedDate: "2026-09-13",
+        selectedHour: 9,
+        endMinutes: 12 * 60,
+        priorities: ["photography"],
+        transport: "walking",
+      },
+    },
+    { forecast, experiences: [cerrito] }
+  );
+
+  assert.ok(withLocation);
+  assert.ok(withoutLocation);
+  assert.equal(
+    withLocation.stops[0].travelMinutes,
+    2
+  );
+  assert.equal(
+    withoutLocation.stops[0].travelMinutes,
+    25
+  );
 });

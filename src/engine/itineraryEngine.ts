@@ -9,9 +9,6 @@ import type {
   ExplorerContext,
 } from "../types/explorerContext";
 import type {
-  Interest,
-} from "../types/interest";
-import type {
   ItineraryDecisionAction,
   ItineraryExclusion,
   ItineraryPlan,
@@ -44,6 +41,11 @@ import type {
 import {
   getExperienceOpeningWindow,
 } from "./experienceScheduleEngine";
+import {
+  getExplicitIntentScore,
+  getProfilePreferenceScore,
+  isEligibleForExplicitIntents,
+} from "./experienceIntentEngine";
 
 const MAX_STOPS = 5;
 const MINUTES_PER_RECOMMENDED_STOP = 150;
@@ -110,6 +112,24 @@ function getTravelMinutes(
     context.answers?.transport ??
     "walking";
 
+  const from = previousExperience
+    ? {
+        latitude: previousExperience.latitude,
+        longitude: previousExperience.longitude,
+      }
+    : context.location ?? null;
+
+  if (from) {
+    return estimateTravelMinutes(
+      from,
+      {
+        latitude: experience.latitude,
+        longitude: experience.longitude,
+      },
+      transport
+    );
+  }
+
   if (isExpedition(experience) && transport === "walking") {
     return parseDurationMinutes(
       experience.walkTime
@@ -127,13 +147,6 @@ function getTravelMinutes(
       ? driveMinutes + 10
       : driveMinutes;
   }
-
-  const from = previousExperience
-    ? {
-        latitude: previousExperience.latitude,
-        longitude: previousExperience.longitude,
-      }
-    : context.location ?? null;
 
   return estimateTravelMinutes(
     from,
@@ -226,133 +239,30 @@ function forecastToWeatherStatus(
   };
 }
 
-function matchesPriority(
-  experience: Experience,
-  priority: string
-): boolean {
-  const knownInterest = [
-    "photography",
-    "adventure",
-    "gastronomy",
-    "family",
-    "couples",
-    "backpacker",
-    "nightlife",
-  ].includes(priority)
-    ? (priority as Interest)
-    : null;
-
-  if (
-    knownInterest &&
-    experience.interests?.includes(
-      knownInterest
-    )
-  ) {
-    return true;
-  }
-
-  if (isExpedition(experience)) {
-    return (
-      knownInterest !== null &&
-      experience.affinity[
-        knownInterest
-      ] > 50
-    );
-  }
-
-  if (priority === "gastronomy") {
-    return ["restaurant", "cafe", "food_route"].includes(
-      experience.type
-    );
-  }
-
-  if (priority === "nightlife") {
-    return ["bar", "nightclub"].includes(
-      experience.type
-    );
-  }
-
-  if (priority === "culture") {
-    return (
-      ["museum", "festival", "event"].includes(
-        experience.type
-      ) ||
-      experience.tags.some((tag) =>
-        [
-          "historia",
-          "history",
-          "cultura",
-          "culture",
-          "patrimonio",
-        ].includes(tag.toLowerCase())
-      )
-    );
-  }
-
-  if (priority === "crafts") {
-    return experience.type === "craft";
-  }
-
-  if (priority === "festivals") {
-    return ["festival", "event"].includes(
-      experience.type
-    );
-  }
-
-  if (priority === "photography") {
-    return experience.tags.some((tag) =>
-      [
-        "fotografía",
-        "photography",
-        "mirador",
-        "atardecer",
-      ].includes(tag.toLowerCase())
-    );
-  }
-
-  return priority === "surprise";
-}
-
-function matchesAnyPriority(
-  experience: Experience,
-  priorities: string[]
-): boolean {
-  return (
-    priorities.includes("surprise") ||
-    priorities.some((priority) =>
-      matchesPriority(experience, priority)
-    )
-  );
-}
-
 function scoreExperience(
   experience: Experience,
   context: ExplorerContext
-): number {
+): {
+  score: number;
+  hasExplicitMatch: boolean;
+} {
   const answers = context.answers;
 
-  if (!answers) return 0;
+  if (!answers) {
+    return {
+      score: 0,
+      hasExplicitMatch: false,
+    };
+  }
 
-  const matchedPriorities =
-    answers.priorities.filter((priority) =>
-      matchesPriority(experience, priority)
+  const intentRanking =
+    getExplicitIntentScore(
+      experience,
+      answers.priorities
     );
-  let score =
-    matchedPriorities.length > 0 ||
-    answers.priorities.includes("surprise")
-    ? 100
-    : 0;
+  let score = intentRanking.score;
 
   if (isExpedition(experience)) {
-    for (const priorityValue of
-      answers.priorities) {
-      const priority = priorityValue as Interest;
-
-      if (priority in experience.affinity) {
-        score += experience.affinity[priority];
-      }
-    }
-
     if (answers.companions === "family") {
       score += experience.affinity.family;
     }
@@ -404,18 +314,16 @@ function scoreExperience(
     }
   }
 
-  for (const interest of context.profile
-    .interests) {
-    if (
-      experience.interests?.includes(
-        interest
-      )
-    ) {
-      score += 10;
-    }
-  }
+  score += getProfilePreferenceScore(
+    experience,
+    context.profile.interests
+  );
 
-  return score;
+  return {
+    score,
+    hasExplicitMatch:
+      intentRanking.matchedIntents.length > 0,
+  };
 }
 
 function isWetForecast(
@@ -434,7 +342,7 @@ function isWetForecast(
 function getRecommendationReason(
   forecast: WeatherForecastDay | null,
   period: WeatherForecastPeriod | null,
-  score: number,
+  hasExplicitMatch: boolean,
   visitMinutes: number
 ): ItineraryReasonCode {
   if (visitMinutes >= FULL_DAY_MINUTES) {
@@ -449,7 +357,7 @@ function getRecommendationReason(
     return "indoor-priority";
   }
 
-  return score > 0
+  return hasExplicitMatch
     ? "interest-match"
     : "weather-compatible";
 }
@@ -664,19 +572,23 @@ export function buildItineraryPlan(
 
   const scored = safeCandidates
     .filter((experience) =>
-      matchesAnyPriority(
+      isEligibleForExplicitIntents(
         experience,
         answers.priorities
       )
     )
-    .map((experience, index) => ({
-      experience,
-      index,
-      score: scoreExperience(
+    .map((experience, index) => {
+      const ranking = scoreExperience(
         experience,
         context
-      ),
-    }))
+      );
+
+      return {
+        experience,
+        index,
+        ...ranking,
+      };
+    })
     .sort(
       (a, b) =>
         b.score - a.score ||
@@ -693,7 +605,10 @@ export function buildItineraryPlan(
       break;
     }
 
-    const { experience, score } =
+    const {
+      experience,
+      hasExplicitMatch,
+    } =
       candidate;
     const visitMinutes =
       getVisitMinutes(experience);
@@ -912,7 +827,7 @@ export function buildItineraryPlan(
           getRecommendationReason(
             forecast,
             selectedForecastPeriod,
-            score,
+            hasExplicitMatch,
             visitMinutes
           ),
         params: {

@@ -1,7 +1,9 @@
 # Checklist de regresión de I.GUIDE
 
-**Producción actual:** `main @ b88540a`  
-**Última actualización:** 3 de septiembre de 2026  
+**Producción actual:** `main @ 5abd94f`
+
+**Última actualización:** 9 de septiembre de 2026
+
 **Punto de recuperación anterior:** `dc28ede`
 
 ## Para qué existe este archivo
@@ -52,6 +54,13 @@ Cada resultado se marca como `PASÓ`, `FALLÓ` o `NO APLICA`.
 - [ ] C7. Las exclusiones muestran un motivo legible.
 - [ ] C8. Compartir genera un enlace que abre en otro navegador.
 - [ ] C9. Los planes v1 y v2 conviven sin perder información.
+- [ ] C10. «Comer local» solo propone restaurantes, cafés o rutas
+      gastronómicas; nunca una expedición o mirador.
+- [ ] C11. Cada interés filtra primero su categoría; una afinidad numérica
+      solo ordena candidatos válidos y nunca cambia qué clase de lugar es.
+- [ ] C12. «Sorpréndeme» es la única opción que puede mezclar categorías.
+- [ ] C13. Si existe un punto de regreso, el primer traslado se calcula desde
+      allí; sin ubicación se conserva un tiempo prudente de respaldo.
 
 ## D. Misión y MemoryCard
 
@@ -131,6 +140,7 @@ modifica. Debe migrar `priority: "gastronomy"` a
 | `2165683` | Clima semanal y reacciones independientes. |
 | `dc28ede` | Ventanas, distancias, atardecer, snapshots y guardado verificado. |
 | `b88540a` | Cada franja del clima abre el itinerario preparado. |
+| `5abd94f` | Checklist de regresión incorporado a producción. |
 
 ## Retirado
 

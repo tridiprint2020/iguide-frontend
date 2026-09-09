@@ -35,6 +35,9 @@ import {
 import {
   buildItineraryPlan,
 } from "../engine/itineraryEngine";
+import {
+  loadReturnPoint,
+} from "../engine/returnPointEngine";
 
 import {
   createItinerarySnapshot,
@@ -272,6 +275,16 @@ function ItineraryPage() {
     () => loadUserProfile(),
     []
   );
+  const planningLocation = useMemo(() => {
+    const returnPoint = loadReturnPoint();
+
+    return returnPoint
+      ? {
+          latitude: returnPoint.lat,
+          longitude: returnPoint.lng,
+        }
+      : undefined;
+  }, []);
 
   const today = useMemo(
     () => new Date(),
@@ -556,6 +569,7 @@ function ItineraryPage() {
         {
           profile,
           answers,
+          location: planningLocation,
         },
         {
           forecast: selectedForecast,
@@ -786,6 +800,7 @@ function ItineraryPage() {
         {
           profile,
           answers,
+          location: planningLocation,
         },
         {
           forecast: plan.forecast,
@@ -812,6 +827,7 @@ function ItineraryPage() {
         {
           profile,
           answers,
+          location: planningLocation,
         },
         {
           forecast: plan.forecast,
