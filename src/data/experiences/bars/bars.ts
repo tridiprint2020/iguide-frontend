@@ -27,6 +27,10 @@ export const bars: Experience[] = [
 
     tags:["bar"],
 
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
+
     priceRange:"mid",
 
     openingHours:"18:00-21:00",
@@ -66,6 +70,10 @@ estimatedVisitMinutes: 60
 
     tags:["bar"],
 
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
+
     priceRange:"mid",
 
     openingHours:"18:00-00:00",
@@ -104,6 +112,11 @@ estimatedVisitMinutes: 60
 
     tags:["bar"],
 
+    // Está en el último piso, pero el ambiente de atención es interior.
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
+
     priceRange:"mid",
 
     openingHours:"12:00-00:00",
@@ -112,6 +125,12 @@ admissionFee: 0,
 coverImage: placeholder, // O string vacío ""
 gallery: [],
 isActive: true,
+lastUpdated:"2026-09-11",
+operationalVerification:{
+  verifiedAt:"2026-09-11",
+  precision:"day",
+  evidenceSource:"Confirmación directa del Fundador: el ambiente de atención está en el último piso, pero es interior."
+},
 estimatedVisitMinutes: 60
 
 }

@@ -28,6 +28,9 @@ certificationRadiusMeters: 20,
         "familia",
         "almuerzo"
     ],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"tradicional",
 
@@ -73,6 +76,9 @@ estimatedVisitMinutes: 60
         "familia",
         "almuerzo"
     ],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"tradicional",
 
@@ -118,6 +124,9 @@ estimatedVisitMinutes: 60
         "familia",
         "almuerzo"
     ],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"tradicional",
 
@@ -162,6 +171,9 @@ certificationRadiusMeters: 20,
         "familia",
         "almuerzo"
     ],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"tradicional",
 
@@ -207,6 +219,9 @@ estimatedVisitMinutes: 60
         "familia",
         "almuerzo"
     ],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"tradicional",
 
@@ -252,6 +267,9 @@ estimatedVisitMinutes: 60
         "familia",
         "almuerzo"
     ],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"tradicional",
 
@@ -374,6 +392,9 @@ huarique:{
         "familia",
         "almuerzo"
     ],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"tradicional",
 

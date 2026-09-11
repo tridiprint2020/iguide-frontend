@@ -29,6 +29,10 @@ export const museums: Experience[] = [
 
     tags:["museo"],
 
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
+
     openingHours:"08:00-21:00",
     guidedTours: false,
 exhibitions: ["Colección Permanente"],
@@ -66,6 +70,11 @@ estimatedVisitMinutes: 90
     rating:6.6,
 
     tags:["museo"],
+
+    environment:"mixed",
+    weatherSensitivity:"high",
+    avoidWhenWet:true,
+    terrain:"paved",
 
     openingHours:"09:00-17:00",
     guidedTours: false,

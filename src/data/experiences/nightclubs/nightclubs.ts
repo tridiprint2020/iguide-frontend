@@ -1,123 +1,135 @@
 import type { Experience } from "../../../types/experience/experience";
 import placeholder from "../../../assets/branding/logo-light-bg.png";
-export const nigthclubs: Experience[] = [
 
-{
-    experienceId:"NGT-0001",
-
-    slug:"taj-mahal",
-
-    title:"Taj Mahal",
-
-    type:"nightclub",
-
-    city:"Huancayo",
-
-    image:"",
-
-    description:"Es una discoteca buena, para bailar y festejar. No he visto si vendan comida.  Musica de los 80 y actual. Vigilancia y el trato del personal de servicio muy bueno. ",
-
-    latitude:-12.07576213396818, 
-
-    longitude:-75.21083643690143,
-
+/** Locales nocturnos activados con horarios y puertas contrastados. */
+export const nightclubs: Experience[] = [
+  {
+    experienceId: "NGT-0001",
+    slug: "taj-mahal",
+    title: "Taj Mahal",
+    type: "nightclub",
+    city: "Huancayo",
+    image: "",
+    description:
+      "Pub interior con música en vivo y repertorio de los años 90.",
+    latitude: -12.075932451832939,
+    longitude: -75.21127489404162,
     certificationRadiusMeters: 20,
-
-    rating:5.6,
-
-    tags:["bar"],
-
-    admissionFee:0,
-
-    priceRange:"mid",
-
-    openingHours:"18:00-21:00",
+    rating: 5.6,
+    tags: ["discoteca", "pub", "música en vivo", "años 90", "vida nocturna"],
+    environment: "indoor",
+    weatherSensitivity: "low",
+    terrain: "paved",
+    priceRange: "mid",
+    weeklySchedule: {
+      days: [0, 2, 3, 4, 5, 6],
+      opensAt: "20:00",
+      closesAt: "03:00",
+      closedOnHolidays: false,
+    },
+    averagePricePen: 100,
+    paymentMethods: ["cash", "yape", "card"],
+    admissionRequired: true,
+    hospesTip:
+      "Buen lugar si buscas música de los años 90 y presentaciones en vivo.",
     hasDelivery: false,
-
-coverImage: placeholder, // O string vacío ""
-gallery: [],
-isActive: true,
-estimatedVisitMinutes: 60
-
-},
-
-
-{
-    experienceId:"BAR-0005",
-
-    slug:"insomnio-house-music",
-
-    title:"Insomnio House Music",
-
-    type:"bar",
-
-    city:"Huancayo",
-
-    image:"",
-
-    description:"Un lugar para divertirse y pasarla bien, uno de los mejorcitos de Huancayo. ",
-
-    latitude:-12.073119072880571, 
-
-    longitude:-75.20885337369259,
-
+    coverImage: placeholder,
+    gallery: [],
+    isActive: true,
+    lastUpdated: "2026-09-11",
+    operationalVerification: {
+      verifiedAt: "2026-06",
+      precision: "month",
+      evidenceSource:
+        "Puerta, horario y datos confirmados personalmente por el Fundador aproximadamente tres meses antes del 2026-09-11.",
+    },
+    listingStatus: "editorial",
+    estimatedVisitMinutes: 180,
+  },
+  {
+    experienceId: "NGT-0002",
+    slug: "insomnio-house-music",
+    title: "Insomnio House Music",
+    type: "nightclub",
+    city: "Huancayo",
+    image: "",
+    description:
+      "Discoteca interior con música de los años 2000, reggaetón y house.",
+    latitude: -12.073339811248584,
+    longitude: -75.20938519728494,
     certificationRadiusMeters: 20,
-
-    rating:6.6,
-
-    tags:["bar"],
-
-    admissionFee:0,
-
-    priceRange:"mid",
-
-    openingHours:"18:00-00:00",
+    rating: 6.6,
+    tags: ["discoteca", "house", "reggaetón", "años 2000", "vida nocturna"],
+    environment: "indoor",
+    weatherSensitivity: "low",
+    terrain: "paved",
+    priceRange: "premium",
+    weeklySchedule: {
+      days: [4, 5, 6],
+      opensAt: "21:00",
+      closesAt: "05:00",
+      closedOnHolidays: false,
+    },
+    averagePricePen: 150,
+    paymentMethods: ["cash", "yape", "card"],
+    admissionRequired: true,
+    hospesTip:
+      "Ideal si buscas música de los años 2000, reggaetón y house.",
     hasDelivery: false,
-
-coverImage: placeholder, // O string vacío ""
-gallery: [],
-isActive: true,
-estimatedVisitMinutes: 60
-
-},
-
-
-{
-    experienceId:"BAR-0006",
-
-    slug:"mr-juerga-discoteca",
-
-    title:"Mr. Juerga Discoteca",
-
-    type:"bar",
-
-    city:"Huancayo",
-
-    image:"",
-
-    description:"Rooftop bar con una vista increíble de la ciudad, buena música y un ambiente relajado. Ideal para disfrutar de una noche con amigos.",
-
-    latitude:-12.067862718513465, 
-
-    longitude:-75.21447779416475,
-
+    coverImage: placeholder,
+    gallery: [],
+    isActive: true,
+    lastUpdated: "2026-09-11",
+    operationalVerification: {
+      verifiedAt: "2026-09-04",
+      precision: "day",
+      evidenceSource:
+        "Horario, puerta y datos confirmados por amistades del Fundador aproximadamente una semana antes del 2026-09-11.",
+    },
+    listingStatus: "editorial",
+    estimatedVisitMinutes: 180,
+  },
+  {
+    experienceId: "NGT-0003",
+    slug: "mr-juerga-discoteca",
+    title: "Mr. Juerga Discoteca",
+    type: "nightclub",
+    city: "Huancayo",
+    image: "",
+    description:
+      "Discoteca interior con música actual, frecuentada principalmente por público joven desde los 18 años.",
+    latitude: -12.068115087022154,
+    longitude: -75.2146304854011,
     certificationRadiusMeters: 20,
-
-    rating:5.4,
-
-    tags:["bar"],
-
-    admissionFee:0,
-
-    priceRange:"mid",
-
-    openingHours:"12:00-00:00",
+    rating: 5.4,
+    tags: ["discoteca", "música actual", "baile", "vida nocturna"],
+    environment: "indoor",
+    weatherSensitivity: "low",
+    terrain: "paved",
+    priceRange: "premium",
+    weeklySchedule: {
+      days: [0, 1, 2, 3, 4, 5, 6],
+      opensAt: "18:00",
+      closesAt: "04:00",
+      closedOnHolidays: false,
+    },
+    averagePricePen: 150,
+    paymentMethods: ["cash", "yape", "card"],
+    admissionRequired: true,
+    hospesTip:
+      "Música actual y ambiente frecuentado principalmente por jóvenes desde los 18 años.",
     hasDelivery: false,
-
-coverImage: placeholder, // O string vacío ""
-gallery: [],
-isActive: true,
-estimatedVisitMinutes: 60
-
-}
+    coverImage: placeholder,
+    gallery: [],
+    isActive: true,
+    lastUpdated: "2026-09-11",
+    operationalVerification: {
+      verifiedAt: "2026-08-28",
+      precision: "day",
+      evidenceSource:
+        "Horario, puerta y datos confirmados por amistades del Fundador aproximadamente dos semanas antes del 2026-09-11.",
+    },
+    listingStatus: "editorial",
+    estimatedVisitMinutes: 180,
+  },
 ];

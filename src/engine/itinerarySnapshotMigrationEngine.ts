@@ -32,6 +32,8 @@ const REASON_CODES = new Set<
   "high-mountain-weather",
   "night-incompatible",
   "transport-incompatible",
+  "schedule-unverified",
+  "schedule-variable",
   "outside-opening-hours",
   "after-sunset-outdoor",
   "meal-window-unavailable",

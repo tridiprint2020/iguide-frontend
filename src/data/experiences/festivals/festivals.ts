@@ -6,74 +6,143 @@ export const festivals: Experience[] = [
     slug: "el-santiago",
     title: "El Santiago",
     type: "festival",
-    description: "...",
+    description:
+      "Temporada anual que comienza la noche del 24 de julio. Familias y grupos de familias recorren los barrios bailando al compás de sus bandas e invitan a la población a sumarse antes de reunirse en un local.",
     city: "Huancayo",
-    date: "Finales de julio - Inicio de agosto",
+    date: "24 de julio - septiembre (temporada anual)",
     category: "religious",
-      latitude: -12.070010362453202,
+    latitude: -12.070010362453202,
     longitude: -75.20652996480194,
     certificationRadiusMeters: 40,
-    tags: ["tradition"],
+    tags: ["tradition", "danza", "banda", "barrios"],
+    environment: "mixed",
+    weatherSensitivity: "medium",
+    terrain: "paved",
     rating: 6.5,
-    organizer: "Municipalidad de Huancayo",
+    organizer: "Familias y barrios de Huancayo",
     ticketUrl: "",
     coverImage: "",
-    // ✅ PROPIEDADES AGREGADAS LEGALMENTE PARA CERRAR EL CONTRATO DE BASEEXPERIENCE:
-    image: "", 
+    image: "",
     admissionFee: 0,
+    gallery: [],
     isActive: true,
-    estimatedVisitMinutes: 180
+    lastUpdated: "2026-09-11",
+    estimatedVisitMinutes: 300,
+    operationalVerification: {
+      verifiedAt: "2026-09-04",
+      precision: "day",
+      evidenceSource:
+        "Confirmación del Fundador basada en observación personal aproximadamente una semana antes del 2026-09-11; la temporada 2026 seguía activa, pero estaba por terminar.",
+    },
+    annualSchedule: {
+      recursAnnually: true,
+      start: { month: 7, day: 24 },
+      end: { month: 9, endOfMonth: true },
+      timing: {
+        kind: "variable",
+        note:
+          "Cada familia o grupo organiza su propia fiesta; no existe una hora diaria ni un punto único garantizado.",
+      },
+      locationScope: "citywide",
+      locationDescription:
+        "Celebraciones distribuidas por los barrios y calles de Huancayo; las coordenadas de la ficha son únicamente una referencia central.",
+      rainPolicy: "continues",
+    },
   },
-
   {
     experienceId: "FES-0002",
     slug: "fiesta-de-la-santisima-trinidad",
     title: "Fiesta de la Santísima Trinidad",
-    type: "festival",              // 👈 faltaba por completo
-    
-    description: " Es la fiesta patronal más grande de la ciudad. Se celebra entre finales de mayo y el mes de junio en honor a la Santísima Trinidad oTayta Padre, destacando por sus multitudinarias procesiones y danzas típicas.",
+    type: "festival",
+    description:
+      "Celebración anual del 1 al 7 de junio. Las familias y barrios bailan en las calles con sus orquestas y después continúan la reunión en un local.",
     city: "Huancayo",
-    date: "Finales de mayo - Junio",
+    date: "1 - 7 de junio (anual)",
     category: "religious",
-    latitude: -12.06810931529854, 
-    longitude: -75.21005597422756,  
-    certificationRadiusMeters: 40,               // 👈 número, no texto ""
-    tags: ["tradition"],           // 👈 arreglo, no texto suelto
-    rating: 6.5,                   // 👈 número, no texto "4.5"
-    organizer: "Municipalidad de Huancayo",
-ticketUrl: "",
-coverImage: "",
-image: "", 
+    latitude: -12.06810931529854,
+    longitude: -75.21005597422756,
+    certificationRadiusMeters: 40,
+    tags: ["tradition", "danza", "orquesta", "barrios"],
+    environment: "mixed",
+    weatherSensitivity: "medium",
+    terrain: "paved",
+    rating: 6.5,
+    organizer: "Familias y barrios de Huancayo",
+    ticketUrl: "",
+    coverImage: "",
+    image: "",
     admissionFee: 0,
-gallery: [],
-isActive: true,
-estimatedVisitMinutes: 180
-
+    gallery: [],
+    isActive: true,
+    lastUpdated: "2026-09-11",
+    estimatedVisitMinutes: 360,
+    operationalVerification: {
+      verifiedAt: "2026-06",
+      precision: "month",
+      evidenceSource:
+        "Confirmación del Fundador basada en observación personal durante la edición más reciente, en junio de 2026.",
+    },
+    annualSchedule: {
+      recursAnnually: true,
+      start: { month: 6, day: 1 },
+      end: { month: 6, day: 7 },
+      timing: {
+        kind: "variable",
+        note:
+          "Las celebraciones dependen de cada familia y barrio; no existe una hora diaria ni un punto único garantizado.",
+      },
+      locationScope: "citywide",
+      locationDescription:
+        "Celebraciones distribuidas por los barrios de Huancayo; las coordenadas de la ficha son únicamente una referencia central.",
+      rainPolicy: "continues",
+    },
   },
-
   {
     experienceId: "FES-0003",
     slug: "carnavales",
     title: "Carnavales",
-    type: "festival",              // 👈 faltaba por completo
-    
-    description: " Se celebran entre febrero y marzo. Son famosos por el tradicional Huaylarsh, las comparsas coloridas, el cortamonte y la celebración del Ño Carnavalón.",
+    type: "festival",
+    description:
+      "Temporada de carnavales desde el 13 hasta finales de febrero, con el Ño Carnavalón, comparsas, cortamontes y yunzas organizadas también por familias.",
     city: "Huancayo",
-    date: "Finales de enero - febrero",
-    category: "religious",
-    latitude: -12.06810931529854, 
-    longitude: -75.21005597422756,  
-    certificationRadiusMeters: 40,               // 👈 número, no texto ""
-    tags: ["tradition"],           // 👈 arreglo, no texto suelto
-    rating: 4.5,                   // 👈 número, no texto "4.5"
-    organizer: "Municipalidad de Huancayo",
-ticketUrl: "",
-coverImage: "",
-image: "", 
+    date: "13 - fin de febrero (anual)",
+    category: "cultural",
+    latitude: -12.06810931529854,
+    longitude: -75.21005597422756,
+    certificationRadiusMeters: 40,
+    tags: ["tradition", "Ño Carnavalón", "cortamonte", "yunza"],
+    environment: "mixed",
+    weatherSensitivity: "medium",
+    terrain: "paved",
+    rating: 4.5,
+    organizer: "Barrios y familias de Huancayo",
+    ticketUrl: "",
+    coverImage: "",
+    image: "",
     admissionFee: 0,
-gallery: [],
-isActive: true,
-estimatedVisitMinutes: 180
-
+    gallery: [],
+    isActive: true,
+    lastUpdated: "2026-09-11",
+    estimatedVisitMinutes: 300,
+    operationalVerification: {
+      verifiedAt: "2025",
+      precision: "year",
+      evidenceSource:
+        "Confirmación del Fundador basada en experiencia personal realizada aproximadamente un año antes del registro del 2026-09-11. El 2026-09-11 aclaró que la celebración no se cancela por lluvia y continúa bailándose en la calle.",
+    },
+    annualSchedule: {
+      recursAnnually: true,
+      start: { month: 2, day: 13 },
+      end: { month: 2, endOfMonth: true },
+      timing: {
+        kind: "variable",
+        note:
+          "El recorrido central del 13 se realiza durante el día; las fiestas familiares posteriores cambian de hora y lugar.",
+      },
+      locationScope: "route-and-citywide",
+      locationDescription:
+        "El 13, el Ño Carnavalón recorre la Calle Real desde El Tambo hacia Huancayo y termina en Huamanmarca; luego hay cortamontes y yunzas familiares en distintos puntos.",
+      rainPolicy: "continues",
+    },
   },
 ];

@@ -61,6 +61,13 @@ Cada resultado se marca como `PASÓ`, `FALLÓ` o `NO APLICA`.
 - [ ] C12. «Sorpréndeme» es la única opción que puede mezclar categorías.
 - [ ] C13. Si existe un punto de regreso, el primer traslado se calcula desde
       allí; sin ubicación se conserva un tiempo prudente de respaldo.
+- [ ] C14. «Vida nocturna» con lluvia conserva Cava, Galileo y Azotea 18 porque
+      los tres ambientes de atención son interiores.
+- [ ] C15. «Opciones descartadas» cuenta únicamente lugares de la intención elegida.
+- [ ] C16. Un horario con cierre `24:00` se interpreta como medianoche.
+- [ ] C17. Un local sin horario o una fiesta sin hora y punto fijos permanece
+      visible, pero Hospes no lo recomienda automáticamente.
+- [ ] C18. El San no existe en catálogo, mapa, itinerario ni búsqueda.
 
 ## D. Misión y MemoryCard
 
@@ -78,6 +85,9 @@ Cada resultado se marca como `PASÓ`, `FALLÓ` o `NO APLICA`.
 - [ ] E2. De noche solo aparecen experiencias compatibles.
 - [ ] E3. Sin candidatos aparece un estado seguro con explicación.
 - [ ] E4. Hospes usa hitos urbanos como referencia, no restaurantes.
+- [ ] E5. Home, Explorer, Itinerario y la página de Hospes comparten intención,
+      horario y seguridad; no existe un fallback al catálogo crudo.
+- [ ] E6. Con ubicación conocida, candidatos equivalentes se ordenan por cercanía.
 
 ## F. Lo que nunca debe aparecer
 
@@ -127,8 +137,13 @@ modifica. Debe migrar `priority: "gastronomy"` a
 - El baseline contiene 11 errores y 5 warnings de lint heredados.
 - El bundle necesita división de código.
 - Los Guardianes aún no están integrados.
-- Huariques v1 está implementado en esta rama, sin negocios etiquetados hasta
-  que el Fundador apruebe la evidencia. Historias y diseño Instagram siguen pendientes.
+- Huariques v1 contiene cinco locales y la Ruta del lechón con evidencia del
+  Fundador. Historias y diseño Instagram siguen pendientes.
+- Taj Mahal, Insomnio House Music y Mr. Juerga poseen horarios, puertas,
+  duración, precios y pagos registrados. Deben pasar la prueba X8b antes de
+  entrar en producción.
+- Las tres fiestas ya tienen temporada y evidencia estructuradas. Siguen como
+  contenido informativo porque sus celebraciones cambian de hora y ubicación.
 - La telemetría sigue desconectada hasta contar con consentimiento y política.
 
 ## Historial de producción

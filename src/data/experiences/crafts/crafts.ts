@@ -24,6 +24,10 @@ export const crafts: Experience[] = [
 
     tags:["artesanía", "cerámica", "souvenir"],
 
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
+
     specialty:"Cerámica Wanka",
 
     openingHours:"09:00-22:00",
@@ -58,6 +62,10 @@ estimatedVisitMinutes: 60
     rating:6.6,
 
     tags:["artesanía"],
+
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     specialty:"Artesanía Wanka",
 

@@ -26,6 +26,9 @@ export const cafes: Experience[] = [
     rating:6.6,
 
     tags:["café"],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"cafetería",
 
@@ -65,6 +68,9 @@ estimatedVisitMinutes: 60
     rating:6.6,
 
     tags:["café"],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"cafetería",
 
@@ -102,6 +108,9 @@ estimatedVisitMinutes: 60
     rating:6.6,
 
     tags:["café"],
+    environment:"indoor",
+    weatherSensitivity:"low",
+    terrain:"paved",
 
     cuisine:"cafetería",
 
@@ -138,21 +147,35 @@ estimatedVisitMinutes: 60
 
     description: "Heladería de Huancayo y punto de acceso I.GUIDE.",
 
-    latitude: -12.067778839437912,
+    latitude: -12.067779937071837,
 
-    longitude: -75.20962406108907,
+    longitude: -75.20962107923576,
 
-    arrivalLatitude: -12.067778839437912,
+    arrivalLatitude: -12.067779937071837,
 
-    arrivalLongitude: -75.20962406108907,
+    arrivalLongitude: -75.20962107923576,
+
+    link: "https://www.google.com/maps/dir/?api=1&destination=-12.067779937071837,-75.20962107923576",
 
     certificationRadiusMeters: 20,
 
     rating: 7.3,
 
     tags: ["heladería"],
+    environment: "indoor",
+    weatherSensitivity: "low",
+    terrain: "paved",
 
     cuisine: "heladería",
+
+    openingHours: "09:00-21:00",
+
+    weeklySchedule: {
+      days: [0, 1, 2, 3, 4, 5, 6],
+      opensAt: "09:00",
+      closesAt: "21:00",
+      closedOnHolidays: false,
+    },
 
     coverImage: placeholder,
 
@@ -160,7 +183,16 @@ estimatedVisitMinutes: 60
 
     isActive: true,
 
-    lastUpdated: "2026-08-19"
+    lastUpdated: "2026-09-11",
+
+    estimatedVisitMinutes: 60,
+
+    operationalVerification: {
+      verifiedAt: "2026-09-08",
+      precision: "day",
+      evidenceSource:
+        "Confirmación del Fundador basada en visita personal realizada aproximadamente tres días antes del 2026-09-11.",
+    },
 
 },
 
@@ -185,21 +217,35 @@ estimatedVisitMinutes: 60
 
     description: "Heladería seleccionada por I.GUIDE en Huancayo.",
 
-    latitude: -12.062364113242808,
+    latitude: -12.062358635910979,
 
-    longitude: -75.20662237587491,
+    longitude: -75.20661775767118,
 
-    arrivalLatitude: -12.062364113242808,
+    arrivalLatitude: -12.062358635910979,
 
-    arrivalLongitude: -75.20662237587491,
+    arrivalLongitude: -75.20661775767118,
+
+    link: "https://www.google.com/maps/dir/?api=1&destination=-12.062358635910979,-75.20661775767118",
 
     certificationRadiusMeters: 20,
 
     rating: 7.7,
 
     tags: ["heladería"],
+    environment: "indoor",
+    weatherSensitivity: "low",
+    terrain: "paved",
 
     cuisine: "heladería",
+
+    openingHours: "11:00-18:30",
+
+    weeklySchedule: {
+      days: [0, 1, 2, 3, 4, 5, 6],
+      opensAt: "11:00",
+      closesAt: "18:30",
+      closedOnHolidays: true,
+    },
 
     coverImage: placeholder,
 
@@ -207,7 +253,16 @@ estimatedVisitMinutes: 60
 
     isActive: true,
 
-    lastUpdated: "2026-08-19"
+    lastUpdated: "2026-09-11",
+
+    estimatedVisitMinutes: 60,
+
+    operationalVerification: {
+      verifiedAt: "2026-08-28",
+      precision: "day",
+      evidenceSource:
+        "Confirmación del Fundador basada en visita personal realizada aproximadamente dos semanas antes del 2026-09-11.",
+    },
 
 }
 

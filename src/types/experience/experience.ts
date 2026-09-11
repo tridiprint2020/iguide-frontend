@@ -54,6 +54,44 @@ export interface WeeklyOpeningSchedule {
   closesWhenSoldOut?: boolean;
 }
 
+export interface OperationalVerification {
+  /** Fecha ISO completa o parcial según la precisión declarada. */
+  verifiedAt: string;
+  precision: "day" | "month" | "year";
+  evidenceSource: string;
+}
+
+export type AnnualDateBoundary =
+  | { month: number; day: number }
+  | { month: number; endOfMonth: true };
+
+export type FestivalTiming =
+  | {
+      kind: "fixed";
+      opensAt: string;
+      closesAt: string;
+    }
+  | { kind: "all-day" }
+  | { kind: "variable"; note: string };
+
+export interface AnnualFestivalSchedule {
+  recursAnnually: true;
+  start: AnnualDateBoundary;
+  end: AnnualDateBoundary;
+  timing: FestivalTiming;
+  locationScope:
+    | "fixed"
+    | "route"
+    | "citywide"
+    | "route-and-citywide";
+  locationDescription: string;
+  rainPolicy:
+    | "continues"
+    | "changes"
+    | "cancels"
+    | "unconfirmed";
+}
+
 export interface AffinityScores {
   firstTimeVisitor: number;
   family: number;
@@ -94,6 +132,7 @@ export interface BaseExperience {
    */
   placeCategory?: PlaceCategory;
   listingStatus?: ListingStatus;
+  operationalVerification?: OperationalVerification;
   
   // 🚀 EVOLUCIÓN ARQUITECTÓNICA: Cualquier experiencia puede responder a múltiples perfiles o intereses
   interests?: Interest[]; 
@@ -143,9 +182,12 @@ export interface VenueExperience extends PublishableExperience {
   priceRange?: "budget" | "mid" | "premium";
   openingHours?: string;
   admissionFee?: number;
+  /** El local cobra entrada, aunque el importe todavía pueda variar. */
+  admissionRequired?: boolean;
   hasDelivery?: boolean;
   menuHighlights?: string[];
   averagePricePen?: number;
+  hospesTip?: string;
   weeklySchedule?: WeeklyOpeningSchedule;
   mealSlots?: MealServiceSlot[];
   paymentMethods?: PaymentMethod[];
@@ -199,6 +241,7 @@ export interface FestivalExperience extends PublishableExperience {
   organizer: string;
   ticketUrl?: string;
   admissionFee: number;   
+  annualSchedule?: AnnualFestivalSchedule;
 }
 
 export interface EventExperience extends PublishableExperience {
@@ -208,6 +251,7 @@ export interface EventExperience extends PublishableExperience {
   organizer: string;
   ticketUrl?: string;
   admissionFee: number;   
+  annualSchedule?: AnnualFestivalSchedule;
 }
 
 export interface CraftExperience extends PublishableExperience {

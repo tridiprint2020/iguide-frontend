@@ -122,6 +122,10 @@ function getReasonLabel(
       "No es compatible con ese horario nocturno",
     "transport-incompatible":
       "No es viable con el transporte elegido",
+    "schedule-unverified":
+      "Horario o fecha todavía sin verificar",
+    "schedule-variable":
+      "Celebración sin hora ni punto fijo",
     "outside-opening-hours":
       "Queda fuera del horario publicado",
     "after-sunset-outdoor":

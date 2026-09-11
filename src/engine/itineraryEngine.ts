@@ -40,6 +40,8 @@ import type {
 } from "./itineraryTimePolicyEngine";
 import {
   getExperienceOpeningWindow,
+  getScheduleReadiness,
+  hasRecommendableSchedule,
 } from "./experienceScheduleEngine";
 import {
   getExplicitIntentScore,
@@ -519,9 +521,44 @@ export function buildItineraryPlan(
         )
     );
 
+  const intentCandidates =
+    relevantExperiences.filter(
+      (experience) =>
+        isEligibleForExplicitIntents(
+          experience,
+          answers.priorities
+        )
+    );
+  const scheduledCandidates =
+    intentCandidates.filter(
+      hasRecommendableSchedule
+    );
+  const scheduledIds = new Set(
+    scheduledCandidates.map(
+      (experience) => experience.experienceId
+    )
+  );
+  const exclusions: ItineraryExclusion[] =
+    intentCandidates
+      .filter(
+        (experience) =>
+          !scheduledIds.has(
+            experience.experienceId
+          )
+      )
+      .map((experience) =>
+        createExclusion(
+          experience,
+          getScheduleReadiness(experience) ===
+            "variable"
+            ? "schedule-variable"
+            : "schedule-unverified"
+        )
+      );
+
   const safeCandidates =
     getSafeCandidates(
-      relevantExperiences,
+      scheduledCandidates,
       {
         profile: context.profile,
         weather,
@@ -534,11 +571,8 @@ export function buildItineraryPlan(
         experience.experienceId
     )
   );
-  const exclusions: ItineraryExclusion[] =
-    [];
-
   for (const experience of
-    relevantExperiences) {
+    scheduledCandidates) {
     if (safeIds.has(experience.experienceId)) {
       continue;
     }
@@ -571,12 +605,6 @@ export function buildItineraryPlan(
   }
 
   const scored = safeCandidates
-    .filter((experience) =>
-      isEligibleForExplicitIntents(
-        experience,
-        answers.priorities
-      )
-    )
     .map((experience, index) => {
       const ranking = scoreExperience(
         experience,

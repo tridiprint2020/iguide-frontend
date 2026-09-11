@@ -46,8 +46,15 @@ export function getHospesProgressMessage(user: UserProfile): string {
   );
 }
 
-function getNextSuggestion(context: ExplorerContext) {
-  const ranked = getRecommendations(context);
+function getNextSuggestion(
+  context: ExplorerContext,
+  weather: WeatherStatus,
+  currentDate: Date
+) {
+  const ranked = getRecommendations(
+    context,
+    { weather, currentDate }
+  );
 
   return (
     ranked.find(
@@ -90,7 +97,8 @@ function getSuggestionContext(suggestion: NonNullable<ReturnType<typeof getNextS
 
 export function getHospesMessage(
   user: UserProfile,
-  weather: WeatherStatus
+  weather: WeatherStatus,
+  location?: ExplorerContext["location"]
 ): string {
 
   const timeContext = getCurrentTimeContext();
@@ -104,12 +112,17 @@ export function getHospesMessage(
 
   const context: ExplorerContext = {
     profile: user,
+    location,
   };
 
   const total = expeditions.length;
   const visited = user.visitedExperiences.length;
   const progress = getExplorationProgress(user, total);
-  const suggestion = getNextSuggestion(context);
+  const suggestion = getNextSuggestion(
+    context,
+    weather,
+    new Date()
+  );
 
   if (visited >= total) {
     return `${greeting} ${tx("Has completado el 100% del Valle. Eres un verdadero Embajador de {{city}}. 👑", { city: currentCity })}`;

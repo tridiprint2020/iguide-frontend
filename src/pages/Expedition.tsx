@@ -314,6 +314,22 @@ function Expedition() {
           })
       : null);
 
+  const paymentMethods =
+    "paymentMethods" in expedition &&
+    Array.isArray(expedition.paymentMethods)
+      ? expedition.paymentMethods
+          .map((method) => {
+            if (method === "cash") return tx("Efectivo");
+            if (method === "card") return tx("Tarjeta");
+            return "Yape";
+          })
+          .join(", ")
+      : null;
+
+  const admissionRequired =
+    "admissionRequired" in expedition &&
+    expedition.admissionRequired === true;
+
   const difficulty =
     readTextField(
       expedition,
@@ -325,6 +341,10 @@ function Expedition() {
 
   const localTip =
     huarique?.hospesTip ??
+    readTextField(
+      expedition,
+      "hospesTip"
+    ) ??
     readTextField(
       expedition,
       "hospes"
@@ -428,6 +448,24 @@ function Expedition() {
               price,
             icon:
               Wallet,
+          } satisfies InfoItem,
+        ]
+      : []),
+    ...(paymentMethods
+      ? [
+          {
+            label: tx("Pago"),
+            value: paymentMethods,
+            icon: Wallet,
+          } satisfies InfoItem,
+        ]
+      : []),
+    ...(admissionRequired
+      ? [
+          {
+            label: tx("Entrada"),
+            value: tx("Sí"),
+            icon: Wallet,
           } satisfies InfoItem,
         ]
       : []),

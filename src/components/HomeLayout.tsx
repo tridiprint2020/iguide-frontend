@@ -17,6 +17,9 @@ import {
 import {
   loadUserProfile,
 } from "../data/user";
+import {
+  loadReturnPoint,
+} from "../engine/returnPointEngine";
 
 import {
   getRecommendations,
@@ -27,7 +30,6 @@ import {
 } from "../engine/hospesContextEngine";
 
 import {
-  getSafeCandidates,
   selectHomeExperience,
 } from "../engine/homeRecommendationEngine";
 
@@ -168,25 +170,28 @@ function HomeLayout() {
     isLoading: weatherLoading,
   } = useWeather();
 
-  const recommendations =
-    getRecommendations({
-      profile,
-    });
+  const returnPoint =
+    loadReturnPoint();
 
-  /*
-   * R1: el catálogo jamás llega crudo a la UI.
-   * Todo pasa por la política de seguridad única.
-   */
-  const availableExperiences =
-    getSafeCandidates(
-      recommendations.length > 0
-        ? recommendations
-        : catalog,
+  const recommendations =
+    getRecommendations(
       {
         profile,
+        location: returnPoint
+          ? {
+              latitude: returnPoint.lat,
+              longitude: returnPoint.lng,
+            }
+          : undefined,
+      },
+      {
         weather: liveWeather,
       }
     );
+
+  /* El motor compartido ya aplicó intención, horario y seguridad. */
+  const availableExperiences =
+    recommendations;
 
   const suggestedExperience =
     selectHomeExperience({

@@ -30,6 +30,8 @@ export type ItineraryReasonCode =
   | "high-mountain-weather"
   | "night-incompatible"
   | "transport-incompatible"
+  | "schedule-unverified"
+  | "schedule-variable"
   | "outside-opening-hours"
   | "after-sunset-outdoor"
   | "meal-window-unavailable"

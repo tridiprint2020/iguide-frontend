@@ -4,6 +4,7 @@ import { loadUserProfile } from "../data/user";
 import { useWeather } from "../context/WeatherContext";
 import { getHospesMessage } from "../engine/hospesEngine";
 import { tx } from "../i18n";
+import { loadReturnPoint } from "../engine/returnPointEngine";
 
 export default function Hospes() {
   const user = loadUserProfile();
@@ -17,6 +18,7 @@ export default function Hospes() {
 
   const [messages, setMessages] = useState<string[]>([]);
   const [input, setInput] = useState("");
+  const returnPoint = loadReturnPoint();
   const conditionLabel = {
     sunny: tx("Soleado"),
     cloudy: tx("Nublado"),
@@ -29,7 +31,13 @@ export default function Hospes() {
       ? null
       : getHospesMessage(
           user,
-          weather
+          weather,
+          returnPoint
+            ? {
+                latitude: returnPoint.lat,
+                longitude: returnPoint.lng,
+              }
+            : undefined
         );
 
   function sendMessage() {

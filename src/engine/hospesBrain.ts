@@ -7,14 +7,26 @@ import { getRecommendations } from "./recommendationEngine";
 import { isExpedition } from "../types/experience";
 
 // 1. Obtiene la siguiente recomendación general disponible
-function getNextSuggestion(profile: UserProfile): Experience | null {
-  const ranked = getRecommendations({ profile });
+function getNextSuggestion(
+  profile: UserProfile,
+  weather: WeatherStatus
+): Experience | null {
+  const ranked = getRecommendations(
+    { profile },
+    { weather }
+  );
   return ranked.find((e) => !profile.visitedExperiences.includes(e.experienceId)) ?? null;
 }
 
 // 2. Obtiene de forma segura una sugerencia que NO sea expedición (bajo techo)
-function getIndoorSuggestion(profile: UserProfile): Experience | null {
-  const ranked = getRecommendations({ profile });
+function getIndoorSuggestion(
+  profile: UserProfile,
+  weather: WeatherStatus
+): Experience | null {
+  const ranked = getRecommendations(
+    { profile },
+    { weather }
+  );
   return ranked.find((e: Experience) => !profile.visitedExperiences.includes(e.experienceId) && !isExpedition(e)) ?? null;
 }
 
@@ -28,7 +40,10 @@ export function getHospesDecision(profile: UserProfile, weather: WeatherStatus):
   
   // Manejo inteligente del clima lluvioso
   if (hasRainRisk) {
-    const indoorSuggestion = getIndoorSuggestion(profile);
+    const indoorSuggestion = getIndoorSuggestion(
+      profile,
+      weather
+    );
 
     if (indoorSuggestion) {
       return {
@@ -49,7 +64,10 @@ export function getHospesDecision(profile: UserProfile, weather: WeatherStatus):
   }
 
   // Comportamiento normal en días despejados
-  const suggestion = getNextSuggestion(profile);
+  const suggestion = getNextSuggestion(
+    profile,
+    weather
+  );
 
   if (timeContext.isNight) {
     return {

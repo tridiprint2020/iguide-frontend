@@ -13,6 +13,9 @@ import {
 import {
   getRecommendations,
 } from "../engine/recommendationEngine";
+import {
+  loadReturnPoint,
+} from "../engine/returnPointEngine";
 
 import {
   selectHomeExperience,
@@ -89,17 +92,26 @@ function Explorer() {
     weather,
   } = useWeather();
 
+  const returnPoint =
+    loadReturnPoint();
+
   const recommendations =
-    getRecommendations({
-      profile: user,
-    });
+    getRecommendations(
+      {
+        profile: user,
+        location: returnPoint
+          ? {
+              latitude: returnPoint.lat,
+              longitude: returnPoint.lng,
+            }
+          : undefined,
+      },
+      { weather }
+    );
 
   const suggestedExperience =
     selectHomeExperience({
-      experiences:
-        recommendations.length > 0
-          ? recommendations
-          : catalog,
+      experiences: recommendations,
       weather,
     });
 
