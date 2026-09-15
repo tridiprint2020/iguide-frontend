@@ -57,6 +57,18 @@ test("un snapshot v2 vuelve a validarse sin alterar sus decisiones", () => {
   assert.deepEqual(reparsed, migrated);
 });
 
+test("los motivos nuevos de horario sobreviven la serialización sin perder el plan V1 migrado", () => {
+  const snapshot = migrateItinerarySnapshot(FIXTURE_V1_X8B);
+  snapshot.exclusions = ["schedule-unverified", "schedule-variable"].map((reasonCode) => ({
+    experienceId: `fixture-${reasonCode}`,
+    title: "Fixture de horario",
+    explanation: { action: "excluded", reasonCode },
+  }));
+  const reloaded = migrateItinerarySnapshot(JSON.parse(JSON.stringify(snapshot)));
+  assert.deepEqual(reloaded, snapshot);
+  assert.equal(reloaded.stops.length, 8);
+});
+
 test("un kilómetro caminando estima aproximadamente 17 minutos", () => {
   const minutes = estimateTravelMinutes(
     { latitude: 0, longitude: 0 },

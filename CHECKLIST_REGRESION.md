@@ -2,7 +2,7 @@
 
 **Producción actual:** `main @ 5abd94f`
 
-**Última actualización:** 9 de septiembre de 2026
+**Última actualización:** 15 de septiembre de 2026
 
 **Punto de recuperación anterior:** `dc28ede`
 
@@ -68,6 +68,10 @@ Cada resultado se marca como `PASÓ`, `FALLÓ` o `NO APLICA`.
 - [ ] C17. Un local sin horario o una fiesta sin hora y punto fijos permanece
       visible, pero Hospes no lo recomienda automáticamente.
 - [ ] C18. El San no existe en catálogo, mapa, itinerario ni búsqueda.
+- [ ] C19. Los locales que cierran feriados quedan fuera de ficha abierta,
+      recomendación e itinerario en feriados nacionales peruanos.
+- [ ] C20. La hora exacta de cierre ya figura como cerrado; un turno no puede
+      prolongarse dentro de un feriado si el local declara cierre ese día.
 
 ## D. Misión y MemoryCard
 
@@ -114,6 +118,14 @@ git diff --stat main..HEAD -- package-lock.json
 - [ ] G6. AR, telemetría, Supabase, `mediaStorage`, `trackingEngine` y el motor
       de migración permanecen intactos salvo autorización expresa.
 - [ ] G7. La rama nace de `main`, permite fast-forward y no tiene ancestría AR.
+
+Excepción de alcance registrada para revisión: `9619a8b` añadió
+`schedule-unverified` y `schedule-variable` a los motivos aceptados por
+`itinerarySnapshotMigrationEngine.ts`. El sprint no modifica ese motor;
+añade cobertura de serialización y relectura que conserva ambos motivos y
+las ocho paradas del fixture V1. No declarar el motor intacto frente a `main`.
+Los resultados técnicos del sprint están en `SPRINT_INTEGRACION_2026-09-15.md`;
+no sustituyen las casillas de validación funcional anteriores.
 
 ## H. Huariques — cuando el preview incluya esta función
 

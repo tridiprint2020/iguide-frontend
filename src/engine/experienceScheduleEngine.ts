@@ -1,4 +1,5 @@
 import { tx } from "../i18n";
+import { isPeruNationalHoliday } from "./peruHolidayEngine";
 import type {
   AnnualDateBoundary,
   AnnualFestivalSchedule,
@@ -326,6 +327,18 @@ function parseSelectedWeekday(selectedDate: string): Weekday | null {
   return date.getDay() as Weekday;
 }
 
+/** Un cierre por feriado cubre el día civil completo, incluida su madrugada. */
+function limitCloseBeforeHoliday(
+  weekly: WeeklyOpeningSchedule,
+  date: Date,
+  closesAt: number
+): number {
+  if (!weekly.closedOnHolidays || closesAt <= 24 * 60) return closesAt;
+  const tomorrow = new Date(date);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return isPeruNationalHoliday(tomorrow) ? 24 * 60 : closesAt;
+}
+
 type WeeklyWindowAtDateTime = {
   hasSchedule: boolean;
   isScheduledToday: boolean;
@@ -369,6 +382,11 @@ function getWeeklyWindowAtDateTime(
   const weekday = currentDate.getDay() as Weekday;
   const previousWeekday = ((weekday + 6) % 7) as Weekday;
   const startsToday = weekly.days.includes(weekday);
+  const holidayClosed = weekly.closedOnHolidays && isPeruNationalHoliday(currentDate);
+  if (holidayClosed) {
+    return { hasSchedule: true, isScheduledToday: false, isOpen: false,
+      opensAt, closesAt: rawClose, currentMinutes };
+  }
   const crossesMidnight = rawClose <= opensAt;
 
   if (!crossesMidnight) {
@@ -378,16 +396,19 @@ function getWeeklyWindowAtDateTime(
       isOpen:
         startsToday &&
         currentMinutes >= opensAt &&
-        currentMinutes <= rawClose,
+        currentMinutes < rawClose,
       opensAt,
       closesAt: rawClose,
       currentMinutes,
     };
   }
 
+  const yesterday = new Date(currentDate);
+  yesterday.setDate(yesterday.getDate() - 1);
   const continuesFromYesterday =
     weekly.days.includes(previousWeekday) &&
-    currentMinutes <= rawClose;
+    !(weekly.closedOnHolidays && isPeruNationalHoliday(yesterday)) &&
+    currentMinutes < rawClose;
   const currentShiftStarted =
     startsToday && currentMinutes >= opensAt;
 
@@ -403,7 +424,7 @@ function getWeeklyWindowAtDateTime(
       : opensAt,
     closesAt: continuesFromYesterday
       ? rawClose
-      : rawClose + 24 * 60,
+      : limitCloseBeforeHoliday(weekly, currentDate, rawClose + 24 * 60),
     currentMinutes,
   };
 }
@@ -442,9 +463,13 @@ export function getExperienceOpeningWindow(
 
     return {
       hasSchedule: true,
-      isScheduledToday: weekly.days.includes(weekday),
+      isScheduledToday: weekly.days.includes(weekday) &&
+        !(weekly.closedOnHolidays && isPeruNationalHoliday(new Date(`${selectedDate}T12:00:00`))),
       opensAt,
-      closesAt: rawClose <= opensAt ? rawClose + 24 * 60 : rawClose,
+      closesAt: limitCloseBeforeHoliday(
+        weekly, new Date(`${selectedDate}T12:00:00`),
+        rawClose <= opensAt ? rawClose + 24 * 60 : rawClose
+      ),
     };
   }
 
@@ -523,7 +548,7 @@ export function getExperienceOpeningStatus(
       !window.hasSchedule ||
       (window.isScheduledToday &&
         overnightMinutes >= window.opensAt &&
-        overnightMinutes <= window.closesAt),
+        overnightMinutes < window.closesAt),
     ...(window.hasSchedule
       ? {
           opensAt: formatClock(window.opensAt),

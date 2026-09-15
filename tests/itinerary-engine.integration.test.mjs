@@ -11,6 +11,7 @@ let catalog;
 let getRecommendations;
 let getProfilePreferenceScore;
 let getExperienceOpeningWindow;
+let getExperienceOpeningStatus;
 let getScheduleReadiness;
 let hasRecommendableSchedule;
 let isWetRisky;
@@ -117,6 +118,7 @@ before(async () => {
   ({
     canCompleteVisitNow,
     getExperienceOpeningWindow,
+    getExperienceOpeningStatus,
     getScheduleReadiness,
     hasRecommendableSchedule,
   } = await server.ssrLoadModule(
@@ -852,6 +854,47 @@ test("un turno nocturno sigue abierto después de medianoche si comenzó el día
     ),
     false
   );
+});
+
+test("feriados cierran Polares en ficha, recomendación e itinerario", () => {
+  const polares = catalog.find((item) => item.experienceId === "CAF-0102");
+  assert.ok(polares);
+  for (const selectedDate of ["2026-04-02", "2026-04-03", "2026-07-28", "2026-12-25"]) {
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const date = new Date(year, month - 1, day, 15);
+    assert.equal(getExperienceOpeningStatus(polares, date).isOpen, false, selectedDate);
+    assert.equal(canCompleteVisitNow(polares, date), false, selectedDate);
+    const context = { profile, answers: { selectedDate, selectedHour: 15,
+      endMinutes: 18 * 60, priorities: ["gastronomy"], transport: "walking" } };
+    assert.deepEqual(getRecommendations(context, { experiences: [polares] }), []);
+    const plan = buildItineraryPlan(context, { forecast, experiences: [polares] });
+    assert.ok(plan);
+    assert.equal(plan.stops.length, 0);
+    assert.equal(plan.exclusions[0]?.explanation.reasonCode, "outside-opening-hours");
+  }
+  assert.equal(canCompleteVisitNow(polares, new Date(2026, 8, 15, 15)), true);
+  const serranita = catalog.find((item) => item.experienceId === "CAF-0101");
+  assert.ok(serranita);
+  assert.equal(canCompleteVisitNow(serranita, new Date(2026, 6, 28, 15)), true);
+});
+
+test("al llegar la hora exacta de cierre la ficha ya no dice abierto", () => {
+  const taj = nightclubs.find((item) => item.experienceId === "NGT-0001");
+  assert.ok(taj);
+  assert.equal(getExperienceOpeningStatus(taj, new Date(2026, 8, 14, 2, 59)).isOpen, true);
+  assert.equal(getExperienceOpeningStatus(taj, new Date(2026, 8, 14, 3, 0)).isOpen, false);
+});
+
+test("un turno que cierra feriados no atraviesa el día cerrado ni revive al siguiente", () => {
+  const base = nightclubs.find((item) => item.experienceId === "NGT-0003");
+  assert.ok(base);
+  const club = { ...base, weeklySchedule: { ...base.weeklySchedule, closedOnHolidays: true } };
+  assert.equal(canCompleteVisitNow(club, new Date(2026, 6, 27, 21)), true);
+  assert.equal(canCompleteVisitNow(club, new Date(2026, 6, 27, 22)), false);
+  assert.equal(getExperienceOpeningWindow(club, "2026-07-27").closesAt, 1440);
+  assert.equal(getExperienceOpeningStatus(club, new Date(2026, 6, 28, 0)).isOpen, false);
+  assert.equal(getExperienceOpeningStatus(club, new Date(2026, 6, 30, 1)).isOpen, false);
+  assert.equal(canCompleteVisitNow(club, new Date(2026, 6, 30, 21)), true);
 });
 
 test("todos los candidatos activos declaran su relación con clima y ambiente", () => {
