@@ -9,6 +9,7 @@ import {
   hydrateItinerarySnapshot,
   parseItinerarySnapshot,
 } from "./itineraryPersistenceEngine";
+import { packItinerary, unpackItinerary } from "./itineraryCompactCodec";
 
 const SHARE_QUERY_KEY = "plan";
 const MAX_SHARE_PAYLOAD_LENGTH = 12_000;
@@ -118,9 +119,9 @@ function decodeBase64Url(
 export function encodeItinerarySnapshot(
   snapshot: NormalizedItineraryPlanSnapshot
 ): string {
-  const encoded = encodeBase64Url(
+  const encoded = "c1." + encodeBase64Url(
     JSON.stringify(
-      getPortableSnapshot(snapshot)
+      packItinerary(getPortableSnapshot(snapshot))
     )
   );
 
@@ -140,12 +141,14 @@ export function decodeItinerarySnapshot(
   encoded: string
 ): NormalizedItineraryPlanSnapshot | null {
   try {
+    if (encoded.length > MAX_SHARE_PAYLOAD_LENGTH) return null;
+    const compact = encoded.startsWith("c1.");
     const parsed: unknown = JSON.parse(
-      decodeBase64Url(encoded)
+      decodeBase64Url(compact ? encoded.slice(3) : encoded)
     );
 
     return parseItinerarySnapshot(
-      parsed
+      compact ? unpackItinerary(parsed) : parsed
     );
   } catch {
     return null;
