@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import NeonIcon from "../ui/NeonIcon";
 import { tx } from "../../i18n";
 import "./QuickActionsGrid.css";
 
@@ -42,8 +41,7 @@ function ActionCard({ action }: { action: QuickAction }) {
     {action.image && <img className="home-action__image" src={action.image} alt="" />}
     <div className="home-action__shade" />
     <header className="home-action__header">
-      <NeonIcon icon={action.icon} tone={action.tone} size={22} />
-      <h2>{action.title}</h2>
+      <h2><button className="home-action__title" onClick={action.onClick}>{action.title}</button></h2>
     </header>
     <div className="home-action__viewport"
       onPointerDown={(event) => {
@@ -68,21 +66,20 @@ function ActionCard({ action }: { action: QuickAction }) {
       onClickCapture={(event) => {
         if (swiped.current) { event.preventDefault(); event.stopPropagation(); swiped.current = false; }
       }}>
-      <div className="home-action__panel" inert={expanded} aria-hidden={expanded}
+      <button type="button" className="home-action__panel home-action__primary" onClick={action.onClick} inert={expanded} aria-hidden={expanded}
         style={{ transform: expanded ? `translate(${x}%, ${y}%)` : "translate(0, 0)" }}>
         <p>{action.subtitle}</p>
-        <button className="home-action__link" onClick={action.onClick}>{tx("Descubrir")} <ArrowRight size={15} aria-hidden="true" /></button>
-      </div>
+      </button>
       <div id={`options-${action.id}`} className="home-action__panel home-action__panel--options"
         inert={!expanded} aria-hidden={!expanded}
         style={{ transform: expanded ? "translate(0, 0)" : `translate(${-x}%, ${-y}%)` }}>
         {action.options.map((option) => <button key={option.label} className="home-action__link" onClick={option.onClick}>{option.label}</button>)}
       </div>
     </div>
-    <button className="home-action__toggle" aria-expanded={expanded} aria-controls={`options-${action.id}`}
+    <button type="button" className={`home-action__toggle home-action__toggle--${action.direction}`} aria-expanded={expanded} aria-controls={`options-${action.id}`}
+      aria-label={`${action.title}: ${expanded ? tx("Volver") : tx("Más opciones")}`}
       onClick={() => setExpanded((value) => !value)}>
-      {expanded ? <ChevronLeft size={16} aria-hidden="true" /> : <Arrow size={16} aria-hidden="true" />}
-      {expanded ? tx("Volver") : tx("Más opciones")}
+      <Arrow size={18} strokeWidth={1.4} aria-hidden="true" style={{ transform: expanded ? "rotate(180deg)" : undefined }} />
     </button>
   </article>;
 }
