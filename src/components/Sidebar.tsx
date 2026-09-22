@@ -16,26 +16,17 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import NeonIcon from "./ui/NeonIcon";
+import "./Sidebar.css";
 import NearbyIcon from "./ui/NearbyIcon";
 
 import {
   tx,
 } from "../i18n";
 
-import {
-  NeonTheme,
-} from "../styles/neonTheme";
-
-import type {
-  NeonTone,
-} from "../styles/neonTheme";
-
 type NavigationItem = {
   to: string;
   icon: LucideIcon;
   label: string;
-  tone: NeonTone;
   end?: boolean;
   nearby?: boolean;
 };
@@ -45,45 +36,38 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     to: "/",
     icon: House,
     label: "Inicio",
-    tone: "magenta",
     end: true,
   },
   {
     to: "/explorer",
     icon: Binoculars,
     label: "Explorar",
-    tone: "cyan",
   },
   {
     to: "/mapa",
     icon: Map,
     label: "Mapa",
-    tone: "magenta",
   },
   {
     to: "/mapa?nearby=all",
     icon: Map,
     label: "Cerca de ti",
-    tone: "cyan",
     nearby: true,
   },
   {
     to: "/itinerario",
     icon: CalendarDays,
     label: "Itinerario",
-    tone: "cyan",
   },
   {
     to: "/favoritos",
     icon: Heart,
     label: "Favoritos",
-    tone: "magenta",
   },
   {
     to: "/perfil",
     icon: UserRound,
     label: "Perfil",
-    tone: "cyan",
   },
 ];
 
@@ -130,49 +114,11 @@ function Sidebar() {
             end={item.end}
             title={translatedLabel}
             aria-label={translatedLabel}
-            style={({ isActive: routeActive }) => {
-              const isActive = activeFor(item, routeActive);
-              return ({
-              width: "50px",
-              height: "50px",
-              flexShrink: 0,
-              boxSizing: "border-box",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "16px",
-              textDecoration: "none",
-              background: isActive
-                ? item.tone === "cyan"
-                  ? "linear-gradient(145deg, rgba(0,230,255,0.19), rgba(15,18,37,0.95))"
-                  : "linear-gradient(145deg, rgba(255,61,232,0.21), rgba(15,18,37,0.95))"
-                : "transparent",
-              border: isActive
-                ? item.tone === "cyan"
-                  ? "1px solid rgba(0,230,255,0.42)"
-                  : "1px solid rgba(255,61,232,0.42)"
-                : "1px solid transparent",
-              boxShadow: isActive
-                ? item.tone === "cyan"
-                  ? NeonTheme.Shadows.cyan
-                  : NeonTheme.Shadows.magenta
-                : "none",
-              transform: isActive
-                ? "scale(1.04)"
-                : "scale(1)",
-              transition:
-                "background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease",
-            }); }}
+            className={({ isActive }) => `sidebar-link${activeFor(item, isActive) ? " sidebar-link--active" : ""}`}
           >
-            {({ isActive }) => (
-              item.nearby ? <NearbyIcon /> : <NeonIcon
-                icon={Icon}
-                tone={item.tone}
-                size={25}
-                strokeWidth={1.55}
-                active={activeFor(item, isActive)}
-              />
-            )}
+            <span className="sidebar-link__icon" aria-hidden="true">
+              {item.nearby ? <NearbyIcon /> : <Icon size={25} strokeWidth={1.55} />}
+            </span>
           </NavLink>
         );
       })}

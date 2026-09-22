@@ -370,6 +370,7 @@ function HomeLayout() {
 
     {
       id: "huariques",
+      image: pachamancaImage,
       direction: "right" as const,
       options: [
         { label: tx("Ver huariques verificados"), onClick: () => navigate("/mapa?nearby=huariques") },
