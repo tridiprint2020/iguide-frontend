@@ -1,396 +1,88 @@
-import type {
-  LucideIcon,
-} from "lucide-react";
-
-import {
-  Navigation,
-  Radar,
-} from "lucide-react";
-
+import { useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import NeonIcon from "../ui/NeonIcon";
+import { tx } from "../../i18n";
+import "./QuickActionsGrid.css";
 
-import {
-  tx,
-} from "../../i18n";
-
-import {
-  NeonTheme,
-} from "../../styles/neonTheme";
-
-type ActionTone =
-  | "magenta"
-  | "cyan";
-
+type Direction = "up" | "right" | "down" | "left";
 type QuickAction = {
   id: string;
-
   title: string;
-
   subtitle: string;
-
   icon: LucideIcon;
-
-  tone:
-    ActionTone;
-
+  tone: "magenta" | "cyan";
   image?: string;
-
-  variant?:
-    "default"
-    | "map";
-
-  onClick:
-    () => void;
+  direction: Direction;
+  options: { label: string; onClick: () => void }[];
+  onClick: () => void;
 };
+const arrows = { up: ArrowUp, right: ArrowRight, down: ArrowDown, left: ArrowLeft };
+const vectors = { up: [0, -100], right: [100, 0], down: [0, 100], left: [-100, 0] };
 
-type Props = {
-  actions:
-    QuickAction[];
-};
-
-function QuickActionsGrid({
-  actions,
-}: Props) {
-  return (
-    <section
-      aria-label={tx("Acciones rápidas")}
-      style={{
-        width: "100%",
-
-        display: "grid",
-
-        gridTemplateColumns:
-          "repeat(2, minmax(0, 1fr))",
-
-        gap: "10px",
-      }}
-    >
-      {actions.map(
-        (action, index) => (
-          <QuickActionCard
-            key={
-              action.id
-            }
-            action={
-              action
-            }
-            fullWidth={
-              actions.length % 2 === 1 &&
-              index === actions.length - 1
-            }
-          />
-        )
-      )}
-    </section>
-  );
+export default function QuickActionsGrid({ actions }: { actions: QuickAction[] }) {
+  return <section className="home-actions" aria-label={tx("Acciones rápidas")}>
+    {actions.map((action) => <ActionCard key={action.id} action={action} />)}
+  </section>;
 }
 
-type QuickActionCardProps = {
-  action:
-    QuickAction;
-  fullWidth:
-    boolean;
-};
-
-function QuickActionCard({
-  action,
-  fullWidth,
-}: QuickActionCardProps) {
-  const isCyan =
-    action.tone ===
-    "cyan";
-
-  const toneColor =
-    isCyan
-      ? NeonTheme
-          .Colors
-          .cyan
-      : NeonTheme
-          .Colors
-          .magenta;
-
-  const glowColor =
-    isCyan
-      ? "rgba(0,230,255,0.28)"
-      : "rgba(255,61,232,0.28)";
-
-  const isMap =
-    action.variant ===
-    "map";
-
-  return (
-    <button
-      type="button"
-      onClick={
-        action.onClick
-      }
-      style={{
-        position: "relative",
-
-        gridColumn:
-          fullWidth
-            ? "1 / -1"
-            : undefined,
-
-        width: "100%",
-
-        minWidth: 0,
-
-        minHeight: "160px",
-
-        boxSizing:
-          "border-box",
-
-        overflow: "hidden",
-
-        display: "flex",
-
-        flexDirection:
-          "column",
-
-        alignItems:
-          "flex-start",
-
-        justifyContent:
-          "space-between",
-
-        padding: "13px",
-
-        borderRadius:
-          "20px",
-
-        border:
-          `1px solid ${toneColor}44`,
-
-        background:
-          `
-            radial-gradient(
-              circle at 72% 28%,
-              ${glowColor},
-              transparent 34%
-            ),
-            linear-gradient(
-              145deg,
-              #181A31,
-              #0A0B16
-            )
-          `,
-
-        color:
-          "#FFFFFF",
-
-        textAlign:
-          "left",
-
-        cursor:
-          "pointer",
-
-        boxShadow:
-          `
-            0 13px 30px rgba(0,0,0,0.29),
-            0 0 19px ${glowColor}
-          `,
-
-        transition:
-          "transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease",
+function ActionCard({ action }: { action: QuickAction }) {
+  const [expanded, setExpanded] = useState(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(false);
+  const Arrow = arrows[action.direction];
+  const [x, y] = vectors[action.direction];
+  const style = {
+    "--accent": action.tone === "cyan" ? "#00e6ff" : "#ff3de8",
+    "--slide-x": `${x}%`, "--slide-y": `${y}%`,
+    "--enter-x": `${-x}%`, "--enter-y": `${-y}%`,
+  } as CSSProperties;
+  return <article className="home-action" style={style}>
+    {action.image && <img className="home-action__image" src={action.image} alt="" />}
+    <div className="home-action__shade" />
+    <header className="home-action__header">
+      <NeonIcon icon={action.icon} tone={action.tone} size={22} />
+      <h2>{action.title}</h2>
+    </header>
+    <div className="home-action__viewport"
+      onPointerDown={(event) => {
+        if (!event.isPrimary || event.button !== 0) return;
+        start.current = { x: event.clientX, y: event.clientY };
+        swiped.current = false;
       }}
-    >
-      {action.image && (
-        <>
-          <img
-            src={action.image}
-            alt=""
-            aria-hidden="true"
-            loading="eager"
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center",
-            }}
-          />
-
-          <span
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 1,
-              background:
-                `linear-gradient(
-                  180deg,
-                  rgba(6,7,16,0.08) 0%,
-                  rgba(6,7,16,0.30) 38%,
-                  rgba(6,7,16,0.93) 100%
-                )`,
-            }}
-          />
-        </>
-      )}
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
-        <NeonIcon
-          icon={
-            action.icon
-          }
-          tone={
-            action.tone
-          }
-          size={23}
-          strokeWidth={
-            1.5
-          }
-          framed
-        />
-      </div>
-
-      {isMap && (
-        <MapDecoration />
-      )}
-
-      <div
-        style={{
-          position:
-            "relative",
-
-          zIndex: 2,
-
-          width: "100%",
-        }}
-      >
-        <h2
-          style={{
-            margin:
-              "0 0 5px",
-
-            color:
-              "#FFFFFF",
-
-            fontSize:
-              "clamp(1rem, 4.2vw, 1.25rem)",
-
-            fontWeight:
-              850,
-
-            lineHeight:
-              1.04,
-
-            letterSpacing:
-              "-0.02em",
-
-            textShadow:
-              "0 3px 11px rgba(0,0,0,0.94)",
-          }}
-        >
-          {action.title}
-        </h2>
-
-        <p
-          style={{
-            margin: 0,
-
-            color:
-              "rgba(255,255,255,0.80)",
-
-            fontSize:
-              "10px",
-
-            lineHeight:
-              1.35,
-
-            textShadow:
-              "0 2px 8px rgba(0,0,0,0.96)",
-          }}
-        >
-          {
-            action.subtitle
-          }
-        </p>
-      </div>
-    </button>
-  );
-}
-
-function MapDecoration() {
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position:
-          "absolute",
-
-        inset: 0,
-
-        pointerEvents:
-          "none",
+      onPointerMove={(event) => {
+        if (!start.current) return;
+        const dx = event.clientX - start.current.x;
+        const dy = event.clientY - start.current.y;
+        const along = x ? dx * Math.sign(x) : dy * Math.sign(y);
+        const across = x ? Math.abs(dy) : Math.abs(dx);
+        if (Math.abs(along) < 36 || Math.abs(along) < across * 1.4) return;
+        swiped.current = true;
+        start.current = null;
+        setExpanded(along > 0);
       }}
-    >
-      <div
-        style={{
-          position:
-            "absolute",
-
-          right: "18px",
-
-          top: "31px",
-
-          color:
-            NeonTheme
-              .Colors
-              .cyan,
-
-          filter:
-            NeonTheme
-              .Glow
-              .cyan,
-        }}
-      >
-        <Radar
-          size={53}
-          strokeWidth={
-            1.15
-          }
-        />
+      onPointerUp={() => { start.current = null; }}
+      onPointerCancel={() => { start.current = null; }}
+      onPointerLeave={() => { start.current = null; }}
+      onClickCapture={(event) => {
+        if (swiped.current) { event.preventDefault(); event.stopPropagation(); swiped.current = false; }
+      }}>
+      <div className="home-action__panel" inert={expanded} aria-hidden={expanded}
+        style={{ transform: expanded ? `translate(${x}%, ${y}%)` : "translate(0, 0)" }}>
+        <p>{action.subtitle}</p>
+        <button className="home-action__link" onClick={action.onClick}>{tx("Descubrir")} <ArrowRight size={15} aria-hidden="true" /></button>
       </div>
-
-      <div
-        style={{
-          position:
-            "absolute",
-
-          right: "35px",
-
-          top: "48px",
-
-          color:
-            NeonTheme
-              .Colors
-              .magenta,
-
-          filter:
-            NeonTheme
-              .Glow
-              .magenta,
-        }}
-      >
-        <Navigation
-          size={19}
-          strokeWidth={
-            1.6
-          }
-          fill="rgba(255,61,232,0.18)"
-        />
+      <div id={`options-${action.id}`} className="home-action__panel home-action__panel--options"
+        inert={!expanded} aria-hidden={!expanded}
+        style={{ transform: expanded ? "translate(0, 0)" : `translate(${-x}%, ${-y}%)` }}>
+        {action.options.map((option) => <button key={option.label} className="home-action__link" onClick={option.onClick}>{option.label}</button>)}
       </div>
     </div>
-  );
+    <button className="home-action__toggle" aria-expanded={expanded} aria-controls={`options-${action.id}`}
+      onClick={() => setExpanded((value) => !value)}>
+      {expanded ? <ChevronLeft size={16} aria-hidden="true" /> : <Arrow size={16} aria-hidden="true" />}
+      {expanded ? tx("Volver") : tx("Más opciones")}
+    </button>
+  </article>;
 }
-
-export default QuickActionsGrid;

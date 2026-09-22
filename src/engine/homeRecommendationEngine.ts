@@ -8,6 +8,8 @@ import {
   filterSafeExperiences,
 } from "./experienceSafetyEngine";
 
+import { hasRecommendableSchedule } from "./experienceScheduleEngine";
+
 export {
   getSafeCandidates,
 } from "./experienceSafetyEngine";
@@ -26,7 +28,7 @@ export function selectHomeExperience({
   Experience | null {
   const candidates =
     filterSafeExperiences(
-      experiences,
+      experiences.filter(hasRecommendableSchedule),
       weather,
       currentDate
     );

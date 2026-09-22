@@ -944,6 +944,13 @@ const en: Record<string, string> = {
   "Por seguridad, hoy no te propondré una misión al aire libre. Puedes revisar alternativas bajo techo y confirmar sus horarios.": "For your safety, I won't suggest an outdoor mission today. You can explore indoor alternatives and confirm their opening hours.",
   "Esta franja de comida ya está cubierta por otra parada": "This meal period is already covered by another stop",
   "La siguiente franja de comida empieza cuando tu plan ya termina": "The next meal period starts at or after your plan ends",
+  "Ver restaurantes y cafés": "View restaurants and cafés",
+  "Armar un itinerario": "Plan an itinerary",
+  "Ver huariques verificados": "View verified huariques",
+  "Explorar lugares": "Explore places",
+  "Ver el mapa": "View the map",
+  "Requiere organizar la salida desde el día anterior": "Requires arranging departure at least the day before",
+  "Organiza la visita desde el día anterior. Salidas de 5:00 a 6:30 a. m. como máximo. Coordina previamente la salida y aclimátate uno o dos días.": "Arrange your visit at least the day before. Departures run from 5:00 to 6:30 a.m. at the latest. Confirm departure in advance and allow one or two days to acclimatize.",
 };
 
 export default en;

@@ -3,7 +3,7 @@ import {
   Heart,
   House,
   Map,
-  Route as RouteIcon,
+  CalendarDays,
   UserRound,
 } from "lucide-react";
 
@@ -13,9 +13,11 @@ import type {
 
 import {
   NavLink,
+  useLocation,
 } from "react-router-dom";
 
 import NeonIcon from "./ui/NeonIcon";
+import NearbyIcon from "./ui/NearbyIcon";
 
 import {
   tx,
@@ -35,6 +37,7 @@ type NavigationItem = {
   label: string;
   tone: NeonTone;
   end?: boolean;
+  nearby?: boolean;
 };
 
 const NAVIGATION_ITEMS: NavigationItem[] = [
@@ -58,8 +61,15 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     tone: "magenta",
   },
   {
+    to: "/mapa?nearby=all",
+    icon: Map,
+    label: "Cerca de ti",
+    tone: "cyan",
+    nearby: true,
+  },
+  {
     to: "/itinerario",
-    icon: RouteIcon,
+    icon: CalendarDays,
     label: "Itinerario",
     tone: "cyan",
   },
@@ -78,6 +88,10 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
 ];
 
 function Sidebar() {
+  const location = useLocation();
+  const nearby = new URLSearchParams(location.search).get("nearby") === "all";
+  const activeFor = (item: NavigationItem, active: boolean) =>
+    item.nearby ? active && nearby : item.to === "/mapa" ? active && !nearby : active;
   return (
     <aside
       aria-label={tx("Navegación principal")}
@@ -116,7 +130,9 @@ function Sidebar() {
             end={item.end}
             title={translatedLabel}
             aria-label={translatedLabel}
-            style={({ isActive }) => ({
+            style={({ isActive: routeActive }) => {
+              const isActive = activeFor(item, routeActive);
+              return ({
               width: "50px",
               height: "50px",
               flexShrink: 0,
@@ -146,15 +162,15 @@ function Sidebar() {
                 : "scale(1)",
               transition:
                 "background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease",
-            })}
+            }); }}
           >
             {({ isActive }) => (
-              <NeonIcon
+              item.nearby ? <NearbyIcon /> : <NeonIcon
                 icon={Icon}
                 tone={item.tone}
                 size={25}
                 strokeWidth={1.55}
-                active={isActive}
+                active={activeFor(item, isActive)}
               />
             )}
           </NavLink>

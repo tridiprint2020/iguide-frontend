@@ -153,6 +153,12 @@ export interface PublishableExperience extends BaseExperience {
 
 export interface ExpeditionExperience extends PublishableExperience {
   type: "expedition";
+  advancePlanning?: {
+    minimumDaysAhead: number;
+    departureFrom: string;
+    departureUntil: string;
+    evidenceSource: string;
+  };
   distance: string;
   driveTime: string;
   walkTime: string;

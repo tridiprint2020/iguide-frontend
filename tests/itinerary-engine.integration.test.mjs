@@ -1359,3 +1359,25 @@ test("P0-1 distingue franja cubierta, próxima franja fuera del plan y falta rea
   assert.equal(lunch.stops.length, 1);
   assert.equal(lunch.exclusions[0].explanation.params.mealConstraint, "slot-covered");
 });
+
+test("Huaytapallana requiere organizarse el día anterior y no se ofrece como misión espontánea", async () => {
+  const mountain = catalog.find((item) => item.slug === "huaytapallana");
+  assert.equal(mountain.advancePlanning.minimumDaysAhead, 1);
+  assert.equal(mountain.advancePlanning.departureFrom, "05:00");
+  assert.equal(mountain.advancePlanning.departureUntil, "06:30");
+  assert.equal(hasRecommendableSchedule(mountain), false);
+  for (const hour of [5, 6, 10]) {
+    assert.equal(canCompleteVisitNow(mountain, new Date(2026, 8, 22, hour, 20)), false);
+  }
+  const { selectHomeExperience } = await server.ssrLoadModule("/src/engine/homeRecommendationEngine.ts");
+  assert.equal(selectHomeExperience({ experiences: [mountain], weather: null,
+    currentDate: new Date(2026, 8, 22, 10, 20) }), null);
+  const plan = buildItineraryPlan({ profile, answers: {
+    selectedDate: "2026-09-23", selectedHour: 5, endMinutes: 1080,
+    priorities: ["adventure"], transport: "taxi",
+  } }, { experiences: [mountain], forecast });
+  assert.equal(plan.stops.length, 0);
+  assert.equal(plan.exclusions[0].explanation.params.advancePlanning, true);
+  // Other expeditions retain their existing schedule contract.
+  assert.equal(hasRecommendableSchedule(catalog.find((item) => item.slug === "cerrito-libertad")), true);
+});

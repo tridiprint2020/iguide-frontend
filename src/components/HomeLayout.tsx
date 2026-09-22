@@ -1,6 +1,5 @@
 import {
   Camera,
-  MapPin,
   PartyPopper,
   Sparkles,
   Utensils,
@@ -342,6 +341,11 @@ function HomeLayout() {
   const quickActions = [
     {
       id: "food",
+      direction: "up" as const,
+      options: [
+        { label: tx("Ver restaurantes y cafés"), onClick: () => navigate("/mapa?nearby=food") },
+        { label: tx("Armar un itinerario"), onClick: () => navigate("/itinerario") },
+      ],
 
       title:
         tx("¿Dónde puedo comer algo rico cerca?"),
@@ -366,6 +370,11 @@ function HomeLayout() {
 
     {
       id: "huariques",
+      direction: "right" as const,
+      options: [
+        { label: tx("Ver huariques verificados"), onClick: () => navigate("/mapa?nearby=huariques") },
+        { label: tx("Ver restaurantes y cafés"), onClick: () => navigate("/mapa?nearby=food") },
+      ],
       title: tx("Descubrir huariques"),
       subtitle: tx("Sabores locales con historia, verificados por I.GUIDE"),
       icon: Sparkles,
@@ -376,6 +385,11 @@ function HomeLayout() {
 
     {
       id: "corners",
+      direction: "left" as const,
+      options: [
+        { label: tx("Explorar lugares"), onClick: () => navigate("/explorer") },
+        { label: tx("Ver el mapa"), onClick: () => navigate("/mapa") },
+      ],
 
       title:
         tx("Descubrir rincones"),
@@ -400,6 +414,11 @@ function HomeLayout() {
 
     {
       id: "surprise",
+      direction: "down" as const,
+      options: [
+        { label: tx("Explorar lugares"), onClick: () => navigate("/explorer") },
+        { label: tx("Armar un itinerario"), onClick: () => navigate("/itinerario") },
+      ],
 
       title:
         tx("Sorpresa local"),
@@ -422,29 +441,7 @@ function HomeLayout() {
         ),
     },
 
-    {
-      id: "nearby",
 
-      title:
-        tx("Cerca de ti"),
-
-      subtitle:
-        tx("Descubre qué tienes alrededor"),
-
-      icon:
-        MapPin,
-
-      tone:
-        "cyan" as const,
-
-      variant:
-        "map" as const,
-
-      onClick: () =>
-        navigate(
-          "/mapa"
-        ),
-    },
   ];
 
   return (

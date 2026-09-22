@@ -44,10 +44,16 @@ export const expeditions: Experience[] = [
   {
     experienceId: "EXP-0002",
     slug: "huaytapallana",
+    advancePlanning: {
+      minimumDaysAhead: 1,
+      departureFrom: "05:00",
+      departureUntil: "06:30",
+      evidenceSource: "Confirmación directa del Fundador: organizar desde el día anterior; salida máxima 06:30.",
+    },
     title: "Nevado Huaytapallana",
     type: "expedition",
     city: "Huancayo",
-    description: "Ideal si buscas aventura y ya pasaste uno o dos días aclimatándote.",
+    description: "Organiza la visita desde el día anterior. Salidas de 5:00 a 6:30 a. m. como máximo. Coordina previamente la salida y aclimátate uno o dos días.",
     latitude: -11.9311,
     longitude: -75.0473,
     tags: ["montaña", "aventura"],
@@ -61,7 +67,7 @@ export const expeditions: Experience[] = [
     duration: "6 horas",
     difficulty: "high",
     price: "S/ 80",
-    hospes: "Ideal si buscas aventura y ya pasaste uno o dos días aclimatándote.",
+    hospes: "Organiza la visita desde el día anterior. Salidas de 5:00 a 6:30 a. m. como máximo. Coordina previamente la salida y aclimátate uno o dos días.",
     certificationRadiusMeters: 80,
     affinity: {
       firstTimeVisitor: 40, 

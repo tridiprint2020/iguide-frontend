@@ -553,7 +553,9 @@ export function buildItineraryPlan(
           getScheduleReadiness(experience) ===
             "variable"
             ? "schedule-variable"
-            : "schedule-unverified"
+            : "schedule-unverified",
+          experience.type === "expedition" && experience.advancePlanning
+            ? { advancePlanning: true } : undefined
         )
       );
 

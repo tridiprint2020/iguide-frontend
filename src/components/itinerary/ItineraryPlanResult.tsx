@@ -100,6 +100,9 @@ function getReasonLabel(
   reasonCode: ItineraryReasonCode,
   params?: ItineraryReasonParams
 ): string {
+  if (reasonCode === "schedule-unverified" && params?.advancePlanning) {
+    return tx("Requiere organizar la salida desde el día anterior");
+  }
   if (reasonCode === "meal-window-unavailable" || reasonCode === "not-enough-time") {
     if (params?.mealConstraint === "slot-covered") {
       return tx("Esta franja de comida ya está cubierta por otra parada");

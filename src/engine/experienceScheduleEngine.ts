@@ -282,7 +282,9 @@ export function getScheduleReadiness(
   }
 
   if (experience.type === "expedition") {
-    return "ready";
+    // A departure window does not certify a previously arranged trip.
+    // Keep these trips informative until advance planning can be confirmed.
+    return experience.advancePlanning ? "unverified" : "ready";
   }
 
   const weekly = getWeeklySchedule(experience);
