@@ -1334,3 +1334,28 @@ test("la ubicación conocida calcula también el primer traslado de una expedici
     25
   );
 });
+
+test("P0-1 distingue franja cubierta, próxima franja fuera del plan y falta real de tiempo", () => {
+  const paris = catalog.find((item) => item.slug === "paris");
+  const bicho = catalog.find((item) => item.slug === "bicho");
+  const bakery = catalog.find((item) => item.slug === "la-petite-bakery");
+  function planFor(experiences, hour, endMinutes, location) {
+    return buildItineraryPlan({ profile, location, answers: {
+      selectedDate: "2026-09-19", selectedHour: hour, endMinutes,
+      priorities: ["gastronomy"], transport: "walking",
+    } }, { experiences, forecast: null });
+  }
+  const afternoon = planFor([bicho, paris, bakery], 15, 1080, bicho);
+  assert.equal(afternoon.stops.length, 1);
+  assert.equal(afternoon.stops[0].experience.experienceId, bicho.experienceId);
+  assert.equal(afternoon.exclusions.find((e) => e.experienceId === paris.experienceId).explanation.params.mealConstraint, "next-slot-outside-plan");
+  assert.equal(afternoon.exclusions.find((e) => e.experienceId === bakery.experienceId).explanation.params.mealConstraint, "slot-covered");
+  const alone = planFor([paris], 15, 1080, paris);
+  assert.equal(alone.exclusions[0].explanation.params.mealConstraint, "next-slot-outside-plan");
+  const short = planFor([paris], 12, 750, paris);
+  assert.equal(short.exclusions[0].explanation.reasonCode, "not-enough-time");
+  assert.equal(short.exclusions[0].explanation.params.mealConstraint, undefined);
+  const lunch = planFor([paris, { ...paris, experienceId: "fixture-second" }], 12, 900, paris);
+  assert.equal(lunch.stops.length, 1);
+  assert.equal(lunch.exclusions[0].explanation.params.mealConstraint, "slot-covered");
+});

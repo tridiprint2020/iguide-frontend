@@ -11,6 +11,7 @@ import {
 import type {
   ItineraryPlan,
   ItineraryReasonCode,
+  ItineraryReasonParams,
 } from "../../types/itinerary";
 
 type ItineraryPlanResultProps = {
@@ -96,8 +97,17 @@ function formatForecastClock(
 }
 
 function getReasonLabel(
-  reasonCode: ItineraryReasonCode
+  reasonCode: ItineraryReasonCode,
+  params?: ItineraryReasonParams
 ): string {
+  if (reasonCode === "meal-window-unavailable" || reasonCode === "not-enough-time") {
+    if (params?.mealConstraint === "slot-covered") {
+      return tx("Esta franja de comida ya está cubierta por otra parada");
+    }
+    if (params?.mealConstraint === "next-slot-outside-plan") {
+      return tx("La siguiente franja de comida empieza cuando tu plan ya termina");
+    }
+  }
   const labels: Record<
     ItineraryReasonCode,
     string
@@ -615,7 +625,8 @@ export function ItineraryPlanResult({
                 </strong>
                 :{" "}
                 {getReasonLabel(
-                  item.explanation.reasonCode
+                  item.explanation.reasonCode,
+                  item.explanation.params
                 )}
               </li>
             ))}

@@ -32,6 +32,7 @@ import {
 } from "./itineraryTravelEngine";
 import {
   findNextMealWindow,
+  explainMealConstraint,
   getWeatherPeriodKey,
   isOutdoorVisitAfterSunset,
 } from "./itineraryTimePolicyEngine";
@@ -692,12 +693,23 @@ export function buildItineraryPlan(
     let visitStart =
       cursor + travelMinutes;
     let selectedMealSlot: MealSlot | null = null;
+    let mealConstraint: string | undefined;
 
     if (
       experience.type === "restaurant" ||
       experience.type === "cafe" ||
       experience.type === "food_route"
     ) {
+      mealConstraint = explainMealConstraint({
+        experienceType: experience.type,
+        earliestMinutes: visitStart,
+        usedSlots: usedMealSlots,
+        allowedSlots: experience.mealSlots,
+        visitMinutes,
+        endMinutes,
+        opensAt: openingWindow.hasSchedule ? openingWindow.opensAt : 0,
+        closesAt: openingWindow.hasSchedule ? openingWindow.closesAt : 24 * 60,
+      });
       const mealWindow = findNextMealWindow(
         experience.type,
         visitStart,
@@ -709,7 +721,8 @@ export function buildItineraryPlan(
         exclusions.push(
           createExclusion(
             experience,
-            "meal-window-unavailable"
+            "meal-window-unavailable",
+            mealConstraint ? { mealConstraint } : undefined
           )
         );
         continue;
@@ -725,7 +738,8 @@ export function buildItineraryPlan(
         exclusions.push(
           createExclusion(
             experience,
-            "meal-window-unavailable"
+            "meal-window-unavailable",
+            mealConstraint ? { mealConstraint } : undefined
           )
         );
         continue;
@@ -770,6 +784,7 @@ export function buildItineraryPlan(
           experience,
           "not-enough-time",
           {
+            ...(mealConstraint ? { mealConstraint } : {}),
             requiredMinutes:
               visitEnd - cursor,
             remainingMinutes:

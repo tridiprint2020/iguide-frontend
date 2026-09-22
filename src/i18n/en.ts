@@ -942,6 +942,8 @@ const en: Record<string, string> = {
   "Cerámica Wanka": "Wanka ceramics",
   "Artesanía Wanka": "Wanka handicrafts",
   "Por seguridad, hoy no te propondré una misión al aire libre. Puedes revisar alternativas bajo techo y confirmar sus horarios.": "For your safety, I won't suggest an outdoor mission today. You can explore indoor alternatives and confirm their opening hours.",
+  "Esta franja de comida ya está cubierta por otra parada": "This meal period is already covered by another stop",
+  "La siguiente franja de comida empieza cuando tu plan ya termina": "The next meal period starts at or after your plan ends",
 };
 
 export default en;

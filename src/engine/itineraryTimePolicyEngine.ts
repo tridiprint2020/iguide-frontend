@@ -100,6 +100,34 @@ export function findNextMealWindow(
   return null;
 }
 
+// Explanation only: selection continues to use findNextMealWindow unchanged.
+export function explainMealConstraint({
+  experienceType, earliestMinutes, usedSlots, allowedSlots,
+  visitMinutes, endMinutes, opensAt, closesAt,
+}: {
+  experienceType: string;
+  earliestMinutes: number;
+  usedSlots: ReadonlySet<MealSlot>;
+  allowedSlots?: readonly MealSlot[];
+  visitMinutes: number;
+  endMinutes: number;
+  opensAt: number;
+  closesAt: number;
+}): "slot-covered" | "next-slot-outside-plan" | undefined {
+  const available = findNextMealWindow(experienceType, earliestMinutes, usedSlots, allowedSlots);
+  const withoutPriorMeal = findNextMealWindow(experienceType, earliestMinutes, new Set(), allowedSlots);
+  if (withoutPriorMeal && usedSlots.has(withoutPriorMeal.slot)) {
+    const start = Math.max(withoutPriorMeal.startMinutes, opensAt);
+    if (start + visitMinutes <= Math.min(withoutPriorMeal.endMinutes, endMinutes, closesAt)) {
+      return "slot-covered";
+    }
+  }
+  if (available && available.startMinutes >= endMinutes) {
+    return "next-slot-outside-plan";
+  }
+  return undefined;
+}
+
 function parseClockMinutes(
   isoLocalTime: string
 ): number | null {
