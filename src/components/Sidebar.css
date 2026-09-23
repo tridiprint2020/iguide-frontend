@@ -48,3 +48,10 @@
 @media (prefers-reduced-motion: reduce) {
   .sidebar-link, .sidebar-link__icon { transition: none; }
 }
+
+/* Home keeps the icon glow without a surrounding tile. */
+.sidebar-link.sidebar-link--home {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}

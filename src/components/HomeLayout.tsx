@@ -379,7 +379,7 @@ function HomeLayout() {
       subtitle: tx("Restaurantes y cafés recomendados alrededor de ti"), tone: "magenta" as const,
       image: "/images/restaurants/detras-de-la-catedral.jpg", slides: slides(food),
       onClick: () => navigate("/mapa?nearby=food") },
-    { id: "corners", direction: "left" as const, title: tx("Circuito turístico"),
+    { id: "corners", direction: "right" as const, title: tx("Circuito turístico"),
       subtitle: tx("Miradores, historias y lugares ocultos"), tone: "cyan" as const,
       image: cerritoImage, slides: slides(places), onClick: () => openExperience(cornerExperience) },
     { id: "huariques", direction: "right" as const, title: tx("Descubrir huariques"),
