@@ -114,7 +114,7 @@ function Sidebar() {
             end={item.end}
             title={translatedLabel}
             aria-label={translatedLabel}
-            className={({ isActive }) => `sidebar-link${activeFor(item, isActive) ? " sidebar-link--active" : ""}`}
+            className={({ isActive }) => `sidebar-link sidebar-link--${["/", "/mapa", "/itinerario", "/favoritos"].includes(item.to) ? "magenta" : "cyan"}${activeFor(item, isActive) ? " sidebar-link--active" : ""}`}
           >
             <span className="sidebar-link__icon" aria-hidden="true">
               {item.nearby ? <NearbyIcon /> : <Icon size={25} strokeWidth={1.55} />}

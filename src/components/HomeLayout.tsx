@@ -1,9 +1,7 @@
-import {
-  Camera,
-  PartyPopper,
-  Sparkles,
-  Utensils,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { isVerifiedHuarique } from "../engine/huariqueEngine";
+import { getHaversineDistanceKm } from "../engine/itineraryTravelEngine";
+
 
 import {
   useNavigate,
@@ -171,17 +169,23 @@ function HomeLayout() {
 
   const returnPoint =
     loadReturnPoint();
+  const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(null);
+  useEffect(() => {
+    let active = true;
+    navigator.geolocation?.getCurrentPosition(
+      ({ coords }) => { if (active) setPosition({ latitude: coords.latitude, longitude: coords.longitude }); },
+      () => {}, { maximumAge: 60000, timeout: 8000, enableHighAccuracy: true }
+    );
+    return () => { active = false; };
+  }, []);
+  const origin = position ?? (returnPoint ? { latitude: returnPoint.lat, longitude: returnPoint.lng } : null);
+
 
   const recommendations =
     getRecommendations(
       {
         profile,
-        location: returnPoint
-          ? {
-              latitude: returnPoint.lat,
-              longitude: returnPoint.lng,
-            }
-          : undefined,
+        location: origin ?? undefined,
       },
       {
         weather: liveWeather,
@@ -338,111 +342,53 @@ function HomeLayout() {
     );
   }
 
+  const nearbyCandidates = [...availableExperiences].sort((a, b) => origin
+    ? getHaversineDistanceKm(origin, a) - getHaversineDistanceKm(origin, b) : 0);
+  const food = nearbyCandidates.filter((item) => ["restaurant", "cafe", "food_route"].includes(item.type));
+  const places = nearbyCandidates.filter((item) => ["expedition", "museum", "craft"].includes(item.type));
+  const surprises = nearbyCandidates.filter((item) => ["expedition", "museum", "craft", "festival", "event"].includes(item.type));
+  const photos: Record<string, string> = {
+    "detras-de-la-catedral": "/images/restaurants/detras-de-la-catedral.jpg",
+    "el-olimpico": "/images/restaurants/el-olimpico.jpg",
+    "bicho": "/images/cafes/bicho.jpg",
+    "cerrito-libertad": "/images/expeditions/cerrito.jpg",
+    "torre-torre": "/images/expeditions/torretorre.jpg",
+  };
+  function slides(experiences: Experience[]) {
+    return experiences.map((experience) => {
+      const image = photos[experience.slug] ||
+        ([experience.image, experience.coverImage].find((value) => value && !/logo|placeholder/i.test(value)) ?? undefined);
+      const distance = origin ? `${getHaversineDistanceKm(origin, experience).toFixed(1)} km` : null;
+      return {
+        id: experience.experienceId,
+        title: experience.title,
+        subtitle: [distance && `${distance} · ${position ? tx("Desde tu ubicación") : tx("Desde tu punto de regreso")}`,
+          experience.description || tx("Descubre este lugar"),
+          !origin && tx("Activa tu ubicación para ordenar por cercanía")].filter(Boolean).join(" · "),
+        image,
+        onClick: () => {
+          const eligible = getRecommendations({ profile, location: origin ?? undefined }, { weather: liveWeather, experiences: [experience] });
+          if (!eligible.length) { openExperience(experience); return; }
+          if (startWalking(experience)) navigate("/journey");
+        },
+      };
+    });
+  }
   const quickActions = [
-    {
-      id: "food",
-      direction: "up" as const,
-      options: [
-        { label: tx("Ver restaurantes y cafés"), onClick: () => navigate("/mapa?nearby=food") },
-        { label: tx("Armar un itinerario"), onClick: () => navigate("/itinerario") },
-      ],
-
-      title:
-        tx("¿Dónde puedo comer algo rico cerca?"),
-
-      subtitle:
-        tx("Restaurantes y cafés recomendados alrededor de ti"),
-
-      icon:
-        Utensils,
-
-      tone:
-        "magenta" as const,
-
-      image:
-        pachamancaImage,
-
-      onClick: () =>
-        navigate(
-          "/mapa?nearby=food"
-        ),
-    },
-
-    {
-      id: "huariques",
-      image: pachamancaImage,
-      direction: "right" as const,
-      options: [
-        { label: tx("Ver huariques verificados"), onClick: () => navigate("/mapa?nearby=huariques") },
-        { label: tx("Ver restaurantes y cafés"), onClick: () => navigate("/mapa?nearby=food") },
-      ],
-      title: tx("Descubrir huariques"),
-      subtitle: tx("Sabores locales con historia, verificados por I.GUIDE"),
-      icon: Sparkles,
-      tone: "cyan" as const,
-      onClick: () =>
-        navigate("/mapa?nearby=huariques"),
-    },
-
-    {
-      id: "corners",
-      direction: "left" as const,
-      options: [
-        { label: tx("Explorar lugares"), onClick: () => navigate("/explorer") },
-        { label: tx("Ver el mapa"), onClick: () => navigate("/mapa") },
-      ],
-
-      title:
-        tx("Descubrir rincones"),
-
-      subtitle:
-        tx("Miradores, historias y lugares ocultos"),
-
-      icon:
-        Camera,
-
-      tone:
-        "cyan" as const,
-
-      image:
-        cerritoImage,
-
-      onClick: () =>
-        openExperience(
-          cornerExperience
-        ),
-    },
-
-    {
-      id: "surprise",
-      direction: "down" as const,
-      options: [
-        { label: tx("Explorar lugares"), onClick: () => navigate("/explorer") },
-        { label: tx("Armar un itinerario"), onClick: () => navigate("/itinerario") },
-      ],
-
-      title:
-        tx("Sorpresa local"),
-
-      subtitle:
-        tx("Algo que Huancayo está viviendo hoy"),
-
-      icon:
-        PartyPopper,
-
-      tone:
-        "magenta" as const,
-
-      image:
-        santiagoImage,
-
-      onClick: () =>
-        openExperience(
-          surpriseExperience
-        ),
-    },
-
-
+    { id: "food", direction: "up" as const, title: tx("¿Dónde puedo comer algo rico cerca?"),
+      subtitle: tx("Restaurantes y cafés recomendados alrededor de ti"), tone: "magenta" as const,
+      image: "/images/restaurants/detras-de-la-catedral.jpg", slides: slides(food),
+      onClick: () => navigate("/mapa?nearby=food") },
+    { id: "corners", direction: "left" as const, title: tx("Circuito turístico"),
+      subtitle: tx("Miradores, historias y lugares ocultos"), tone: "cyan" as const,
+      image: cerritoImage, slides: slides(places), onClick: () => openExperience(cornerExperience) },
+    { id: "huariques", direction: "right" as const, title: tx("Descubrir huariques"),
+      subtitle: tx("Sabores locales con historia, verificados por I.GUIDE"), tone: "magenta" as const,
+      image: pachamancaImage, slides: slides(nearbyCandidates.filter(isVerifiedHuarique)),
+      onClick: () => navigate("/mapa?nearby=huariques") },
+    { id: "surprise", direction: "down" as const, title: tx("Sorpresa local"),
+      subtitle: tx("Algo que Huancayo está viviendo hoy"), tone: "magenta" as const,
+      image: santiagoImage, slides: slides(surprises), onClick: () => openExperience(surpriseExperience) },
   ];
 
   return (

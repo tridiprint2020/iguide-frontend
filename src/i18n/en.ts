@@ -951,6 +951,13 @@ const en: Record<string, string> = {
   "Ver el mapa": "View the map",
   "Requiere organizar la salida desde el día anterior": "Requires arranging departure at least the day before",
   "Organiza la visita desde el día anterior. Salidas de 5:00 a 6:30 a. m. como máximo. Coordina previamente la salida y aclimátate uno o dos días.": "Arrange your visit at least the day before. Departures run from 5:00 to 6:30 a.m. at the latest. Confirm departure in advance and allow one or two days to acclimatize.",
+  "Circuito turístico": "Tourist circuit",
+  "Desde tu ubicación": "From your location",
+  "Desde tu punto de regreso": "From your return point",
+  "Descubre este lugar": "Discover this place",
+  "Activa tu ubicación para ordenar por cercanía": "Enable location to sort by distance",
+  "Siguiente opción": "Next option",
+  "Foto del lugar pendiente": "Photo of this place pending",
 };
 
 export default en;

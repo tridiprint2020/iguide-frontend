@@ -1,24 +1,14 @@
 import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { tx } from "../../i18n";
 import "./QuickActionsGrid.css";
 
 type Direction = "up" | "right" | "down" | "left";
-type QuickAction = {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: LucideIcon;
-  tone: "magenta" | "cyan";
-  image?: string;
-  direction: Direction;
-  options: { label: string; onClick: () => void }[];
-  onClick: () => void;
-};
+type Slide = { id: string; title: string; subtitle: string; image?: string; onClick: () => void };
+type QuickAction = Slide & { tone: "magenta" | "cyan"; direction: Direction; slides: Slide[] };
 const arrows = { up: ArrowUp, right: ArrowRight, down: ArrowDown, left: ArrowLeft };
-const vectors = { up: [0, -100], right: [100, 0], down: [0, 100], left: [-100, 0] };
+const vectors = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
 
 export default function QuickActionsGrid({ actions }: { actions: QuickAction[] }) {
   return <section className="home-actions" aria-label={tx("Acciones rápidas")}>
@@ -27,59 +17,71 @@ export default function QuickActionsGrid({ actions }: { actions: QuickAction[] }
 }
 
 function ActionCard({ action }: { action: QuickAction }) {
-  const [expanded, setExpanded] = useState(false);
+  const [selectedId, setSelectedId] = useState(action.id);
+  const [reverse, setReverse] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
   const swiped = useRef(false);
+  const pages = [action, ...action.slides];
+  const index = Math.max(0, pages.findIndex((page) => page.id === selectedId));
+  const page = pages[index];
   const Arrow = arrows[action.direction];
   const [x, y] = vectors[action.direction];
+  function advance(back = false) {
+    if (pages.length < 2) return;
+    setReverse(back);
+    setSelectedId(pages[(index + (back ? -1 : 1) + pages.length) % pages.length].id);
+  }
   const style = {
     "--accent": action.tone === "cyan" ? "#00e6ff" : "#ff3de8",
-    "--slide-x": `${x}%`, "--slide-y": `${y}%`,
-    "--enter-x": `${-x}%`, "--enter-y": `${-y}%`,
+    "--enter-x": `${x * (reverse ? 100 : -100)}%`,
+    "--enter-y": `${y * (reverse ? 100 : -100)}%`,
   } as CSSProperties;
-  return <article className="home-action" style={style}>
-    {action.image && <img className="home-action__image" src={action.image} alt="" />}
-    <div className="home-action__shade" />
-    <header className="home-action__header">
-      <h2><button className="home-action__title" onClick={action.onClick}>{action.title}</button></h2>
-    </header>
-    <div className="home-action__viewport"
-      onPointerDown={(event) => {
-        if (!event.isPrimary || event.button !== 0) return;
-        start.current = { x: event.clientX, y: event.clientY };
-        swiped.current = false;
-      }}
-      onPointerMove={(event) => {
-        if (!start.current) return;
-        const dx = event.clientX - start.current.x;
-        const dy = event.clientY - start.current.y;
-        const along = x ? dx * Math.sign(x) : dy * Math.sign(y);
-        const across = x ? Math.abs(dy) : Math.abs(dx);
-        if (Math.abs(along) < 36 || Math.abs(along) < across * 1.4) return;
-        swiped.current = true;
-        start.current = null;
-        setExpanded(along > 0);
-      }}
-      onPointerUp={() => { start.current = null; }}
-      onPointerCancel={() => { start.current = null; }}
-      onPointerLeave={() => { start.current = null; }}
-      onClickCapture={(event) => {
-        if (swiped.current) { event.preventDefault(); event.stopPropagation(); swiped.current = false; }
-      }}>
-      <button type="button" className="home-action__panel home-action__primary" onClick={action.onClick} inert={expanded} aria-hidden={expanded}
-        style={{ transform: expanded ? `translate(${x}%, ${y}%)` : "translate(0, 0)" }}>
-        <p>{action.subtitle}</p>
-      </button>
-      <div id={`options-${action.id}`} className="home-action__panel home-action__panel--options"
-        inert={!expanded} aria-hidden={!expanded}
-        style={{ transform: expanded ? "translate(0, 0)" : `translate(${-x}%, ${-y}%)` }}>
-        {action.options.map((option) => <button key={option.label} className="home-action__link" onClick={option.onClick}>{option.label}</button>)}
-      </div>
-    </div>
-    <button type="button" className={`home-action__toggle home-action__toggle--${action.direction}`} aria-expanded={expanded} aria-controls={`options-${action.id}`}
-      aria-label={`${action.title}: ${expanded ? tx("Volver") : tx("Más opciones")}`}
-      onClick={() => setExpanded((value) => !value)}>
-      <Arrow size={18} strokeWidth={1.4} aria-hidden="true" style={{ transform: expanded ? "rotate(180deg)" : undefined }} />
-    </button>
+  return <article className="home-action" style={style} aria-label={action.title}
+    onKeyDown={(event) => {
+      const offsets: Record<string, number[]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+      const offset = offsets[event.key];
+      if (!offset || !(offset[0] * x + offset[1] * y)) return;
+      event.preventDefault(); advance(offset[0] * x + offset[1] * y < 0);
+    }}
+    onPointerDown={(event) => {
+      swiped.current = false;
+      if (!event.isPrimary || event.button !== 0 || (event.target as HTMLElement).closest('.home-action__toggle')) return;
+      start.current = { x: event.clientX, y: event.clientY };
+    }}
+    onPointerMove={(event) => {
+      if (!start.current) return;
+      const dx = event.clientX - start.current.x;
+      const dy = event.clientY - start.current.y;
+      const along = dx * x + dy * y;
+      const across = x ? Math.abs(dy) : Math.abs(dx);
+      if (Math.abs(along) < 36 || Math.abs(along) < across * 1.4) return;
+      swiped.current = true; start.current = null; advance(along < 0);
+    }}
+    onPointerUp={() => { start.current = null; }}
+    onPointerCancel={() => { start.current = null; }}
+    onPointerLeave={() => { start.current = null; }}
+    onClickCapture={(event) => {
+      if (swiped.current) { event.preventDefault(); event.stopPropagation(); swiped.current = false; }
+    }}>
+    <CardFace key={page.id} page={page} isDestination={index > 0} />
+    {pages.length > 1 && <button type="button" className={`home-action__toggle home-action__toggle--${action.direction}`}
+      aria-label={`${action.title}: ${tx("Siguiente opción")}`} onClick={() => advance()}>
+      <Arrow size={18} strokeWidth={1.4} aria-hidden="true" />
+    </button>}
+    <span className="home-action__announcement" aria-live="polite" aria-atomic="true">{page.title} · {index + 1}/{pages.length}</span>
   </article>;
+}
+function CardFace({ page, isDestination }: { page: Slide; isDestination: boolean }) {
+  const [failed, setFailed] = useState(false);
+  return <button type="button" className="home-action__face" onClick={page.onClick}
+    aria-label={isDestination ? `${tx("Iniciar misión")}: ${page.title}` : page.title}>
+    {page.image && !failed && <img className="home-action__image" src={page.image} alt="" onError={() => setFailed(true)} />}
+    <span className="home-action__shade" />
+    <span className="home-action__content">
+      <span className="home-action__title">{page.title}</span>
+      <span className="home-action__description">{page.subtitle}</span>
+      {isDestination && <span className="home-action__mission">{tx("Iniciar misión")} →</span>}
+      {isDestination && (!page.image || failed) && <span className="home-action__photo-note">{tx("Foto del lugar pendiente")}</span>}
+    </span>
+  </button>;
 }
