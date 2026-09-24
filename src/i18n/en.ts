@@ -958,6 +958,7 @@ const en: Record<string, string> = {
   "Activa tu ubicación para ordenar por cercanía": "Enable location to sort by distance",
   "Siguiente opción": "Next option",
   "Foto del lugar pendiente": "Photo of this place pending",
+  "Sin opciones para iniciar ahora. Prueba otro horario.": "No options to start now. Try another time.",
 };
 
 export default en;

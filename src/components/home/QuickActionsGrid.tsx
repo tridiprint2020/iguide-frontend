@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import { tx } from "../../i18n";
 import "./QuickActionsGrid.css";
+import { getCardSwipeStep } from "./cardSwipe";
 
 type Direction = "up" | "right" | "down" | "left";
 type Slide = { id: string; title: string; subtitle: string; image?: string; onClick: () => void };
@@ -19,6 +20,12 @@ export default function QuickActionsGrid({ actions }: { actions: QuickAction[] }
 function ActionCard({ action }: { action: QuickAction }) {
   const [selectedId, setSelectedId] = useState(action.id);
   const [reverse, setReverse] = useState(false);
+  const [leaving, setLeaving] = useState<{ page: Slide; destination: boolean } | null>(null);
+  useEffect(() => {
+    if (!leaving) return;
+    const timer = setTimeout(() => setLeaving(null), 280);
+    return () => clearTimeout(timer);
+  }, [leaving]);
   const start = useRef<{ x: number; y: number } | null>(null);
   const swiped = useRef(false);
   const pages = [action, ...action.slides];
@@ -27,7 +34,8 @@ function ActionCard({ action }: { action: QuickAction }) {
   const Arrow = arrows[action.direction];
   const [x, y] = vectors[action.direction];
   function advance(back = false) {
-    if (pages.length < 2) return;
+    if (pages.length < 2 || leaving) return;
+    setLeaving({ page, destination: index > 0 });
     setReverse(back);
     setSelectedId(pages[(index + (back ? -1 : 1) + pages.length) % pages.length].id);
   }
@@ -35,6 +43,8 @@ function ActionCard({ action }: { action: QuickAction }) {
     "--accent": action.tone === "cyan" ? "#00e6ff" : "#ff3de8",
     "--enter-x": `${x * (reverse ? 100 : -100)}%`,
     "--enter-y": `${y * (reverse ? 100 : -100)}%`,
+    "--exit-x": `${x * (reverse ? -100 : 100)}%`,
+    "--exit-y": `${y * (reverse ? -100 : 100)}%`,
   } as CSSProperties;
   return <article className="home-action" style={style} aria-label={action.title}
     onKeyDown={(event) => {
@@ -50,20 +60,27 @@ function ActionCard({ action }: { action: QuickAction }) {
     }}
     onPointerMove={(event) => {
       if (!start.current) return;
-      const dx = event.clientX - start.current.x;
-      const dy = event.clientY - start.current.y;
-      const along = dx * x + dy * y;
-      const across = x ? Math.abs(dy) : Math.abs(dx);
-      if (Math.abs(along) < 36 || Math.abs(along) < across * 1.4) return;
-      swiped.current = true; start.current = null; advance(along < 0);
+      if (Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y) > 10) {
+        swiped.current = true;
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
     }}
-    onPointerUp={() => { start.current = null; }}
-    onPointerCancel={() => { start.current = null; }}
-    onPointerLeave={() => { start.current = null; }}
+    onPointerUp={(event) => {
+      if (!start.current) return;
+      const step = getCardSwipeStep(action.direction, event.clientX - start.current.x, event.clientY - start.current.y);
+      start.current = null;
+      if (step) { swiped.current = true; advance(step < 0); }
+    }}
+    onPointerCancel={() => { start.current = null; swiped.current = true; }}
+    onLostPointerCapture={() => { start.current = null; }}
     onClickCapture={(event) => {
       if (swiped.current) { event.preventDefault(); event.stopPropagation(); swiped.current = false; }
     }}>
-    <CardFace key={page.id} page={page} isDestination={index > 0} />
+    {leaving && <div className="home-action__departing" inert aria-hidden="true">
+      <CardFace page={leaving.page} isDestination={leaving.destination} />
+    </div>}
+    <CardFace key={page.id} page={page} isDestination={index > 0} entering={Boolean(leaving)} />
+    {pages.length === 1 && <span className="home-action__empty">{tx("Sin opciones para iniciar ahora. Prueba otro horario.")}</span>}
     {pages.length > 1 && <button type="button" className={`home-action__toggle home-action__toggle--${action.direction}`}
       aria-label={`${action.title}: ${tx("Siguiente opción")}`} onClick={() => advance()}>
       <Arrow size={18} strokeWidth={1.4} aria-hidden="true" />
@@ -71,9 +88,9 @@ function ActionCard({ action }: { action: QuickAction }) {
     <span className="home-action__announcement" aria-live="polite" aria-atomic="true">{page.title} · {index + 1}/{pages.length}</span>
   </article>;
 }
-function CardFace({ page, isDestination }: { page: Slide; isDestination: boolean }) {
+function CardFace({ page, isDestination, entering = false }: { page: Slide; isDestination: boolean; entering?: boolean }) {
   const [failed, setFailed] = useState(false);
-  return <button type="button" className="home-action__face" onClick={page.onClick}
+  return <button type="button" className={`home-action__face${entering ? " home-action__face--entering" : ""}`} onClick={page.onClick}
     aria-label={isDestination ? `${tx("Iniciar misión")}: ${page.title}` : page.title}>
     {page.image && !failed && <img className="home-action__image" src={page.image} alt="" onError={() => setFailed(true)} />}
     <span className="home-action__shade" />
