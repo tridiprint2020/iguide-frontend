@@ -54,6 +54,7 @@ import type {
   Experience,
 } from "../types/experience";
 
+import papaHuancainaImage from "../assets/optimized/papa-huancaina.webp";
 import pachamancaImage from "../assets/optimized/pachamanca.webp";
 import cerritoImage from "../assets/optimized/cerrito-libertad.webp";
 import santiagoImage from "../assets/optimized/fiesta-santiago.webp";
@@ -377,12 +378,12 @@ function HomeLayout() {
   const quickActions = [
     { id: "food", direction: "up" as const, title: tx("¿Dónde puedo comer algo rico cerca?"),
       subtitle: tx("Restaurantes y cafés recomendados alrededor de ti"), tone: "magenta" as const,
-      image: "/images/restaurants/detras-de-la-catedral.jpg", slides: slides(food),
+      image: papaHuancainaImage, slides: slides(food),
       onClick: () => navigate("/mapa?nearby=food") },
     { id: "corners", direction: "right" as const, title: tx("Circuito turístico"),
       subtitle: tx("Miradores, historias y lugares ocultos"), tone: "cyan" as const,
       image: cerritoImage, slides: slides(places), onClick: () => openExperience(cornerExperience) },
-    { id: "huariques", direction: "right" as const, title: tx("Descubrir huariques"),
+    { id: "huariques", direction: "left" as const, title: tx("Descubrir huariques"),
       subtitle: tx("Sabores locales con historia, verificados por I.GUIDE"), tone: "magenta" as const,
       image: pachamancaImage, slides: slides(nearbyCandidates.filter(isVerifiedHuarique)),
       onClick: () => navigate("/mapa?nearby=huariques") },
