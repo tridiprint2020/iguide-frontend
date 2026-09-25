@@ -255,7 +255,7 @@ function MemoryMapCanvas({
         boxZoom={false}
         keyboard={false}
         touchZoom={false}
-        attributionControl={false}
+        attributionControl={true}
         preferCanvas
         style={{
           height: "100%",
@@ -267,8 +267,9 @@ function MemoryMapCanvas({
         }}
       >
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxNativeZoom={19}
           maxZoom={20}
           crossOrigin="anonymous"
           opacity={

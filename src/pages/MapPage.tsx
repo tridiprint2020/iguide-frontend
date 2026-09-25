@@ -1,3 +1,4 @@
+import NearbyPage from "./NearbyPage";
 import {
   useEffect,
   useMemo,
@@ -288,7 +289,7 @@ function buildExperienceSearchText(
   );
 }
 
-function MapPage() {
+function MapExplorerPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const foodNearbyMode =
@@ -1003,7 +1004,7 @@ function MapPage() {
             ? tx("Huariques del Valle del Mantaro")
             : foodNearbyMode
             ? tx("¿Dónde comer algo rico cerca?")
-            : tx("Explora cerca de ti")}
+            : tx("Explora el mapa de Huancayo")}
         </h1>
 
         <p
@@ -1018,7 +1019,7 @@ function MapPage() {
             ? tx("Locales y rutas gastronómicas con historia y evidencia, sin perder su identidad original.")
             : foodNearbyMode
             ? tx("Mostramos restaurantes y cafés para elegir desde tu ubicación.")
-            : tx("Busca por nombre, filtra e inicia una misión.")}
+            : tx("Explora la ciudad, busca lugares y descubre sus detalles.")}
         </p>
       </header>
 
@@ -2054,4 +2055,7 @@ function QuickFilterButton({
   );
 }
 
-export default MapPage;
+export default function MapPage() {
+  const [params] = useSearchParams();
+  return params.get("nearby") === "all" ? <NearbyPage /> : <MapExplorerPage />;
+}
