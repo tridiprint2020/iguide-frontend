@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getCategorySlides } from "./home/categorySlides";
 import { isVerifiedHuarique } from "../engine/huariqueEngine";
 import { getHaversineDistanceKm } from "../engine/itineraryTravelEngine";
 
@@ -343,11 +344,13 @@ function HomeLayout() {
     );
   }
 
-  const nearbyCandidates = [...availableExperiences].sort((a, b) => origin
-    ? getHaversineDistanceKm(origin, a) - getHaversineDistanceKm(origin, b) : 0);
-  const food = nearbyCandidates.filter((item) => ["restaurant", "cafe", "food_route"].includes(item.type));
-  const places = nearbyCandidates.filter((item) => ["expedition", "museum", "craft"].includes(item.type));
-  const surprises = nearbyCandidates.filter((item) => ["expedition", "museum", "craft", "festival", "event"].includes(item.type));
+  const readyIds = new Set(availableExperiences.map((item) => item.experienceId));
+  const category = (matches: (item: Experience) => boolean) =>
+    getCategorySlides(catalog, readyIds, matches).sort((a, b) => origin
+      ? getHaversineDistanceKm(origin, a) - getHaversineDistanceKm(origin, b) : 0);
+  const food = category((item) => ["restaurant", "cafe", "food_route"].includes(item.type));
+  const places = category((item) => ["expedition", "museum", "craft"].includes(item.type));
+  const surprises = category((item) => ["expedition", "museum", "craft", "festival", "event"].includes(item.type));
   const photos: Record<string, string> = {
     "detras-de-la-catedral": "/images/restaurants/detras-de-la-catedral.jpg",
     "el-olimpico": "/images/restaurants/el-olimpico.jpg",
@@ -359,15 +362,18 @@ function HomeLayout() {
     return experiences.map((experience) => {
       const image = photos[experience.slug] ||
         ([experience.image, experience.coverImage].find((value) => value && !/logo|placeholder/i.test(value)) ?? undefined);
+      const ready = readyIds.has(experience.experienceId);
       const distance = origin ? `${getHaversineDistanceKm(origin, experience).toFixed(1)} km` : null;
       return {
         id: experience.experienceId,
         title: experience.title,
-        subtitle: [distance && `${distance} · ${position ? tx("Desde tu ubicación") : tx("Desde tu punto de regreso")}`,
+        subtitle: [!ready && tx("Para otra ocasión · Consulta horarios y condiciones"), distance && `${distance} · ${position ? tx("Desde tu ubicación") : tx("Desde tu punto de regreso")}`,
           experience.description || tx("Descubre este lugar"),
           !origin && tx("Activa tu ubicación para ordenar por cercanía")].filter(Boolean).join(" · "),
         image,
+        actionLabel: ready ? tx("Iniciar misión") : tx("Ver detalles"),
         onClick: () => {
+          if (!ready) { openExperience(experience); return; }
           const eligible = getRecommendations({ profile, location: origin ?? undefined }, { weather: liveWeather, experiences: [experience] });
           if (!eligible.length) { openExperience(experience); return; }
           if (startWalking(experience)) navigate("/journey");
@@ -385,7 +391,7 @@ function HomeLayout() {
       image: cerritoImage, slides: slides(places), onClick: () => openExperience(cornerExperience) },
     { id: "huariques", direction: "left" as const, title: tx("Descubrir huariques"),
       subtitle: tx("Sabores locales con historia, verificados por I.GUIDE"), tone: "magenta" as const,
-      image: pachamancaImage, slides: slides(nearbyCandidates.filter(isVerifiedHuarique)),
+      image: pachamancaImage, slides: slides(category(isVerifiedHuarique)),
       onClick: () => navigate("/mapa?nearby=huariques") },
     { id: "surprise", direction: "down" as const, title: tx("Sorpresa local"),
       subtitle: tx("Algo que Huancayo está viviendo hoy"), tone: "magenta" as const,

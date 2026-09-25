@@ -6,7 +6,7 @@ import "./QuickActionsGrid.css";
 import { getCardSwipeStep } from "./cardSwipe";
 
 type Direction = "up" | "right" | "down" | "left";
-type Slide = { id: string; title: string; subtitle: string; image?: string; onClick: () => void };
+type Slide = { id: string; title: string; subtitle: string; image?: string; actionLabel?: string; onClick: () => void };
 type QuickAction = Slide & { tone: "magenta" | "cyan"; direction: Direction; slides: Slide[] };
 const arrows = { up: ArrowUp, right: ArrowRight, down: ArrowDown, left: ArrowLeft };
 const vectors = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
@@ -97,13 +97,13 @@ function ActionCard({ action }: { action: QuickAction }) {
 function CardFace({ page, isDestination, entering = false }: { page: Slide; isDestination: boolean; entering?: boolean }) {
   const [failed, setFailed] = useState(false);
   return <button type="button" className={`home-action__face${entering ? " home-action__face--entering" : ""}`} onClick={page.onClick}
-    aria-label={isDestination ? `${tx("Iniciar misión")}: ${page.title}` : page.title}>
+    aria-label={isDestination ? `${page.actionLabel ?? tx("Iniciar misión")}: ${page.title}` : page.title}>
     {page.image && !failed && <img className="home-action__image" src={page.image} alt="" draggable={false} onError={() => setFailed(true)} />}
     <span className="home-action__shade" />
     <span className="home-action__content">
       <span className="home-action__title">{page.title}</span>
       <span className="home-action__description">{page.subtitle}</span>
-      {isDestination && <span className="home-action__mission">{tx("Iniciar misión")} →</span>}
+      {isDestination && <span className="home-action__mission">{page.actionLabel ?? tx("Iniciar misión")} →</span>}
       {isDestination && (!page.image || failed) && <span className="home-action__photo-note">{tx("Foto del lugar pendiente")}</span>}
     </span>
   </button>;

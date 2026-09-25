@@ -957,6 +957,7 @@ const en: Record<string, string> = {
   "Descubre este lugar": "Discover this place",
   "Activa tu ubicación para ordenar por cercanía": "Enable location to sort by distance",
   "Siguiente opción": "Next option",
+  "Para otra ocasión · Consulta horarios y condiciones": "For another time · Check hours and conditions",
   "Foto del lugar pendiente": "Photo of this place pending",
   "Sin opciones para iniciar ahora. Prueba otro horario.": "No options to start now. Try another time.",
 };
