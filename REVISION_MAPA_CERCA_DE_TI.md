@@ -36,3 +36,11 @@ QA X8b: comparar ambas rutas; denegar GPS y usar punto de regreso; permitir GPS;
 cambiar radio; revisar hora/clima; abrir detalles e iniciar misión; calles visibles
 al explorar y durante misión; MemoryCard mantiene mapa y atribución al exportar.
 Fotografías faltantes siguen identificadas, no se sustituyen por fotos de otro local.
+
+## Corrección posterior al QA X8b
+
+El Fundador confirmó Cerca de ti, pero el mapa seguía mostrando el aviso de CARTO.
+La revisión anterior omitió la cuarta capa propia de MapPage y el renderizador
+canvas de exportación MemoryCard. Ambos se migran en esta corrección.
+Búsqueda completa de src y bundle compilado sin referencias a cartocdn/CARTO.
+La confirmación de calles en X8b y exportación real continúa pendiente.

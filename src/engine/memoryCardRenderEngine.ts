@@ -345,7 +345,7 @@ async function drawStreetTiles(
     for (let tileX = firstTileX; tileX <= lastTileX; tileX += 1) {
       const wrappedTileX = ((tileX % tileLimit) + tileLimit) % tileLimit;
       const url =
-        `https://a.basemaps.cartocdn.com/light_all/` +
+        `https://tile.openstreetmap.org/` +
         `${projection.zoom}/${wrappedTileX}/${tileY}.png`;
 
       requests.push({
@@ -571,7 +571,7 @@ async function drawFullRouteBackground(
   context.font = "600 10px Arial, sans-serif";
   context.textAlign = "right";
   context.fillText(
-    "© OpenStreetMap · © CARTO",
+    "© OpenStreetMap contributors",
     WIDTH - 18,
     HEIGHT - 12
   );
@@ -720,7 +720,7 @@ async function drawRoutePanel(
   context.font = "600 7px Arial, sans-serif";
   context.textAlign = "right";
   context.fillText(
-    "© OpenStreetMap · © CARTO",
+    "© OpenStreetMap contributors",
     panelX + panelWidth - 6,
     panelY + mapHeight - 5
   );
