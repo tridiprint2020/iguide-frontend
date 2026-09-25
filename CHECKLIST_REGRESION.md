@@ -1,10 +1,10 @@
 # Checklist de regresión de I.GUIDE
 
-**Producción actual:** `main @ 5abd94f`
+**Producción actual:** `main @ 515cd1b`
 
-**Última actualización:** 15 de septiembre de 2026
+**Última actualización:** 25 de septiembre de 2026
 
-**Punto de recuperación anterior:** `dc28ede`
+**Punto de recuperación anterior:** `5abd94f`
 
 ## Para qué existe este archivo
 
@@ -90,7 +90,11 @@ Cada resultado se marca como `PASÓ`, `FALLÓ` o `NO APLICA`.
 - [ ] E3. Sin candidatos aparece un estado seguro con explicación.
 - [ ] E4. Hospes usa hitos urbanos como referencia, no restaurantes.
 - [ ] E5. Home, Explorer, Itinerario y la página de Hospes comparten intención,
-      horario y seguridad; no existe un fallback al catálogo crudo.
+      horario y seguridad al recomendar iniciar ahora. La exploración informativa
+      puede mostrar lugares fuera de horario con aviso y acceso a detalles.
+- [ ] E7. Todo inicio manual pasa por seguridad: riesgo bloquea; horario cerrado,
+      variable o no verificado exige confirmación. Cancelar no activa GPS ni modifica
+      una misión. La planificación previa no se omite mediante esta confirmación.
 - [ ] E6. Con ubicación conocida, candidatos equivalentes se ordenan por cercanía.
 
 ## F. Lo que nunca debe aparecer
@@ -153,7 +157,7 @@ modifica. Debe migrar `priority: "gastronomy"` a
   Fundador. Historias y diseño Instagram siguen pendientes.
 - Taj Mahal, Insomnio House Music y Mr. Juerga poseen horarios, puertas,
   duración, precios y pagos registrados. Deben pasar la prueba X8b antes de
-  entrar en producción.
+  cerrar su validación de campo; su integración no acredita esa prueba.
 - Las tres fiestas ya tienen temporada y evidencia estructuradas. Siguen como
   contenido informativo porque sus celebraciones cambian de hora y ubicación.
 - La telemetría sigue desconectada hasta contar con consentimiento y política.
@@ -167,6 +171,7 @@ modifica. Debe migrar `priority: "gastronomy"` a
 | `2165683` | Clima semanal y reacciones independientes. |
 | `dc28ede` | Ventanas, distancias, atardecer, snapshots y guardado verificado. |
 | `b88540a` | Cada franja del clima abre el itinerario preparado. |
+| `515cd1b` | Integración de 17 commits: catálogo, horarios, enlaces y Home brújula. Autorizada por el Fundador; QA completo del core pendiente. |
 | `5abd94f` | Checklist de regresión incorporado a producción. |
 
 ## Retirado

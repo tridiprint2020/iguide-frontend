@@ -30,6 +30,8 @@ import {
 import { locationTracker } from "../engine/locationTracker";
 import { sensoryFeedbackEngine } from "../engine/sensoryFeedbackEngine";
 import { tx } from "../i18n";
+import { useWeather } from "./WeatherContext";
+import { authorizeMissionStart } from "../engine/missionStartPolicy";
 
 interface JourneyContextType {
   journey: ActiveJourney;
@@ -89,6 +91,7 @@ export function JourneyProvider({
 }: {
   children: ReactNode;
 }) {
+  const { weather, isLoading: weatherLoading, error: weatherError } = useWeather();
   const [journey, setJourney] =
     useState<ActiveJourney>(() => restoreActiveJourney());
 
@@ -252,6 +255,11 @@ export function JourneyProvider({
   function startWalking(
   experience: Experience
 ) {
+  if (!authorizeMissionStart(experience, weatherLoading || weatherError ? null : weather, new Date(), {
+    block: (message) => window.alert(tx(message)),
+    confirm: (message) => window.confirm(tx(message)),
+  })) return false;
+
   /*
    * El sonido se desbloquea dentro
    * del gesto real del usuario.

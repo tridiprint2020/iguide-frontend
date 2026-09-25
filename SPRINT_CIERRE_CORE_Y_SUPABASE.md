@@ -1,6 +1,6 @@
 # Sprint de cierre del core y ruta a Supabase
 
-Fecha: 18/09/2026. Actualizado: 22/09/2026. Responsable técnico: Codex. Auditor: Claude, mediante
+Fecha: 18/09/2026. Actualizado: 25/09/2026. Responsable técnico: Codex. Auditor: Claude, mediante
 evidencia compartida por el Fundador. QA de dispositivo y decisiones: Fundador.
 
 ## Objetivo y alcance
@@ -99,3 +99,15 @@ Pendientes revisión del cambio y comprobación visual.
 Ver `DIAGNOSTICO_P0_1_DESCARTES.md` y el script de reproducción asociado.
 El Fundador solo debe aportar controles que falten para reproducir el caso
 (transporte/ubicación); Codex primero obtiene todo lo posible del código.
+
+## Corte posterior al merge — 25/09/2026
+
+`main @ 515cd1b`: 17 commits integrados por autorización del Fundador,
+producción Vercel exitosa y Home brújula aprobado en X8b. Esto no cierra
+P0-2/3/4: siguen pendientes destinatario ajeno y misión completa en producción.
+Claude confirmó la brecha de inicio manual desde ficha. Corrección candidata:
+puerta común en `startWalking`, seguridad bloqueante y horarios con confirmación
+explícita; planificación previa sigue bloqueando el inicio espontáneo.
+La propuesta mantiene motores compartidos y no altera GPS/llegada ni snapshots.
+Pruebas y evidencia del candidato: `REVISION_P0_INICIO_MISION.md`.
+Supabase permanece HOLD hasta cerrar el core y abrir su etapa.
