@@ -62,7 +62,9 @@ function ActionCard({ action }: { action: QuickAction }) {
       if (!start.current) return;
       if (Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y) > 10) {
         swiped.current = true;
-        event.currentTarget.setPointerCapture(event.pointerId);
+        if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }
       }
     }}
     onPointerUp={(event) => {
@@ -72,7 +74,11 @@ function ActionCard({ action }: { action: QuickAction }) {
       if (step) { swiped.current = true; advance(step < 0); }
     }}
     onPointerCancel={() => { start.current = null; swiped.current = true; }}
-    onLostPointerCapture={() => { start.current = null; }}
+    onLostPointerCapture={(event) => {
+      // Touch capture moves from the child button to this card. The child's
+      // bubbling lostpointercapture must not cancel the card's active swipe.
+      if (event.target === event.currentTarget) start.current = null;
+    }}
     onClickCapture={(event) => {
       if (swiped.current) { event.preventDefault(); event.stopPropagation(); swiped.current = false; }
     }}>
@@ -92,7 +98,7 @@ function CardFace({ page, isDestination, entering = false }: { page: Slide; isDe
   const [failed, setFailed] = useState(false);
   return <button type="button" className={`home-action__face${entering ? " home-action__face--entering" : ""}`} onClick={page.onClick}
     aria-label={isDestination ? `${tx("Iniciar misión")}: ${page.title}` : page.title}>
-    {page.image && !failed && <img className="home-action__image" src={page.image} alt="" onError={() => setFailed(true)} />}
+    {page.image && !failed && <img className="home-action__image" src={page.image} alt="" draggable={false} onError={() => setFailed(true)} />}
     <span className="home-action__shade" />
     <span className="home-action__content">
       <span className="home-action__title">{page.title}</span>
