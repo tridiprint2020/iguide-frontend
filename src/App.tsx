@@ -1,5 +1,7 @@
 import {
   useEffect,
+  lazy,
+  Suspense,
 } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -11,21 +13,19 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import Expedition from "./pages/Expedition";
-import Explorer from "./pages/Explorer";
-import ItineraryPage from "./pages/ItineraryPage";
-import Hospes from "./pages/Hospes";
-import MapPage from "./pages/MapPage";
-import Favorites from "./pages/Favorites";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
+const Expedition = lazy(() => import("./pages/Expedition"));
+const Explorer = lazy(() => import("./pages/Explorer"));
+const ItineraryPage = lazy(() => import("./pages/ItineraryPage"));
+const Hospes = lazy(() => import("./pages/Hospes"));
+const MapPage = lazy(() => import("./pages/MapPage"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const Profile = lazy(() => import("./pages/Profile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 import {
   MainContainer,
 } from "./pages/MainContainer";
 
-import {
-  WalkingView,
-} from "./components/journey/WalkingView";
+const WalkingView = lazy(() => import("./components/journey/WalkingView").then(module => ({ default: module.WalkingView })));
 
 import ActiveJourneyBubble from "./components/journey/ActiveJourneyBubble";
 
@@ -106,12 +106,13 @@ function App() {
    * La suscripción global vuelve a renderizar todas las rutas
    * cuando el usuario cambia entre español e inglés.
    */
-  useTranslation();
+  const { t } = useTranslation();
 
   return (
     <>
       <JourneyUiCoordinator />
 
+      <Suspense fallback={<p role="status" style={{ padding: 24, color: "white" }}>{t("Cargando…")}</p>}>
       <Routes>
         <Route
           path="/"
@@ -174,6 +175,7 @@ function App() {
           element={<NotFound />}
         />
       </Routes>
+      </Suspense>
     </>
   );
 }

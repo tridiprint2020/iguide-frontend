@@ -975,6 +975,7 @@ const en: Record<string, string> = {
   "Elige qué hacer ahora alrededor de tu ubicación": "Choose what to do now around your location",
   "Ubicación y distancia": "Location and distance",
   "Buscando tu ubicación…": "Finding your location\u2026",
+  "Actualizar mi ubicación": "Refresh my location",
   "Usar mi ubicación": "Use my location",
   "Usar mi punto de regreso": "Use my return point",
   "No pudimos obtener tu ubicación. Revisa el permiso o usa tu punto de regreso.": "We could not get your location. Check permission or use your return point.",

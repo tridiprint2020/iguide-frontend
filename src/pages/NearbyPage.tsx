@@ -23,7 +23,7 @@ export default function NearbyPage() {
   const { weather, isLoading, error } = useWeather();
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [radius, setRadius] = useState(1);
-  const [locating, setLocating] = useState(false);
+  const [locating, setLocating] = useState(true);
   const [locationError, setLocationError] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -31,15 +31,26 @@ export default function NearbyPage() {
     return () => window.clearInterval(timer);
   }, []);
   const saved = loadReturnPoint();
+  const [locationRequest, setLocationRequest] = useState(0);
   function locate() {
     setLocationError(false);
-    if (!navigator.geolocation) { setLocationError(true); return; }
     setLocating(true);
+    setLocationRequest(value => value + 1);
+  }
+  useEffect(() => {
+    let active = true;
+    const fail = () => { if (active) { setLocationError(true); setLocating(false); } };
+    if (!navigator.geolocation) {
+      const timer = window.setTimeout(fail, 0);
+      return () => { active = false; window.clearTimeout(timer); };
+    }
     navigator.geolocation.getCurrentPosition(({ coords }) => {
+      if (!active) return;
       setOrigin({ latitude: coords.latitude, longitude: coords.longitude, source: "gps" });
       setLocating(false);
-    }, () => { setLocationError(true); setLocating(false); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
-  }
+    }, fail, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    return () => { active = false; };
+  }, [locationRequest]);
   const ready = getRecommendations({ profile: loadUserProfile() }, { weather: isLoading || error ? null : weather, currentDate: now });
   const readyIds = new Set(ready.map(item => item.experienceId));
   const nearby = origin ? withinNearbyRadius(catalog.filter(item => item.isActive !== false && item.type !== "hotel"), origin, radius) : [];
@@ -61,10 +72,10 @@ export default function NearbyPage() {
     <nav><Link to="/">← {tx("Inicio")}</Link><Link to="/mapa">{tx("Explorar el mapa")} →</Link></nav>
     <header><h1>{tx("Cerca de ti")}</h1><p>{tx("Elige qué hacer ahora alrededor de tu ubicación")}</p></header>
     <section className="nearby-controls" aria-label={tx("Ubicación y distancia")}>
-      <button onClick={locate} disabled={locating}>{tx(locating ? "Buscando tu ubicación…" : "Usar mi ubicación")}</button>
-      {saved && <button disabled={locating} onClick={() => { setLocationError(false); setOrigin({ latitude: saved.lat, longitude: saved.lng, source: "return" }); }}>{tx("Usar mi punto de regreso")}</button>}
+      {locating ? <p role="status">{tx("Buscando tu ubicación…")}</p> : <button onClick={locate}>{tx("Actualizar mi ubicación")}</button>}
+      {saved && !locating && (locationError || origin?.source === "return") && <button disabled={locating} onClick={() => { setLocationError(false); setOrigin({ latitude: saved.lat, longitude: saved.lng, source: "return" }); }}>{tx("Usar mi punto de regreso")}</button>}
       {locationError && <p role="alert">{tx("No pudimos obtener tu ubicación. Revisa el permiso o usa tu punto de regreso.")}</p>}
-      {!origin && <p>{tx("Elige un punto de partida para encontrar lugares cercanos.")}</p>}
+      {!origin && !locating && <p>{tx("Elige un punto de partida para encontrar lugares cercanos.")}</p>}
       {origin && <><p>{tx(origin.source === "gps" ? "Desde tu ubicación" : "Desde tu punto de regreso")}</p>
         <div className="nearby-radii">{[1,3,5].map(km => <button key={km} aria-pressed={radius === km} onClick={() => setRadius(km)}>{km} km</button>)}</div></>}
     </section>

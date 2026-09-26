@@ -1,3 +1,4 @@
+import { latLng } from "leaflet";
 import NearbyPage from "./NearbyPage";
 import {
   useEffect,
@@ -1699,7 +1700,8 @@ function MapExplorerPage() {
         <MapContainer
           ref={mapRef}
           center={center}
-          zoom={18}
+          bounds={latLng(center[0], center[1]).toBounds(60000)}
+          boundsOptions={{ padding: [16, 16] }}
           preferCanvas
           zoomControl
           scrollWheelZoom
@@ -1719,7 +1721,7 @@ function MapExplorerPage() {
 
           <UserLocationLayer
             initialZoom={18}
-            radiusMeters={200}
+            radiusMeters={30000}
           />
 
           {returnPoint && (
