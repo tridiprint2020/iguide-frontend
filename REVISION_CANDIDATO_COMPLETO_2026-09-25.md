@@ -38,3 +38,14 @@ las rutas diferidas incluyendo enlace directo, volver, misión y MemoryCard.
 Pendiente QA P0: cerro nocturno bloquea; cerrado confirma; cancelar conserva;
 aceptar inicia; abierto inicia. Suite no sustituye recorrido de campo completo.
 GO de Claude para d5a87b1 no se extiende automáticamente a esta nueva entrega.
+
+## Ajuste solicitado 28/09/2026 (posterior a 84c0640)
+
+Sustituye la especificación de 30 km: Mapa explora 10 km de radio (bounds 20 km
+más radiusMeters 10000). Cerca de ti añade Leaflet con radio inicial fijo 1 km,
+GPS o punto de regreso explícitamente identificado, pines del catálogo en ese
+radio y detalles. Las tarjetas conservan orden por distancia dentro de cada grupo
+y selección 1/3/5 km. El mapa conserva 1 km al ampliar la lista, indicado en su título.
+No hay una segunda solicitud GPS; utiliza el mismo origen de Cerca de ti.
+Build y lint de los dos componentes pasan. No se repitió la suite de 98 pruebas
+para este ajuste de presentación. QA visual del nuevo mapa X8b pendiente.

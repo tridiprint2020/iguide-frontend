@@ -975,6 +975,7 @@ const en: Record<string, string> = {
   "Elige qué hacer ahora alrededor de tu ubicación": "Choose what to do now around your location",
   "Ubicación y distancia": "Location and distance",
   "Buscando tu ubicación…": "Finding your location\u2026",
+  "Mapa cercano · radio de 1 km": "Nearby map · 1 km radius",
   "Actualizar mi ubicación": "Refresh my location",
   "Usar mi ubicación": "Use my location",
   "Usar mi punto de regreso": "Use my return point",

@@ -1,3 +1,6 @@
+import { latLng } from "leaflet";
+import { MapContainer, TileLayer, Circle, CircleMarker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { catalog } from "../data/catalog";
@@ -79,6 +82,31 @@ export default function NearbyPage() {
       {origin && <><p>{tx(origin.source === "gps" ? "Desde tu ubicación" : "Desde tu punto de regreso")}</p>
         <div className="nearby-radii">{[1,3,5].map(km => <button key={km} aria-pressed={radius === km} onClick={() => setRadius(km)}>{km} km</button>)}</div></>}
     </section>
+    {origin && <section aria-label={tx("Mapa cercano · radio de 1 km")}>
+      <h2>{tx("Mapa cercano · radio de 1 km")}</h2>
+      <div className="nearby-map">
+        <MapContainer key={`${origin.latitude}:${origin.longitude}:${origin.source}`}
+          bounds={latLng(origin.latitude, origin.longitude).toBounds(2000)}
+          boundsOptions={{ padding: [12, 12] }} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+          <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxNativeZoom={19} maxZoom={20}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+          <Circle center={[origin.latitude, origin.longitude]} radius={1000}
+            pathOptions={{ color: "#00bacd", weight: 1, fillOpacity: 0.04 }} interactive={false} />
+          <CircleMarker center={[origin.latitude, origin.longitude]} radius={9}
+            pathOptions={{ color: "#fff", fillColor: "#00cee5", fillOpacity: 1, weight: 3 }}>
+            <Popup>{tx(origin.source === "gps" ? "Desde tu ubicación" : "Desde tu punto de regreso")}</Popup>
+          </CircleMarker>
+          {nearby.filter(item => item.distance <= 1).map(({ experience, distance }) =>
+            <CircleMarker key={experience.experienceId} center={[experience.latitude, experience.longitude]} radius={7}
+              pathOptions={{ color: "#fff", fillColor: readyIds.has(experience.experienceId) ? "#e600b8" : "#727681", fillOpacity: 1, weight: 2 }}>
+              <Popup><strong>{experience.title}</strong><p>{Math.round(distance * 1000)} m · {tx("Distancia en línea recta")}</p>
+                <p>{tx(readyIds.has(experience.experienceId) ? "Disponible según horario y condiciones" : "Consulta horarios y condiciones antes de salir")}</p>
+                <Link to={`/expedition/${experience.slug}`}>{tx("Ver detalles")}</Link>
+              </Popup>
+            </CircleMarker>)}
+        </MapContainer>
+      </div>
+    </section>}
     {origin && <>
       {!available.length && <p role="status">{tx("No hay opciones para iniciar ahora en este radio. Amplía la distancia o consulta opciones para otra ocasión.")}</p>}
       {groups.map(group => {

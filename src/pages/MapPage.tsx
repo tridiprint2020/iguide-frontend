@@ -1700,7 +1700,7 @@ function MapExplorerPage() {
         <MapContainer
           ref={mapRef}
           center={center}
-          bounds={latLng(center[0], center[1]).toBounds(60000)}
+          bounds={latLng(center[0], center[1]).toBounds(20000)}
           boundsOptions={{ padding: [16, 16] }}
           preferCanvas
           zoomControl
@@ -1721,7 +1721,7 @@ function MapExplorerPage() {
 
           <UserLocationLayer
             initialZoom={18}
-            radiusMeters={30000}
+            radiusMeters={10000}
           />
 
           {returnPoint && (
