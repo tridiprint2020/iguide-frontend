@@ -1,3 +1,5 @@
+import { useAppBack } from "../hooks/useAppBack";
+import PageHeader from "../components/ui/PageHeader";
 import {
   useEffect,
   useMemo,
@@ -72,7 +74,7 @@ import type {
   SavedItineraryPlan,
 } from "../types/itinerary";
 
-import logoIG from "../assets/branding/logo-dark-bg.png";
+
 
 import {
   Theme,
@@ -271,6 +273,7 @@ function Chip({
 
 function ItineraryPage() {
   const navigate = useNavigate();
+  const { detailState } = useAppBack();
   const profile = useMemo(
     () => loadUserProfile(),
     []
@@ -896,46 +899,7 @@ function ItineraryPage() {
         }}
       >
         {/* ENCABEZADO */}
-        <header
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "14px",
-            marginBottom: "15px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            style={{
-              minHeight: "40px",
-              padding: "8px 14px",
-              borderRadius: "12px",
-              border:
-                "1px solid rgba(255,255,255,0.10)",
-              background:
-                "rgba(255,255,255,0.06)",
-              color: Theme.Colors.text,
-              fontSize: "12px",
-              fontWeight: 750,
-              cursor: "pointer",
-            }}
-          >
-            ← {tx("Inicio")}
-          </button>
-
-          <img
-            src={logoIG}
-            alt="I.GUIDE"
-            style={{
-              width: "72px",
-              maxHeight: "48px",
-              objectFit: "contain",
-              display: "block",
-            }}
-          />
-        </header>
+        <PageHeader />
 
         {/* TÍTULO */}
         <div
@@ -1445,7 +1409,7 @@ function ItineraryPage() {
             <ItineraryPlanResult
               plan={plan}
               onStart={(slug) =>
-                navigate(`/expedition/${slug}`)
+                navigate(`/expedition/${slug}`, {state:detailState})
               }
               onReplace={handleReplace}
             />

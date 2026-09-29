@@ -1,3 +1,6 @@
+import { useAppBack } from "../hooks/useAppBack";
+import { readBrowseTypes } from "../engine/navigationPolicy";
+import PageHeader from "../components/ui/PageHeader";
 import { latLng } from "leaflet";
 import NearbyPage from "./NearbyPage";
 import {
@@ -292,7 +295,8 @@ function buildExperienceSearchText(
 
 function MapExplorerPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { detailState } = useAppBack();
+  const [searchParams, setSearchParams] = useSearchParams();
   const foodNearbyMode =
     searchParams.get("nearby") === "food";
   const huariqueNearbyMode =
@@ -307,19 +311,19 @@ function MapExplorerPage() {
 
   const [activeFilters, setActiveFilters] =
     useState<ExperienceType[]>(() =>
-      foodNearbyMode
+      searchParams.has("types") ? readBrowseTypes(searchParams) as ExperienceType[] : foodNearbyMode
         ? ["restaurant", "cafe"]
         : []
     );
 
   const [onlyFavorites, setOnlyFavorites] =
-    useState(false);
+    useState(searchParams.get("favorites") === "1");
 
   const [onlyUnvisited, setOnlyUnvisited] =
-    useState(false);
+    useState(searchParams.get("unvisited") === "1");
 
   const [onlyHuariques, setOnlyHuariques] =
-    useState(huariqueNearbyMode);
+    useState(huariqueNearbyMode || searchParams.get("huariques") === "1");
 
   /*
    * Los recuerdos se cargan solo cuando el usuario los pide.
@@ -327,7 +331,7 @@ function MapExplorerPage() {
    * y reduce de forma visible la latencia inicial.
    */
   const [showMemories, setShowMemories] =
-    useState(false);
+    useState(searchParams.get("memories") === "1");
 
   const [shareOpen, setShareOpen] =
     useState(false);
@@ -339,7 +343,16 @@ function MapExplorerPage() {
     useState<Experience | null>(null);
 
   const [searchQuery, setSearchQuery] =
-    useState("");
+    useState(searchParams.get("q") ?? "");
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    next.set("types", activeFilters.join(","));
+    for (const [key, value] of Object.entries({q:searchQuery, favorites:onlyFavorites ? "1":"", unvisited:onlyUnvisited ? "1":"", huariques:onlyHuariques ? "1":"", memories:showMemories ? "1":""})) {
+      if(value) next.set(key,value); else next.delete(key);
+    }
+    if (next.toString() !== searchParams.toString()) setSearchParams(next, {replace:true});
+  }, [activeFilters, searchQuery, onlyFavorites, onlyUnvisited, onlyHuariques, showMemories, searchParams, setSearchParams]);
 
   const [returnPoint] =
     useState(() => loadReturnPoint());
@@ -912,55 +925,7 @@ function MapExplorerPage() {
         color: Theme.Colors.text,
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent:
-            "space-between",
-          alignItems: "center",
-          gap: "12px",
-          maxWidth: "1240px",
-          margin: "0 auto 12px",
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          style={{
-            minHeight: "38px",
-            padding: "8px 13px",
-            display: "flex",
-            alignItems: "center",
-            gap: "7px",
-            borderRadius: "12px",
-            border:
-              "1px solid rgba(255,255,255,0.11)",
-            background:
-              "rgba(255,255,255,0.05)",
-            color: Theme.Colors.text,
-            fontSize: "12px",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          <House
-            size={16}
-            strokeWidth={2.1}
-          />
-          {tx("Inicio")}
-        </button>
-
-        <img
-          src={logoIG}
-          alt="I.GUIDE"
-          style={{
-            width: "67px",
-            maxHeight: "48px",
-            objectFit: "contain",
-            display: "block",
-          }}
-        />
-      </div>
+      <PageHeader />
 
       <header
         style={{
@@ -1841,7 +1806,7 @@ function MapExplorerPage() {
                       }
                       onViewDetails={() =>
                         navigate(
-                          `/expedition/${experience.slug}`
+                          `/expedition/${experience.slug}`, { state: detailState }
                         )
                       }
                     />

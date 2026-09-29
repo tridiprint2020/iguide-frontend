@@ -1,3 +1,4 @@
+import PageHeader from "../components/ui/PageHeader";
 import {
   useState,
 } from "react";
@@ -64,7 +65,7 @@ import type {
   MemoryCardData,
 } from "../types/memoryCard";
 
-import logoIG from "../assets/branding/logo-dark-bg.png";
+
 import { tx } from "../i18n";
 
 const CYAN = "#39E7FF";
@@ -532,93 +533,7 @@ function Expedition() {
             "0 auto",
         }}
       >
-        <header
-          style={{
-            minHeight:
-              "48px",
-            display:
-              "flex",
-            alignItems:
-              "center",
-            justifyContent:
-              "space-between",
-            gap: "10px",
-            marginBottom:
-              "10px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/")
-            }
-            style={{
-              minHeight:
-                "38px",
-              padding:
-                "8px 12px",
-              borderRadius:
-                "12px",
-              border:
-                "1px solid rgba(255,255,255,0.10)",
-              background:
-                "rgba(255,255,255,0.045)",
-              color:
-                "#FFFFFF",
-              fontSize:
-                "11px",
-              fontWeight:
-                750,
-              cursor:
-                "pointer",
-            }}
-          >
-            ← {tx("Inicio")}
-          </button>
-
-          <img
-            src={logoIG}
-            alt="I.GUIDE"
-            style={{
-              width: "58px",
-              maxHeight:
-                "38px",
-              objectFit:
-                "contain",
-            }}
-          />
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate(
-                "/explorer"
-              )
-            }
-            style={{
-              minHeight:
-                "38px",
-              padding:
-                "8px 12px",
-              borderRadius:
-                "12px",
-              border:
-                "1px solid rgba(255,255,255,0.10)",
-              background:
-                "rgba(255,255,255,0.045)",
-              color:
-                "rgba(255,255,255,0.72)",
-              fontSize:
-                "11px",
-              fontWeight:
-                700,
-              cursor:
-                "pointer",
-            }}
-          >
-            {tx("Explorar")}
-          </button>
-        </header>
+        <PageHeader contextual />
 
         {/* BLOQUE PRINCIPAL COMPACTO: lugar + Hospes + acción */}
         <section

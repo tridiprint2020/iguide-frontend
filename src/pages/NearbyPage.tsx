@@ -1,8 +1,10 @@
+import { useAppBack } from "../hooks/useAppBack";
+import PageHeader from "../components/ui/PageHeader";
 import { latLng } from "leaflet";
 import { MapContainer, TileLayer, Circle, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { catalog } from "../data/catalog";
 import { loadUserProfile } from "../data/user";
 import { loadReturnPoint } from "../engine/returnPointEngine";
@@ -22,10 +24,13 @@ const groups = [
 ];
 export default function NearbyPage() {
   const navigate = useNavigate();
+  const { detailState } = useAppBack();
   const { startWalking } = useJourney();
   const { weather, isLoading, error } = useWeather();
   const [origin, setOrigin] = useState<Origin | null>(null);
-  const [radius, setRadius] = useState(1);
+  const [params, setParams] = useSearchParams();
+  const radius = [1,3,5].includes(Number(params.get("radius"))) ? Number(params.get("radius")) : 1;
+  const setRadius = (km:number) => { const next = new URLSearchParams(params); next.set("radius",String(km)); setParams(next,{replace:true}); };
   const [locating, setLocating] = useState(true);
   const [locationError, setLocationError] = useState(false);
   const [now, setNow] = useState(() => new Date());
@@ -67,12 +72,12 @@ export default function NearbyPage() {
       <p className="nearby-distance">{distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} · {tx("Distancia en línea recta")}</p>
       <p>{tx(immediate ? "Disponible según horario y condiciones" : "Consulta horarios y condiciones antes de salir")}</p>
       <NearbyPlaceCard experience={experience} primaryActionLabel={tx(immediate ? "Iniciar misión" : "Ver detalles")}
-        onPrimaryAction={() => immediate ? begin(experience) : navigate(`/expedition/${experience.slug}`)}
-        onViewDetails={() => navigate(`/expedition/${experience.slug}`)} />
+        onPrimaryAction={() => immediate ? begin(experience) : navigate(`/expedition/${experience.slug}`, {state:detailState})}
+        onViewDetails={() => navigate(`/expedition/${experience.slug}`, {state:detailState})} />
     </article>)}</div>;
   }
   return <main className="nearby-page">
-    <nav><Link to="/">← {tx("Inicio")}</Link><Link to="/mapa">{tx("Explorar el mapa")} →</Link></nav>
+    <PageHeader mapHref="/mapa" />
     <header><h1>{tx("Cerca de ti")}</h1><p>{tx("Elige qué hacer ahora alrededor de tu ubicación")}</p></header>
     <section className="nearby-controls" aria-label={tx("Ubicación y distancia")}>
       {locating ? <p role="status">{tx("Buscando tu ubicación…")}</p> : <button onClick={locate}>{tx("Actualizar mi ubicación")}</button>}
@@ -101,7 +106,7 @@ export default function NearbyPage() {
               pathOptions={{ color: "#fff", fillColor: readyIds.has(experience.experienceId) ? "#e600b8" : "#727681", fillOpacity: 1, weight: 2 }}>
               <Popup><strong>{experience.title}</strong><p>{Math.round(distance * 1000)} m · {tx("Distancia en línea recta")}</p>
                 <p>{tx(readyIds.has(experience.experienceId) ? "Disponible según horario y condiciones" : "Consulta horarios y condiciones antes de salir")}</p>
-                <Link to={`/expedition/${experience.slug}`}>{tx("Ver detalles")}</Link>
+                <Link to={`/expedition/${experience.slug}`} state={detailState}>{tx("Ver detalles")}</Link>
               </Popup>
             </CircleMarker>)}
         </MapContainer>

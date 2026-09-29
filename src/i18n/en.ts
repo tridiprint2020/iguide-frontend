@@ -4,6 +4,13 @@
  * allowing the whole interface to share one central dictionary.
  */
 const en: Record<string, string> = {
+  "Ver en mapa": "View on map",
+  "No hay lugares con estos filtros.": "No places match these filters.",
+  "Buscar lugares": "Search places",
+  "Elige una categoría y encuentra tu próxima experiencia.": "Choose a category and find your next experience.",
+  "Descubre Huancayo": "Discover Huancayo",
+  "Explorar por categoría": "Explore by category",
+  "Navegación de página": "Page navigation",
   "Hospes · brújula de I.GUIDE": "Hospes · I.GUIDE compass",
   "Sonidos y vibración": "Sounds and vibration",
   "Respuesta sutil al iniciar, guardar una foto y llegar.": "Subtle feedback when starting, saving a photo and arriving.",

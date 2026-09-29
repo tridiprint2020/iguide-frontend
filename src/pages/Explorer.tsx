@@ -1,3 +1,4 @@
+import PageHeader from "../components/ui/PageHeader";
 import {
   useState,
 } from "react";
@@ -37,7 +38,7 @@ import {
   useWeather,
 } from "../context/WeatherContext";
 
-import MapView from "../components/MapView";
+import ExplorerCatalog from "../components/ExplorerCatalog";
 
 import {
   NameCaptureModal,
@@ -47,7 +48,7 @@ import type {
   UserProfile,
 } from "../types/user/user";
 
-import logoIG from "../assets/branding/logo-dark-bg.png";
+
 import type {
   HospesMessage,
 } from "../types/hospes";
@@ -84,7 +85,6 @@ function Explorer() {
     useNavigate();
 
   const {
-    resetToHome,
     startWalking,
   } = useJourney();
 
@@ -213,15 +213,6 @@ const hospesBannerMessage:
     navigate(action.target);
   }
 
-  function handleGoHome() {
-    /*
-     * Cambia únicamente la pantalla visible.
-     * La misión persistida podrá retomarse
-     * mediante la burbuja global.
-     */
-    resetToHome();
-    navigate("/");
-  }
 
   return (
     <main
@@ -249,65 +240,8 @@ const hospesBannerMessage:
         }}
       >
         {/* ÚNICO ENCABEZADO */}
-        <header
-          style={{
-            display: "flex",
-
-            justifyContent:
-              "space-between",
-
-            alignItems: "center",
-
-            gap: "14px",
-
-            marginBottom: "15px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleGoHome}
-            style={{
-              minHeight: "40px",
-
-              padding:
-                "8px 14px",
-
-              borderRadius:
-                "12px",
-
-              border:
-                "1px solid rgba(255,255,255,0.10)",
-
-              background:
-                "rgba(255,255,255,0.06)",
-
-              color:
-                Theme.Colors.text,
-
-              fontSize: "12px",
-
-              fontWeight: 750,
-
-              cursor: "pointer",
-            }}
-          >
-            ← {tx("Inicio")}
-          </button>
-
-          <img
-            src={logoIG}
-            alt="I.GUIDE"
-            style={{
-              width: "72px",
-
-              maxHeight: "48px",
-
-              objectFit: "contain",
-
-              display: "block",
-            }}
-          />
-        </header>
+        <PageHeader />
+        <ExplorerCatalog />
 
         {/* B) NOTA DE HOSPES */}
         <div
@@ -508,11 +442,9 @@ const hospesBannerMessage:
           </div>
         </section>
 
-        <MapView
-          track={null}
-        />
 
-        {/* D) BOTÓN SORPRÉNDEME DEBAJO DEL MAPA */}
+
+        {/* D) BOTÓN SORPRÉNDEME DEBAJO DEL CATÁLOGO */}
         <div
           style={{
             marginTop: "14px",

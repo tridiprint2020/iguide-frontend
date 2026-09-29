@@ -1,0 +1,6 @@
+.page-header { width:100%; max-width:1240px; min-height:52px; margin:0 auto 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; box-sizing:border-box; }
+.page-header button,.page-header a { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:8px 12px; border:1px solid #ffffff24; border-radius:12px; background:#ffffff0a; color:#fff; font:inherit; font-size:12px; font-weight:700; text-decoration:none; cursor:pointer; box-sizing:border-box; }
+.page-header button:hover,.page-header a:hover { border-color:#ec2ec7; box-shadow:0 0 12px #ec2ec733; }
+.page-header :focus-visible { outline:2px solid #00def2; outline-offset:3px; }
+.page-header__right { display:flex; align-items:center; gap:10px; }
+.page-header img { width:64px; height:40px; object-fit:contain; }
