@@ -1,4 +1,13 @@
-.nearby-page { max-width:1100px; margin:auto; padding:24px 18px 80px; color:#fff; }
+.nearby-page {
+  width:100%;
+  min-height:100svh;
+  box-sizing:border-box;
+  margin:0;
+  padding:24px max(18px, calc((100% - 1064px) / 2)) 80px;
+  color:#fff;
+  background:radial-gradient(circle at 50% -10%, rgba(255,0,255,0.10), transparent 34%), #090a12;
+}
+.nearby-page h1, .nearby-page h2 { color:#fff; }
 .nearby-page nav { display:flex; justify-content:space-between; gap:16px; }
 .nearby-page a { color:#00dff5; }
 .nearby-page header { margin:32px 0; }
