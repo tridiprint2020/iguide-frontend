@@ -1,7 +1,91 @@
 # Sprint de cierre del core y ruta a Supabase
 
-Fecha: 18/09/2026. Actualizado: 25/09/2026. Responsable técnico: Codex. Auditor: Claude, mediante
+Fecha: 18/09/2026. Actualizado: 13/10/2026. Responsable técnico: Codex. Auditor: Claude, mediante
 evidencia compartida por el Fundador. QA de dispositivo y decisiones: Fundador.
+
+## Plan vigente tras la revisión de Claude del 13/10/2026
+
+Main confirmado: `4d1c6c80cf33fe9e6447d12fd6ddbdea04050244`.
+Las secciones de septiembre que siguen se conservan como historial; esta
+secuencia sustituye sus pendientes de producción ya integrados. El backend
+sigue HOLD. No hay autorización de compra o de activación de servicios por
+publicar este plan.
+
+Hasta cerrar el acta T1, solo entran correcciones de defectos a `main`,
+con alcance completo declarado, revisión y autorización. T0 no implementa T6.
+
+| Paso | Entrega y cierre | Esfuerzo orientativo |
+| --- | --- | --- |
+| T0 | Reconciliar checklist y corregir `/hospes`: estado honesto, sin formulario simulado ni reservas prometidas; clima fallido no se presenta como confirmado. | 0.5–1 día técnico |
+| T1 | Acta en producción: misión/GPS/foto/MemoryCard/suspensión, puerta de seguridad, planes antiguos y apertura por destinatario ajeno. No repetir pantallas ya aprobadas salvo cambios que las afecten. | 1–2 días de trabajo coordinado |
+| T2 | Contrato de datos: finalidades, acceso, conservación, eliminación y aviso/consentimiento según uso. Distinguir aporte, medición y reserva. | 2–3 días; decisiones externas aparte |
+| T2b | Habilitación comercial: plan real de Vercel, clima/licencia/atribución, mapas/capacidad, privacidad y términos. Decidir Analytics suspendido o autorizado según contrato. Definir vendedor, comprobante, responsabilidades y cancelación antes del cobro. | 2–5 días de trabajo; trámites y proveedores sin plazo garantizado |
+| T3 | Entorno Supabase activo, permisos y separación de edición/publicación. Confirmar estado del proyecto cuyo aviso de pausa reportó el Fundador. | 1–2 días técnicos |
+| T4 | Enlace corto con lector legacy, errores/caducidad y acceso público comprobados. | 2–3 días técnicos |
+| T5 reducido | Pistas y correcciones públicas solo tras comprobación. Opiniones sobre negocios y candidatos nuevos quedan internos en beta. Recibo real, borrador ante fallo, límites, duplicados y revisión restringida. | 2–3 días técnicos |
+| T6 | Preguntas guiadas sobre datos locales aprobados, con fuente, fecha y falta de confirmación explícita. RAG abierto después. | 2–4 días técnicos |
+| T7 | Pruebas pertinentes, diff acumulado, alcance, presupuesto por SHA y QA afectado. GO técnico y acta de campo son evidencias distintas. | 1–2 días por liberación; incluidos en el cálculo de beta |
+
+## Criterios adicionales de T5
+
+- El texto de terceros se muestra como texto escapado. No ejecutar HTML,
+  scripts, eventos ni URLs incrustadas; probar payloads maliciosos también en
+  la bandeja interna. No usar `dangerouslySetInnerHTML` para los aportes.
+- Validar tipo, lugar y longitud tanto en cliente como en servidor; máximo
+  propuesto 500 caracteres. Fijar en la SPEC el límite de frecuencia y la
+  clave de control permitida por T2; reintentos idempotentes y duplicados no
+  crean dos aportes. Un control exclusivamente local no basta.
+- Opiniones privadas no aparecen en consultas públicas ni en la memoria de
+  recomendaciones. El acceso es exclusivo de los revisores autorizados.
+- Antes de publicar opiniones: política escrita, criterios de moderación,
+  correcciones y réplica; ningún pago compra la retirada de información válida.
+- GPS y XP no acreditan compra, calidad ni veracidad de un aporte. No hay
+  subida automática de fotos ni recorridos.
+
+## Carril comercial paralelo sin esperar al backend
+
+**C0:** un taller con anfitrión, costos y ensayo comprobados, solicitud,
+confirmación, cobro y coordinación manual por WhatsApp. Christian valida
+quién vende, emite comprobante, recibe dinero y responde por la actividad.
+La consulta sobre registro y obligaciones aplicables, y la cancelación, son
+condiciones previas al cobro. Hablar con anfitriones y costear empieza ahora;
+una pasarela, panel o reserva automática no son requisitos para ese ensayo.
+
+**C1:** un hotel y una oferta de concierge/QR después de entregar y liquidar
+el primer C0. Medir un resultado atribuible antes de prometer un reporte de
+visitas/canjes o una cuota por resultados. No depender de métricas que todavía
+no se recopilan ni vender el ranking editorial de Hospes.
+
+## Calendario actualizado y presupuesto
+
+Los 2–4 días describen esfuerzo para cerrar QA, no habilitación comercial.
+La beta T3/T4/T5 requiere T1/T2 y la habilitación T2b aplicable a su uso.
+Mantener 7–10 días laborales de implementación y revisión como estimación,
+añadir una semana de margen y revisar fechas con disponibilidad humana. Como
+meta de referencia, desplazar la beta del 27–30 de octubre al 2–6 de noviembre.
+C0 corre en paralelo; las fechas de permisos, anfitriones y demanda no se
+garantizan. Primera entrega pagada y repetición se evalúan por evidencias.
+
+No usar US$280/año como total confirmado. Vercel Pro publica US$20/mes con
+un asiento de despliegue y crédito de uso incluidos; asientos adicionales,
+consumo e impuestos pueden añadir costo. El plan de esta cuenta no está
+confirmado. Open-Meteo Standard permite uso comercial y 1M llamadas/mes,
+pero su importe no se confirma con la página recuperada. Cotizar mapas;
+OSM no obliga universalmente a usar un proveedor pago. Supabase, dominio,
+pasarela y operación necesitan un presupuesto elegido y vigente.
+
+Web primero; PWA, Play Store y aplicación nativa tienen SPEC propia. Un
+service worker no convierte una PWA en GPS continuo en segundo plano ni
+autoriza descargar tiles en masa. R5, premios y Guardianes siguen fuera
+de este primer candidato.
+
+Fuentes oficiales consultadas el 13/10/2026:
+- https://vercel.com/docs/plans/hobby
+- https://vercel.com/docs/plans/pro-plan
+- https://open-meteo.com/en/pricing
+- https://operations.osmfoundation.org/policies/tiles/
+
+## Historial de septiembre de 2026
 
 ## Objetivo y alcance
 

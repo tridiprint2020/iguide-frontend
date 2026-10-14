@@ -1,10 +1,15 @@
 # Checklist de regresión de I.GUIDE
 
-**Producción actual:** `main @ 515cd1b`
+**Producción actual verificada:** `main @ 4d1c6c80cf33fe9e6447d12fd6ddbdea04050244`
 
-**Última actualización:** 25 de septiembre de 2026
+**Última actualización documental:** 13 de octubre de 2026
 
-**Punto de recuperación anterior:** `5abd94f`
+**Punto de recuperación de la integración anterior:** `515cd1b`
+
+Hasta cerrar el acta de T1, `main` solo recibe correcciones de defectos
+revisadas y autorizadas. Cada entrega declara el alcance completo antes de
+la auditoría. Esta revisión del checklist no marca pruebas de campo como
+aprobadas ni integra automáticamente el candidato T0.
 
 ## Para qué existe este archivo
 
@@ -26,6 +31,8 @@ Cada resultado se marca como `PASÓ`, `FALLÓ` o `NO APLICA`.
 - [ ] A10. Se genera y se ve la MemoryCard.
 - [ ] A11. No hay puntuaciones opacas como `83/100` o `score`.
 - [ ] A12. Una ruta inexistente muestra la página 404.
+- [ ] A13. `/hospes` declara su capacidad actual, sin simular conversación ni
+      prometer reservas. Si el clima falla, no presenta respaldo como clima confirmado.
 
 > A5 y A6 protegen datos y enlaces existentes. Si fallan, no existe GO
 > condicionado: el preview es NO GO.
@@ -118,7 +125,9 @@ git diff --stat main..HEAD -- package-lock.json
 - [ ] G2. Lint en el baseline: 11 errores y 5 warnings, ninguno nuevo.
 - [ ] G3. Todos los tests están verdes.
 - [ ] G4. `package-lock.json` está intacto.
-- [ ] G5. El bundle aumenta menos de 15 kB gzip.
+- [ ] G5. El incremento del bundle respeta el presupuesto vigente de menos
+      de 15 kB gzip contra un SHA base explícito. Publicar carga inicial con
+      dependencias precargadas y JS total por separado; no comparar solo `index`.
 - [ ] G6. AR, telemetría, Supabase, `mediaStorage`, `trackingEngine` y el motor
       de migración permanecen intactos salvo autorización expresa.
 - [ ] G7. La rama nace de `main`, permite fast-forward y no tiene ancestría AR.
@@ -148,10 +157,12 @@ modifica. Debe migrar `priority: "gastronomy"` a
 
 ## Pendientes conocidos
 
-- El enlace del itinerario funciona, pero es demasiado largo.
+- La compactación local del enlace está integrada. El enlace corto remoto y
+  la apertura por un destinatario sin sesión de Vercel siguen pendientes de cierre.
 - `reaction` y `reactions` todavía conviven en `UserFavorite`.
 - El baseline contiene 11 errores y 5 warnings de lint heredados.
-- El bundle necesita división de código.
+- La carga diferida por rutas y WalkingView ya está integrada. Queda mantener
+  mediciones comparables de carga inicial real y JS total por SHA.
 - Los Guardianes aún no están integrados.
 - Huariques v1 contiene cinco locales y la Ruta del lechón con evidencia del
   Fundador. Historias y diseño Instagram siguen pendientes.
@@ -161,6 +172,24 @@ modifica. Debe migrar `priority: "gastronomy"` a
 - Las tres fiestas ya tienen temporada y evidencia estructuradas. Siguen como
   contenido informativo porque sus celebraciones cambian de hora y ubicación.
 - La telemetría sigue desconectada hasta contar con consentimiento y política.
+- El chat honesto de `/hospes` se prepara en T0; antes de su integración,
+  producción todavía conserva la respuesta simulada del corte `4d1c6c8`.
+
+## T2b. Habilitación comercial — pendiente
+
+- [ ] Plan real de Vercel confirmado por el propietario; Hobby no permite uso
+      comercial. Aprobar plan/costo antes de operar comercialmente.
+- [ ] API de clima apta para uso comercial y atribución Open-Meteo visible;
+      comprobar costo, crédito de datos y modificaciones, sin exponer claves privilegiadas.
+- [ ] Mapas: política, atribución, capacidad y proveedor acordados. OSM no
+      impone universalmente un proveedor pago ni define un umbral numérico de uso.
+- [ ] Páginas de privacidad y términos publicadas y accesibles. Analytics debe
+      estar identificado; decidir suspensión o activación según el contrato de datos.
+- [ ] Vendedor, comprobante, responsabilidades y cancelación definidos antes
+      de cobrar; resolver la consulta de registro/obligaciones aplicables.
+
+La integración del SDK de Analytics no acredita revisión de sus métricas ni
+un consentimiento implementado. Estos puntos no se declaran cerrados por T0.
 
 ## Historial de producción
 
@@ -172,6 +201,7 @@ modifica. Debe migrar `priority: "gastronomy"` a
 | `dc28ede` | Ventanas, distancias, atardecer, snapshots y guardado verificado. |
 | `b88540a` | Cada franja del clima abre el itinerario preparado. |
 | `515cd1b` | Integración de 17 commits: catálogo, horarios, enlaces y Home brújula. Autorizada por el Fundador; QA completo del core pendiente. |
+| `4d1c6c8` | Puerta común de misión, GPS automático, mapa 10 km y minimapa 1 km, carga diferida, Explora diferenciado y fondo oscuro de Cerca de ti. Despliegue verificado; acta completa pendiente. |
 | `5abd94f` | Checklist de regresión incorporado a producción. |
 
 ## Retirado

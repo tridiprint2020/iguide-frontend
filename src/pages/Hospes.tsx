@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Theme } from "../styles/theme";
 import { loadUserProfile } from "../data/user";
 import { useWeather } from "../context/WeatherContext";
@@ -16,8 +16,6 @@ export default function Hospes() {
     refreshWeather,
   } = useWeather();
 
-  const [messages, setMessages] = useState<string[]>([]);
-  const [input, setInput] = useState("");
   const returnPoint = loadReturnPoint();
   const conditionLabel = {
     sunny: tx("Soleado"),
@@ -27,7 +25,7 @@ export default function Hospes() {
     snow: tx("Nieve"),
   }[weather.condition] ?? weather.condition;
   const contextualMessage =
-    isLoading
+    isLoading || error !== null
       ? null
       : getHospesMessage(
           user,
@@ -39,18 +37,6 @@ export default function Hospes() {
               }
             : undefined
         );
-
-  function sendMessage() {
-    if (!input.trim()) return;
-
-    setMessages((old) => [
-      ...old,
-      `👤 ${input}`,
-      `🎩 ${tx("Estoy analizando la mejor opción para ti. Muy pronto podré recomendarte rutas, reservar restaurantes y organizar todo tu itinerario.")}`,
-    ]);
-
-    setInput("");
-  }
 
   return (
     <div
@@ -75,7 +61,7 @@ export default function Hospes() {
           marginBottom: Theme.Space.lg,
         }}
       >
-        {tx("Listo para ayudarte, hoy tengo esto para ti.")}
+        {tx("Aún estoy aprendiendo Huancayo.")}
       </p>
 
       <div
@@ -87,10 +73,12 @@ export default function Hospes() {
       >
         {isLoading
           ? `🌤️ ${tx("Consultando las condiciones reales de Huancayo…")}`
-          : `🌤️ ${weather.temperature}° · ${conditionLabel} · ${weather.city}`}
+          : error !== null
+            ? tx("No pude confirmar el clima actual.")
+            : `🌤️ ${weather.temperature}° · ${conditionLabel} · ${weather.city}`}
       </div>
 
-      {error && (
+      {error !== null && (
         <button
           type="button"
           onClick={() => {
@@ -115,7 +103,6 @@ export default function Hospes() {
           background: Theme.Colors.surface,
           borderRadius: Theme.Radius.large,
           padding: Theme.Space.lg,
-          minHeight: "420px",
           display: "flex",
           flexDirection: "column",
           gap: Theme.Space.md,
@@ -133,53 +120,44 @@ export default function Hospes() {
           </div>
         )}
 
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            style={{
-              background: "#ffffff10",
-              padding: "14px",
-              borderRadius: Theme.Radius.medium,
-            }}
-          >
-            {msg}
-          </div>
-        ))}
+        <p style={{ margin: 0, color: Theme.Colors.textSoft }}>
+          {tx("Por ahora te oriento con las opciones del catálogo, la hora y el clima disponible. Las preguntas libres y las reservas todavía no están disponibles.")}
+        </p>
 
         <div
           style={{
-            marginTop: "auto",
             display: "flex",
+            flexWrap: "wrap",
             gap: Theme.Space.sm,
           }}
         >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={tx("Escribe a Hospes...")}
-            style={{
-              flex: 1,
-              padding: "14px",
-              borderRadius: Theme.Radius.medium,
-              border: "none",
-              outline: "none",
-            }}
-          />
-
-          <button
-            onClick={sendMessage}
+          <Link
+            to="/explorer"
             style={{
               padding: "14px 22px",
-              border: "none",
-              cursor: "pointer",
               borderRadius: Theme.Radius.medium,
               background: Theme.Colors.primary,
               color: "white",
               fontWeight: 600,
+              textDecoration: "none",
             }}
           >
-            {tx("Enviar")}
-          </button>
+            {tx("Explorar catálogo")}
+          </Link>
+
+          <Link
+            to="/itinerario"
+            style={{
+              padding: "14px 22px",
+              border: "1px solid rgba(255,255,255,0.24)",
+              borderRadius: Theme.Radius.medium,
+              color: "white",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            {tx("Armar un itinerario")}
+          </Link>
         </div>
       </div>
     </div>
