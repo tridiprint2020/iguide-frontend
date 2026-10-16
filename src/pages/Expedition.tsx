@@ -56,6 +56,7 @@ import {
 import type {
   Experience,
 } from "../types/experience";
+import { difficultyLabels } from "../types/difficulty";
 
 import type {
   TimelineItem,
@@ -332,10 +333,9 @@ function Expedition() {
     expedition.admissionRequired === true;
 
   const difficulty =
-    readTextField(
-      expedition,
-      "difficulty"
-    );
+    expedition.type === "expedition"
+      ? tx(difficultyLabels[expedition.difficulty])
+      : null;
 
   const openingHours =
     getExperienceScheduleLabel(expedition);

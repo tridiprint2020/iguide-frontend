@@ -255,9 +255,9 @@ function ExperienceCard({
           <MetaChip
             icon={Gauge}
             text={
-              difficultyLabels[
+              tx(difficultyLabels[
                 expedition.difficulty
-              ]
+              ])
             }
           />
         </div>
