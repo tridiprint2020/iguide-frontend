@@ -15,7 +15,10 @@ export const museums: Experience[] = [
 
     image:"",
 
-    description:"",
+    // Colecciones: inventario MINCETUR 1179 y Guía de Museos MINCUL 2023.
+    description:"Museo ubicado en el Colegio Salesiano Santa Rosa, en El Tambo. Reúne colecciones de historia natural y arqueología, además de fósiles, minerales, monedas y estampillas. Una visita para conocer la biodiversidad y el patrimonio cultural del Perú. Confirma con el museo los horarios, la tarifa y las condiciones para tomar fotografías.",
+
+    address:"Jr. Santa Rosa 299, El Tambo",
 
     latitude:-12.065556297758183, 
 
@@ -23,7 +26,7 @@ export const museums: Experience[] = [
 
     certificationRadiusMeters: 20,
 
-    admissionFee:0,
+    // Tarifa actual pendiente de confirmación; no presentar S/0 como dato.
 
     rating:6.6,
 
@@ -33,12 +36,14 @@ export const museums: Experience[] = [
     weatherSensitivity:"low",
     terrain:"paved",
 
-    openingHours:"08:00-21:00",
+    // Fuentes de 2023/2025 difieren; horario operativo actual sin verificar.
+    openingHours:"",
     guidedTours: false,
 exhibitions: ["Colección Permanente"],
 coverImage: "",
 gallery: [],
 isActive: true,
+lastUpdated: "2026-10-19",
 estimatedVisitMinutes: 90
 
 },

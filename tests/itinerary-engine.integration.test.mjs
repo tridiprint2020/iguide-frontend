@@ -1381,3 +1381,23 @@ test("Huaytapallana requiere organizarse el día anterior y no se ofrece como mi
   // Other expeditions retain their existing schedule contract.
   assert.equal(hasRecommendableSchedule(catalog.find((item) => item.slug === "cerrito-libertad")), true);
 });
+
+test("Salesiano sin horario confirmado queda informativo y no declara entrada gratuita", async () => {
+  const museum = catalog.find((item) => item.experienceId === "MUS-0001");
+  assert.ok(museum);
+  assert.equal(museum.admissionFee, undefined);
+  assert.equal(getScheduleReadiness(museum), "unverified");
+  const { selectHomeExperience } = await server.ssrLoadModule(
+    "/src/engine/homeRecommendationEngine.ts"
+  );
+  assert.equal(selectHomeExperience({
+    experiences: [museum], weather: null,
+    currentDate: new Date(2026, 9, 19, 10),
+  }), null);
+  const plan = buildItineraryPlan({ profile, location: museum, answers: {
+    selectedDate: "2026-10-19", selectedHour: 10, endMinutes: 17 * 60,
+    priorities: ["culture"], transport: "walking",
+  } }, { experiences: [museum], forecast: null });
+  assert.equal(plan.stops.length, 0);
+  assert.equal(plan.exclusions[0].explanation.reasonCode, "schedule-unverified");
+});

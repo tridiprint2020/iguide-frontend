@@ -15,7 +15,8 @@ export const cafes: Experience[] = [
 
     image:"",
 
-    description:"",
+    // Café de especialidad confirmado por el Fundador el 19/10/2026.
+    description:"Cafetería de especialidad de Huancayo, una opción local para disfrutar de un café y hacer una pausa durante tu recorrido por la ciudad.",
 
     latitude:-12.068743208762504, 
 
@@ -40,6 +41,7 @@ admissionFee: 0,
 coverImage: placeholder, // O string vacío ""
 gallery: [],
 isActive: true,
+lastUpdated: "2026-10-19",
 estimatedVisitMinutes: 60
 
 },

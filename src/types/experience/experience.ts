@@ -234,7 +234,8 @@ export interface HotelExperience extends PublishableExperience {
 
 export interface MuseumExperience extends PublishableExperience {
   type: "museum";
-  admissionFee: number;   
+  /** Ausente cuando la tarifa no está confirmada; cero significa gratuita. */
+  admissionFee?: number;
   openingHours: string;   
   guidedTours: boolean;   
   exhibitions: string[];  
