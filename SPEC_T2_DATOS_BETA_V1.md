@@ -1,6 +1,8 @@
 # T2 — Contrato mínimo de datos para la beta
 
-Fecha: 15/10/2026. Estado: **PROPUESTA PARA REVISIÓN**, no implementada.
+Fecha inicial: 15/10/2026. Revisión: 19/10/2026.
+Estado: **AJUSTADA TRAS AUDITORÍA**, pendiente de revisión de los cambios y
+de las decisiones de producto indicadas; no implementada.
 Base del código: T0 `4927f77`, sobre main `4d1c6c8`. Responsables propuestos:
 Christian decide operación y datos; Codex implementa; Claude revisa por SHA.
 
@@ -66,12 +68,52 @@ original, contrastar evidencia y conservar su trazabilidad privada.
 Ruta de referencia para T4: `/p/<token-lectura>`, a implementar expresamente
 en la app; hoy no existe. El lector V1/c1 de `/itinerario?plan=...` se conserva.
 Generar lectura y gestión con CSPRNG independientes: lectura con al menos
-128 bits; gestión con al menos 256 bits. Guardar hashes; el secreto de gestión
+128 bits; gestión con al menos 256 bits. Para lectura, 16 bytes aleatorios
+codificados en base64url sin padding producen 22 caracteres. No sustituirlos
+por un código de seis caracteres, una secuencia o un identificador derivado
+del lugar. Validar codificación canónica y longitud; comprobar que la generación
+usa el CSPRNG, no solo que la cadena parece aleatoria.
+Guardar hashes; el secreto de gestión
 no viaja en el enlace público, los logs o la respuesta de lectura.
 
 Crear el enlace informa que cualquiera que lo reciba puede reenviarlo y ver
 lugares y horarios previstos. Un token opaco reduce adivinación, no convierte
 el plan compartido en información privada frente a sus destinatarios.
+
+### Protección de enlaces ante Analytics y Referer
+
+Verificado el 19/10: `src/main.tsx` monta `<Analytics />` sin `beforeSend` y el
+lockfile resuelve `@vercel/analytics` 2.0.1. Vercel documenta la captura de URL,
+referrer y parámetros filtrados, y advierte que un identificador en la ruta
+puede recogerse mediante el seguimiento automático. El paquete instalado
+admite `beforeSend`; no hay un filtro de la app que lo aproveche. Esto acredita
+el riesgo del futuro enlace, no una fuga observada de un token real: `/p/*`
+todavía no está implementado.
+
+Antes de liberar T4, la configuración propuesta es Analytics desactivado por
+defecto hasta la decisión de T2b. Si se autoriza en rutas generales, aplicar
+una puerta central antes del primer envío: no inyectar Analytics en entradas
+directas a `/p/*` ni al lector legacy con `?plan=`, y suprimir todos sus eventos
+al entrar allí por navegación SPA. Mantener esa exclusión durante la sesión de
+la pestaña, incluso al volver a Inicio o recargar. Solo se puede persistir un
+indicador de exclusión, nunca el token; si no se puede garantizar el control,
+mantener Analytics desactivado. Filtrar también los eventos personalizados.
+En rutas autorizadas, enviar solo rutas normalizadas sin query ni fragmento.
+
+Fijar explícitamente `Referrer-Policy: no-referrer` en todas las respuestas del
+documento HTML de la app, incluyendo `/p/*`, errores y redirecciones de ese
+flujo, y en los recursos propios que generen solicitudes posteriores. Una
+cabecera limitada a la carga inicial de `/p/*` no cubre una entrada por SPA
+desde otro documento: aplicar la política también al HTML de Inicio. No
+permitir que un enlace o recurso use una política más permisiva. Confirmar
+los encabezados HTTP reales en el despliegue; el HTML inicial debe incorporar
+la misma política antes de cargar recursos. No basta cambiarla tras el montaje.
+
+No transmitir enlaces secretos a reportes de errores ni imprimir URL completas
+en logs propios. El proveedor de hosting recibe necesariamente la URL de la
+solicitud: acordar acceso, retención y redacción de sus registros en T2b, sin
+prometer que no existe en su infraestructura. El criterio DAT13 se refiere
+a eventos de Analytics y a cabeceras `Referer` de solicitudes salientes.
 
 | Operación | Anónimo | Explorador autenticado normal | Revisor autorizado |
 | --- | --- | --- | --- |
@@ -100,12 +142,26 @@ legales afirmados. El responsable debe validar aviso, base aplicable y proveedor
 
 | Dato | Propuesta | Conducta al terminar |
 | --- | --- | --- |
-| Plan compartido | 30 días desde creación; revocación anticipada con secreto | Lectura deja de resolver inmediatamente al caducar/revocar; purga de snapshot en ≤24 h. El mensaje no publica información de otros planes. |
+| Plan compartido | La fecha mayor entre creación +30 días y final de la fecha del plan +7 días; máximo creación +90 días. Revocación anticipada con secreto. | Mostrar la caducidad exacta al crear. Lectura deja de resolver inmediatamente al caducar/revocar; purga de snapshot en ≤24 h. El mensaje no publica información de otros planes. |
 | Aporte bruto | Máximo 90 días desde recepción | Eliminar texto original y secretos al vencer; conservar solo el hecho aprobado independiente y auditoría mínima si corresponde a su finalidad. |
 | Borrador local de aporte | Hasta enviar, borrar o 30 días | Explicar que solo está en el dispositivo; ninguna sincronización automática. |
 | Contadores de abuso | TTL máximo 24 h | Borrado automático; no reutilizarlos para marketing, visitas o R5. |
 | Auditoría mínima de revisión | 180 días, sin texto bruto innecesario | Purgar o reducir al registro editorial justificado que se acuerde en el aviso. |
 | Hecho público | Vigencia específica según tipo, nunca indefinida por omisión | Al vencer, salir de recomendaciones aprobadas y pedir contraste; historial editorial mínimo según contrato final. |
+
+El servidor calcula `C` con su reloj y `F` como las 00:00 del día siguiente a
+la fecha del plan en `America/Lima`, convertidas a UTC. La fórmula es
+`expires_at = min(C + 90 días, max(C + 30 días, F + 7 días))`.
+Los plazos desde creación son intervalos de 24 horas; no usar la zona del
+navegador. Validar la fecha y el par ciudad/zona. En una expansión, la zona
+procede del catálogo controlado del destino, no de un valor libre del cliente.
+
+Si `F + 7 días` excede `C + 90 días`, no crear un enlace que caduque antes de
+dar ese margen al viaje: explicar el límite de la beta y cuándo podrá crearse.
+El plan y su calendario local siguen disponibles. La fecha no es editable en
+el enlace remoto: cambiarla requiere generar otro enlace. Ejemplo de aceptación:
+un plan creado el 19/10/2026 para el 30/11/2026 conserva acceso hasta terminar
+el 07/12/2026, en vez de vencer treinta días después de su creación.
 
 El comprobante debe explicar cómo retirar usando el secreto y qué ocurre si
 se pierde. No prometer recuperación por cuenta cuando no hay cuenta. Christian
@@ -118,6 +174,48 @@ no resucitar enlaces o aportes retirados. Fotos no se subirán en esta beta.
 Si no se conserva una fuente fiable de retiradas posteriores al backup,
 mantener cerradas las APIs y descartar planes/aportes brutos restaurados en
 vez de publicarlos de nuevo. T3 debe documentar y probar esa decisión de recuperación.
+
+### Purga programada y capacidad global
+
+Propuesta de beta a ratificar en D02: máximo **10 000 filas persistentes** en
+conjunto para `shared_plans`, `local_submissions`, `local_facts` y
+`review_actions`, incluyendo registros pendientes, revocados o vencidos que
+aún no se hayan purgado. Los contadores temporales de abuso tienen un límite
+separado de **2 000 filas**, además de su TTL de 24 h. No son límites por IP
+ni por cliente, ni permiten crecer indefinidamente cambiando de dispositivo.
+Toda tabla auxiliar que añada T3 debe tener presupuesto y conservación
+explícitos antes de habilitarse.
+
+Reservar cuota y escribir en una misma transacción con exclusión mutua o un
+contador transaccional comprobado contra las tablas reales; un `count` previo
+en la función seguido de un insert independiente no es suficiente. Los
+reintentos idempotentes no consumen otra fila. Al alcanzar capacidad, rechazar
+nuevas escrituras con un error temporal de capacidad, conservar borradores
+locales y no mostrar Enviado. Seguir permitiendo lecturas vigentes, retiros y
+revocaciones que actualizan/eliminan registros existentes. No eliminar planes
+vigentes para liberar cuota. La API no puede aumentar el límite a petición del
+cliente. Si no hay capacidad para un nuevo contador de abuso, rechazar nuevas
+escrituras públicas; no dejar pasar solicitudes sin control.
+
+T3 debe crear, por migración reproducible, el job de Supabase Cron/`pg_cron`
+**`beta_purge_expired_v1`**, horario `15 * * * *` (cada hora, UTC), y una función
+de mantenimiento de privilegios mínimos fuera de las APIs públicas. Purgar
+planes caducados/revocados, aportes vencidos, contadores vencidos y auditoría
+vencida según los plazos anteriores, con sus dependencias y secretos. Procesar
+lotes de hasta 500 filas hasta agotar las elegibles, con tiempo de ejecución
+medido y cuota liberada de forma transaccional. Un hecho caducado deja de ser
+público por su vigencia aunque el proceso de mantenimiento aún no haya corrido.
+
+Registrar solo inicio, fin, resultado y cantidades. Alertar al operador si
+no hay una ejecución satisfactoria en dos horas; ejecutar la misma función
+manualmente ante una falla y pausar nuevas escrituras si no puede mantenerse
+la eliminación en ≤24 h. La pausa o restauración de un proyecto no prueba que
+Cron siga operativo: comprobarlo antes de abrir las APIs. T3 debe limitar el
+historial propio de ejecución y el de `cron.job_run_details` a siete días y
+1 000 filas por job, con un límite combinado de 5 000 filas para los registros
+de mantenimiento de la beta. Nunca registrar tokens, cuerpos o secretos en
+el historial. Probar la purga, sus fallas y la recuperación; nombrar el job no
+equivale a tenerlo instalado.
 
 ## 6. Recepción honesta y control de abuso
 
@@ -168,14 +266,16 @@ criterios de moderación y réplica; no se habilita en la beta de este contrato.
 | DAT02 | Intentar publicar, revisar o poner expires_at/role desde cliente. | Rechazo del servidor; sin mutación. |
 | DAT03 | Token ausente/aleatorio, caducado y revocado; secreto de gestión incorrecto. | Sin snapshot; no autoriza gestión ni filtra existencia de otros registros. |
 | DAT04 | Crear, abrir y revocar plan; intentar enumerar sin token; confirmar titularidad de gestión. | Solo snapshot mínimo, sin GPS, perfil, exclusiones ni secreto de gestión. |
-| DAT05 | Ocho paradas V1 y c1 antiguas más nuevo enlace remoto. | Lectores existentes funcionan; no requieren cuenta ni pierden pronóstico. |
+| DAT05 | Ocho paradas V1 y c1 antiguas más nuevo enlace remoto sin campo exclusions. | Lectores existentes funcionan; no requieren cuenta ni pierden pronóstico. El adaptador remoto repone `exclusions: []` antes de validar/migrar e hidratar el tipo local; no toma exclusiones editoriales del cliente ni altera los lectores legacy. |
 | DAT06 | Timeout después de escritura y dos reintentos concurrentes iguales. | Una fila; comprobante consistente, sin duplicado ni falso Enviado. |
 | DAT07 | Cuerpo enorme, 501 caracteres, tipo/lugar extraños, HTML/script y URLs maliciosas. | Límites en servidor y cliente; ninguna ejecución en bandeja o vista pública. |
 | DAT08 | Usuario normal intenta leer o aprobar una opinión; API pública consulta todo tipo. | Opinión/candidato internos no aparecen; solo revisor autorizado los consulta. |
 | DAT09 | Alcanzar límite desde clientes distintos/concurrentes; borrado de bucket al TTL. | Control del servidor y conservación acordada, sin bloqueo permanente ni medición comercial oculta. |
-| DAT10 | Vencimiento, retirada, purga y restauración de respaldo de prueba. | No resucitan datos retirados/vencidos; límites de backups documentados. |
+| DAT10 | Reloj fijo: plan cercano, viaje dentro de seis semanas, límite de 90 días, fecha fuera del límite, cruce de día Lima/UTC; retirada, purga y restauración de respaldo. | Se cumple la fórmula de caducidad; el plan de seis semanas no vence antes del viaje. Fechas demasiado lejanas no crean un enlace engañoso. Lectura bloquea al vencer aunque Cron falle. Purga de datos vencidos/retirados en ≤24 h y ninguna resurrección al restaurar; límites de backups documentados. |
 | DAT11 | Fallar backend mientras se usa core local. | GPS/planes locales/fotos siguen su flujo; no borrado ni pérdida por fallo de red. |
 | DAT12 | Dato sin evidencia, fuente indirecta, precisión mensual y consejo caducado. | Sin publicación automática, fechas inventadas o recomendación de contenido vencido. |
+| DAT13 | Token ficticio reconocible: carga directa y SPA a `/p/*`, recarga, volver a Inicio, Atrás/Adelante, enlace legacy y eventos personalizados. Interceptar solicitudes y probar un destino externo y un receptor del mismo origen. | El token no aparece en ningún evento de Analytics ni en la cabecera `Referer` de solicitudes salientes. Si Analytics está habilitado en otra ruta, comprobar el filtro con el transporte activo y un control positivo sin secreto: no aceptar como prueba solo un script bloqueado o debug sin red. La política HTTP y HTML efectiva es `no-referrer`, desde la primera carga; cubrir errores y redirecciones. |
+| DAT14 | Capacidad global a una fila del límite con escrituras concurrentes; reintentos idempotentes; límite de contadores; purga programada y ejecución manual después de falla. | Una sola nueva fila admite la última plaza sin superar la cuota; no hay falso Enviado ni pérdida local. El duplicado no consume cuota. La purga libera capacidad, conserva datos vigentes y acota su propio historial; operación manual y alerta comprobadas. |
 
 Estas pruebas todavía **no se ejecutaron**: no hay backend de esta beta.
 T3 entrega migraciones y pruebas de permisos junto con el código, no después.
@@ -185,16 +285,16 @@ T3 entrega migraciones y pruebas de permisos junto con el código, no después.
 | ID | Decisión concreta | Quién la cierra | Bloquea |
 | --- | --- | --- | --- |
 | D01 | Responsable del tratamiento, canal de privacidad y vendedor de C0; validar obligaciones según servicio. | Christian con asesoría aplicable | Avisos, cobro y activación comercial |
-| D02 | Aprobar/cambiar plazos, aviso por finalidad y separación de Analytics/R5; definir bucket/logs y límites. | Christian; Claude revisa coherencia técnica | T3/T5 público |
+| D02 | Aprobar/cambiar fórmula de conservación y ventana máxima; aviso por finalidad y separación de Analytics/R5; bucket/logs, 10 000 filas persistentes, 2 000 contadores y presupuesto de mantenimiento. | Christian; Claude revisa coherencia técnica | T3/T5 público |
 | D03 | Proyecto Supabase, estado real, región, acceso de revisores, plan, backups y presupuesto. No asumir que el aviso de pausa sigue vigente. | Christian; Codex verifica al abrir T3 | Provisionar backend |
-| D04 | Vercel, clima comercial/atribución, mapas, privacidad/términos y Analytics. | T2b: propietario y responsables técnicos | Uso comercial según condiciones de cada servicio |
-| D05 | Token/TTL/revocación de T4 y controles de esta SPEC, con pruebas DAT01–12. | Claude revisa; Christian decide producto | Implementación y liberación de la beta |
+| D04 | Vercel, clima comercial/atribución, mapas, privacidad/términos y decisión sobre Analytics; política de referencia efectiva y registros del proveedor. | T2b: propietario y responsables técnicos | Uso comercial según condiciones de cada servicio |
+| D05 | Token de lectura de al menos 128 bits, TTL/revocación, adaptación `exclusions: []`, cuotas y controles de esta SPEC, con pruebas DAT01–14. | Claude revisa; Christian decide producto | Implementación y liberación de la beta |
 
 Mientras se revisa: completar T1 y cotizar C0 sin esperar backend. Después,
 autorizar T3 explícitamente, probar permisos, liberar una función completa
 (T4) y luego T5. T6 consulta datos aprobados; no necesita RAG para el piloto.
 
-## 10. Fuentes técnicas verificadas el 15/10/2026
+## 10. Fuentes técnicas contrastadas el 19/10/2026
 
 - Código en la base T0 indicada: contratos portable/local, contexto de misión,
   catálogo, clima, fotos y Analytics enumerados en la sección 1.
@@ -204,6 +304,20 @@ autorizar T3 explícitamente, probar permisos, liberar una función completa
   https://supabase.com/docs/guides/functions/secrets
 - Supabase, Database Backups: retención por plan y límites respecto a Storage:
   https://supabase.com/docs/guides/platform/backups
+- Supabase Cron: programación y monitorización de jobs mediante `pg_cron`:
+  https://supabase.com/docs/guides/cron
+- Vercel Web Analytics, Privacy and Compliance: URL, referrer, parámetros
+  filtrados y seguimiento de transiciones:
+  https://vercel.com/docs/analytics/privacy-policy
+- Vercel Web Analytics, Redacting Sensitive Data: `beforeSend` permite
+  descartar eventos; no sanea automáticamente toda URL de la app:
+  https://vercel.com/docs/analytics/redacting-sensitive-data
+- W3C Referrer Policy: política `no-referrer` y entrega por encabezado/HTML:
+  https://www.w3.org/TR/referrer-policy/
+
+Los plazos, cuotas, horario y alertas son propuestas de este contrato, no
+valores predeterminados ni garantías de los proveedores. DAT01–14 siguen
+pendientes de implementación y ejecución; T1 continúa abierto.
 
 Usar la documentación de la versión elegida al implementar. La SPEC no
 certifica cumplimiento legal ni supone contratación de los planes citados.
