@@ -1001,6 +1001,10 @@ function Profile() {
             {tx("Explorar nuevas misiones")} →
           </button>
         </section>
+        <button type="button" onClick={() => navigate("/admin/locales")}
+          style={{ marginTop: 18, background: "transparent", border: "1px solid #ffffff22", borderRadius: 10, color: "#a8c7ce", padding: "10px 16px", cursor: "pointer" }}>
+          {tx("Administrar fotos de locales")}
+        </button>
       </div>
     </main>
   );

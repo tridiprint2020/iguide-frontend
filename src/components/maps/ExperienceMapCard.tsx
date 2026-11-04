@@ -5,16 +5,13 @@ import {
   Star,
 } from "lucide-react";
 
-import {
-  useState,
-} from "react";
-
 import type {
   Experience,
   ExperienceType,
 } from "../../types/experience";
 
 import FavoriteButton from "../FavoriteButton";
+import { usePlaceCoverImage } from "../../hooks/usePlaceCover";
 import { tx } from "../../i18n";
 import {
   getMemoryCardDescriptor,
@@ -61,18 +58,10 @@ function ExperienceMapCard({
   onPrimaryAction,
   onViewDetails,
 }: Props) {
-  const [imageUnavailable, setImageUnavailable] =
-    useState(false);
-
-  const imageSource =
-    imageUnavailable
-      ? experience.coverImage
-      : experience.image ||
-        experience.coverImage;
+  const { src: imageSource = "", alt: photoAlt, onError } = usePlaceCoverImage(experience, experience.coverImage);
 
   const isBrandImage =
-    imageSource === experience.coverImage ||
-    /logo(?:ig|-iguide)/i.test(
+    /logo|placeholder/i.test(
       imageSource
     );
 
@@ -133,11 +122,9 @@ function ExperienceMapCard({
         >
           <img
             src={imageSource}
-            alt={tx("Imagen de {{title}}", { title: experience.title })}
+            alt={photoAlt || tx("Imagen de {{title}}", { title: experience.title })}
             loading="lazy"
-            onError={() =>
-              setImageUnavailable(true)
-            }
+            onError={onError}
             style={{
               width: "100%",
               height: "100%",
