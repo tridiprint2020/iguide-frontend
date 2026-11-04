@@ -1,4 +1,5 @@
 import PageHeader from "../components/ui/PageHeader";
+import PlaceCoverImage from "../components/places/PlaceCoverImage";
 import {
   useState,
 } from "react";
@@ -640,6 +641,8 @@ function Expedition() {
               {expedition.description}
             </p>
           )}
+
+          <PlaceCoverImage place={expedition} style={{ margin: "12px 0" }} />
 
           {huarique && (
             <aside

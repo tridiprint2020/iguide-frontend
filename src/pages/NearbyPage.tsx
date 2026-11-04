@@ -14,6 +14,7 @@ import { useWeather } from "../context/WeatherContext";
 import { useJourney } from "../context/JourneyContext";
 import type { Experience } from "../types/experience";
 import { tx } from "../i18n";
+import { usePlaceCoverImage } from "../hooks/usePlaceCover";
 import "./NearbyPage.css";
 
 type Origin = { latitude: number; longitude: number; source: "gps" | "return" };
@@ -128,10 +129,9 @@ export default function NearbyPage() {
 function NearbyPlaceCard({ experience, primaryActionLabel, onPrimaryAction, onViewDetails }: {
   experience: Experience; primaryActionLabel: string; onPrimaryAction: () => void; onViewDetails: () => void;
 }) {
-  const [failed, setFailed] = useState(false);
-  const photo = [experience.image, experience.coverImage].find(value => value && !/logo|placeholder/i.test(value));
+  const { src: photo, alt, onError } = usePlaceCoverImage(experience);
   return <div className="nearby-place">
-    {photo && !failed ? <img src={photo} alt={experience.title} loading="lazy" onError={() => setFailed(true)} />
+    {photo ? <img src={photo} alt={alt || experience.title} loading="lazy" onError={onError} />
       : <div className="nearby-photo-placeholder">{tx("Foto del lugar pendiente")}</div>}
     <div className="nearby-place-body"><h3>{experience.title}</h3><p>{experience.description}</p>
       <button className="nearby-start" onClick={onPrimaryAction}>{primaryActionLabel} →</button>

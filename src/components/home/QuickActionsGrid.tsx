@@ -95,16 +95,16 @@ function ActionCard({ action }: { action: QuickAction }) {
   </article>;
 }
 function CardFace({ page, isDestination, entering = false }: { page: Slide; isDestination: boolean; entering?: boolean }) {
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string>();
   return <button type="button" className={`home-action__face${entering ? " home-action__face--entering" : ""}`} onClick={page.onClick}
     aria-label={isDestination ? `${page.actionLabel ?? tx("Iniciar misión")}: ${page.title}` : page.title}>
-    {page.image && !failed && <img className="home-action__image" src={page.image} alt="" draggable={false} onError={() => setFailed(true)} />}
+    {page.image && failed !== page.image && <img className="home-action__image" src={page.image} alt="" draggable={false} onError={() => setFailed(page.image)} />}
     <span className="home-action__shade" />
     <span className="home-action__content">
       <span className="home-action__title">{page.title}</span>
       <span className="home-action__description">{page.subtitle}</span>
       {isDestination && <span className="home-action__mission">{page.actionLabel ?? tx("Iniciar misión")} →</span>}
-      {isDestination && (!page.image || failed) && <span className="home-action__photo-note">{tx("Foto del lugar pendiente")}</span>}
+      {isDestination && (!page.image || failed === page.image) && <span className="home-action__photo-note">{tx("Foto del lugar pendiente")}</span>}
     </span>
   </button>;
 }

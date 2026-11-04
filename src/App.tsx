@@ -32,6 +32,8 @@ import ActiveJourneyBubble from "./components/journey/ActiveJourneyBubble";
 import {
   useJourney,
 } from "./context/JourneyContext";
+import { useLoadPublicPlaceCovers } from "./hooks/usePlaceCover";
+const MerchantPhotos = lazy(() => import("./pages/MerchantPhotos"));
 
 /**
  * Coordina únicamente efectos de UI globales del Journey.
@@ -102,6 +104,7 @@ function JourneyUiCoordinator() {
 }
 
 function App() {
+  useLoadPublicPlaceCovers();
   /*
    * La suscripción global vuelve a renderizar todas las rutas
    * cuando el usuario cambia entre español e inglés.
@@ -114,6 +117,7 @@ function App() {
 
       <Suspense fallback={<p role="status" style={{ padding: 24, color: "white" }}>{t("Cargando…")}</p>}>
       <Routes>
+        <Route path="/admin/locales" element={<MerchantPhotos />} />
         <Route
           path="/"
           element={<MainContainer />}

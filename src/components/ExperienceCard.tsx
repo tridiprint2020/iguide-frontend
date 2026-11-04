@@ -27,6 +27,7 @@ import {
 } from "../context/JourneyContext";
 
 import FavoriteButton from "./FavoriteButton";
+import PlaceCoverImage from "./places/PlaceCoverImage";
 
 import {
   Theme,
@@ -130,6 +131,7 @@ function ExperienceCard({
         />
       </div>
 
+      <PlaceCoverImage place={expedition} style={{ height: 150, marginBottom: 14 }} />
       <div
         onMouseEnter={() =>
           setShowHint(true)
