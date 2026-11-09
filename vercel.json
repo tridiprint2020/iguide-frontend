@@ -7,7 +7,7 @@
   ],
   "headers": [
     {
-      "source": "/admin/locales",
+      "source": "/admin/locales(/?)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
     }
   ]

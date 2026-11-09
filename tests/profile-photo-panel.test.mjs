@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -6,6 +7,11 @@ import { MemoryRouter } from "react-router-dom";
 import { createServer } from "vite";
 
 test("el Perfil público no muestra el acceso de edición de fotos en ES ni EN", async () => {
+  // Una navegación mediante onClick no deja la ruta en el HTML renderizado.
+  const profileSource = readFileSync(new URL("../src/pages/Profile.tsx", import.meta.url), "utf8");
+  assert.ok(!profileSource.includes("/admin/locales"),
+    "El Perfil público referencia la ruta del panel de fotos");
+
   globalThis.localStorage = {
     getItem: (key) => key === "iguide.lang" ? "es" : null,
     setItem() {},
