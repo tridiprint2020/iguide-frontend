@@ -5,7 +5,7 @@ Estado: CANDIDATO PARA REVISIÓN; publicación de rama autorizada, activación r
 
 ## Comportamiento
 
-Panel de editor en `/admin/locales`, enlazado al final de Perfil. Selección y
+Panel de editor por URL directa en `/admin/locales`. Selección y
 búsqueda de locales existentes, cámara/galería, compresión de imágenes, vista
 previa, confirmación de derechos, publicación y retirada. Los visitantes ven
 la portada en ficha y tarjetas; sin conexión se conserva el catálogo estático.
@@ -20,7 +20,7 @@ inicio de misiones, seguimiento, clima, datos del catálogo ni almacenamiento de
 fotos personales. Subir una foto no altera la condición comercial o editorial
 de un local, su valoración ni su posición en recomendaciones.
 
-## Comprobaciones completadas
+## Comprobaciones del candidato inicial `0c135ed`
 
 - `npm run test:itinerary`: **115/115**, sin omitidas. 102 previas y 13 nuevas.
 - Pruebas HTTP: editor no habilitado, caducidad, consentimiento, configuración

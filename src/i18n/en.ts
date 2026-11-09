@@ -1004,7 +1004,6 @@ const en: Record<string, string> = {
   "Para otra ocasión · Consulta horarios y condiciones": "For another time · Check hours and conditions",
   "Foto del lugar pendiente": "Photo of this place pending",
   "Sin opciones para iniciar ahora. Prueba otro horario.": "No options to start now. Try another time.",
-  "Administrar fotos de locales": "Manage business photos",
 };
 
 export default en;

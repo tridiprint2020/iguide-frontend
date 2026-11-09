@@ -9,8 +9,9 @@ Pendientes migración, acceso de editor, revisión por SHA y QA real.
 En `/admin/locales`, un editor autorizado selecciona un negocio del catálogo,
 toma una foto o la elige de su galería, comprueba su vista previa y la publica.
 La portada se usa en la ficha, Explorar, las tarjetas de favoritos, las tarjetas
-del mapa, Cerca de ti y las tarjetas de destino de Inicio. El acceso también
-está al final de Perfil. La ruta por sí sola no concede permisos de edición.
+del mapa, Cerca de ti y las tarjetas de destino de Inicio. El editor abre el
+panel por URL directa. La configuración de Vercel declara `X-Robots-Tag: noindex`
+para esa ruta. La edición requiere una cuenta autorizada.
 
 No añade locales nuevos: las fichas siguen siendo editoriales y el panel cambia
 solo su portada. No cambia sus datos operativos, categoría, valoración,
