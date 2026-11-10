@@ -2,9 +2,26 @@ import type { CSSProperties } from "react";
 import type { Experience } from "../../types/experience";
 import { usePlaceCoverImage } from "../../hooks/usePlaceCover";
 
-export default function PlaceCoverImage({ place, style }: { place: Experience; style?: CSSProperties }) {
-  const { src, alt, onError } = usePlaceCoverImage(place);
+type PlaceCoverImageProps = {
+  place: Experience;
+  matchPublishedFrame?: boolean;
+  style?: CSSProperties;
+};
+
+export default function PlaceCoverImage({ place, matchPublishedFrame = false, style }: PlaceCoverImageProps) {
+  const { src, alt, isPublished, onError } = usePlaceCoverImage(place);
   if (!src) return null;
-  return <img src={src} alt={alt || place.title} loading="lazy" onError={onError}
-    style={{ display: "block", width: "100%", height: 200, objectFit: "cover", borderRadius: 16, ...style }} />;
+  const preserveFrame = matchPublishedFrame && isPublished;
+  return (
+    <img src={src} alt={alt || place.title} loading="lazy" onError={onError}
+      style={{
+        display: "block",
+        width: "100%",
+        height: preserveFrame ? "auto" : 200,
+        aspectRatio: preserveFrame ? "16 / 9" : undefined,
+        objectFit: "cover",
+        borderRadius: 16,
+        ...style,
+      }} />
+  );
 }
