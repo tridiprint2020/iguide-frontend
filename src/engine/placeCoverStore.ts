@@ -21,7 +21,8 @@ export function setPlaceCover(projectUrl: string, row: PublishedPlaceCover) {
   next.set(row.experience_id, { ...row, url: publicCoverUrl(projectUrl, row.object_path) });
   notify(next);
 }
-export function forgetPlaceCover(id: string) {
+export function forgetPlaceCover(id: string, expectedPath?: string) {
+  if (expectedPath && covers.get(id)?.object_path !== expectedPath) return;
   const next = new Map(covers);
   next.delete(id);
   notify(next);

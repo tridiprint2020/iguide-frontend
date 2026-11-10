@@ -3,6 +3,8 @@ import { incorporatedPlaceCover, type PlaceWithImage } from "../engine/placeCove
 import { getPlaceCoverSnapshot, replacePlaceCovers, subscribeToPlaceCovers } from "../engine/placeCoverStore";
 import { getPlacePhotoService } from "../services/placePhotoService";
 
+const COVER_REFRESH_MS = 15 * 60 * 1000;
+
 export function usePlaceCovers() {
   return useSyncExternalStore(subscribeToPlaceCovers, getPlaceCoverSnapshot, getPlaceCoverSnapshot);
 }
@@ -29,8 +31,11 @@ export function useLoadPublicPlaceCovers() {
     const client = service;
     let active = true;
     let loading = false;
+    let lastAttemptAt = -Infinity;
     async function refresh() {
-      if (loading || document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (loading || document.visibilityState === "hidden" || now - lastAttemptAt < COVER_REFRESH_MS) return;
+      lastAttemptAt = now;
       loading = true;
       const previous = getPlaceCoverSnapshot();
       try {
@@ -41,7 +46,7 @@ export function useLoadPublicPlaceCovers() {
     }
     void refresh();
     document.addEventListener("visibilitychange", refresh);
-    const timer = window.setInterval(refresh, 5 * 60 * 1000);
+    const timer = window.setInterval(refresh, COVER_REFRESH_MS);
     return () => { active = false; clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
   }, []);
 }

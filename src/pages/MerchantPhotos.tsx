@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Camera, Check, ImagePlus, LogOut, Search, ShieldCheck, Upload } from "lucide-react";
 import { catalog } from "../data/catalog";
-import { assertPhotoInput } from "../engine/placeCoverContract";
+import { assertPhotoInput, MAX_COVER_BYTES, type PublishedPlaceCover } from "../engine/placeCoverContract";
 import { forgetPlaceCover, replacePlaceCovers, setPlaceCover } from "../engine/placeCoverStore";
 import { usePlaceCover, usePlaceCovers } from "../hooks/usePlaceCover";
 import { getPlacePhotoService, type EditorSession } from "../services/placePhotoService";
@@ -13,6 +13,7 @@ const merchants = catalog.filter(place =>
   ["restaurant", "cafe", "bar", "nightclub", "hotel", "craft"].includes(place.type)
 ).sort((a, b) => a.title.localeCompare(b.title, "es"));
 const searchable = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+type CoverDraft = { photo: Blob; expected: PublishedPlaceCover | null };
 
 export default function MerchantPhotos() {
   const connection = useMemo(() => {
@@ -24,23 +25,29 @@ export default function MerchantPhotos() {
   const [password, setPassword] = useState("");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(merchants[0]?.experienceId ?? "");
-  const [photo, setPhoto] = useState<Blob | null>(null);
+  const [draft, setDraft] = useState<CoverDraft | null>(null);
+  const [draggingPhoto, setDraggingPhoto] = useState(false);
   const [alt, setAlt] = useState("");
   const [rights, setRights] = useState(false);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
-  const [confirmRemoval, setConfirmRemoval] = useState(false);
+  const [confirmRemoval, setConfirmRemoval] = useState<PublishedPlaceCover | null>(null);
   const covers = usePlaceCovers();
   const selected = merchants.find(place => place.experienceId === selectedId) ?? merchants[0];
   const published = covers.get(selectedId);
   const currentCover = usePlaceCover(selected);
+  const photo = draft?.photo ?? null;
+  const canPreparePhoto = !!connection.service && !!session && !busy;
   const preview = useMemo(() => photo ? URL.createObjectURL(photo) : "", [photo]);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
   useEffect(() => {
     if (!session) return;
     const timer = window.setTimeout(() => {
       setSession(null);
+      setDraft(null);
+      setRights(false);
+      setConfirmRemoval(null);
       setNotice("La sesión terminó. Vuelve a entrar para continuar.");
       void connection.service?.signOut();
     }, Math.max(0, session.expiresAt - Date.now()));
@@ -49,7 +56,7 @@ export default function MerchantPhotos() {
 
   function resetMessages() { setError(""); setNotice(""); }
   function choosePlace(id: string) {
-    setSelectedId(id); setPhoto(null); setAlt(""); setRights(false); setConfirmRemoval(false); resetMessages();
+    setSelectedId(id); setDraft(null); setAlt(""); setRights(false); setConfirmRemoval(null); resetMessages();
   }
   async function signIn(event: FormEvent) {
     event.preventDefault();
@@ -61,28 +68,52 @@ export default function MerchantPhotos() {
     catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo entrar."); }
     finally { setBusy(""); }
   }
-  async function preparePhoto(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || busy) return;
-    resetMessages(); setPhoto(null); setRights(false); setBusy("Preparando fotografía…");
+  async function preparePhoto(file: File) {
+    if (!canPreparePhoto) return;
+    const expected = published ?? null;
+    resetMessages(); setDraft(null); setRights(false); setBusy("Preparando fotografía…");
     try {
       assertPhotoInput(file);
       const { compressPhotoFile } = await import("../engine/photoProcessing");
       const compressed = await compressPhotoFile(file, 1600, 0.82);
-      if (compressed.size > 2 * 1024 * 1024) throw new Error("La foto sigue siendo muy grande. Elige otra fotografía.");
-      setPhoto(compressed); setAlt(selected.title);
+      if (compressed.size > MAX_COVER_BYTES) throw new Error("La foto sigue siendo muy grande. Elige otra fotografía.");
+      setDraft({ photo: compressed, expected }); setAlt(selected.title);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo preparar la fotografía."); }
     finally { setBusy(""); }
   }
+  function choosePhotoFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (file) void preparePhoto(file);
+  }
+  function dragPhotoOver(event: DragEvent<HTMLDivElement>) {
+    if (!event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = canPreparePhoto ? "copy" : "none";
+    setDraggingPhoto(canPreparePhoto);
+  }
+  function dropPhoto(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDraggingPhoto(false);
+    if (!canPreparePhoto) return;
+    const { files } = event.dataTransfer;
+    if (files.length > 1) {
+      resetMessages();
+      setDraft(null);
+      setRights(false);
+      setError("Arrastra una sola fotografía por vez.");
+      return;
+    }
+    if (files[0]) void preparePhoto(files[0]);
+  }
   async function publish(event: FormEvent) {
     event.preventDefault();
-    if (!photo || !rights || !session || !connection.service || busy) return;
+    if (!draft || !rights || !session || !connection.service || busy) return;
     resetMessages(); setBusy("Publicando portada…");
     try {
-      const cover = await connection.service.publishCover(selected.experienceId, photo, alt, rights);
+      const cover = await connection.service.publishCover(selected.experienceId, draft.photo, alt, rights, draft.expected);
       setPlaceCover(connection.service.config.url, cover);
-      setPhoto(null); setRights(false);
+      setDraft(null); setRights(false); setConfirmRemoval(null);
       setNotice(`Portada publicada para ${selected.title}. Ya puedes abrir su ficha.`);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo confirmar la publicación."); }
     finally { setBusy(""); }
@@ -91,19 +122,25 @@ export default function MerchantPhotos() {
     if (!connection.service || busy) return;
     resetMessages(); setBusy("Actualizando portadas…");
     try {
-      replacePlaceCovers(connection.service.config.url, await connection.service.listCovers());
-      setNotice("Portadas actualizadas desde el servidor.");
+      const rows = await connection.service.listCovers();
+      replacePlaceCovers(connection.service.config.url, rows);
+      setConfirmRemoval(null);
+      const latest = rows.find(row => row.experience_id === selectedId)?.object_path ?? null;
+      if (draft && (draft.expected?.object_path ?? null) !== latest) {
+        setDraft(null); setRights(false);
+        setNotice("La portada cambió. Revisa la imagen actual y vuelve a elegir tu foto.");
+      } else setNotice("Portadas actualizadas desde el servidor.");
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudieron actualizar las portadas."); }
     finally { setBusy(""); }
   }
   async function remove() {
-    if (!published || !session || !connection.service || busy) return;
+    if (!confirmRemoval || !session || !connection.service || busy) return;
     resetMessages(); setBusy("Retirando portada…");
     try {
-      const result = await connection.service.removeCover(published);
-      forgetPlaceCover(selectedId); setConfirmRemoval(false);
+      const result = await connection.service.removeCover(confirmRemoval);
+      forgetPlaceCover(confirmRemoval.experience_id, confirmRemoval.object_path); setConfirmRemoval(null);
       setNotice(result.fileDeleted ? "Portada retirada y archivo eliminado. Se recuperó la imagen anterior." :
-        "Portada retirada de la ficha. No se confirmó el borrado del archivo público: queda pendiente su eliminación en el almacenamiento.");
+        `Portada retirada de la ficha. Borrado pendiente en el almacenamiento: ${confirmRemoval.object_path}.`);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo confirmar la retirada. Actualiza las portadas."); }
     finally { setBusy(""); }
   }
@@ -113,7 +150,7 @@ export default function MerchantPhotos() {
     <header className="merchant-topbar">
       <Link to="/" aria-label="Volver a I.GUIDE"><img src={logo} alt="I.GUIDE" /></Link>
       <span>LOCALES · EDICIÓN</span>
-      {session ? <button disabled={!!busy} onClick={() => { setSession(null); setPhoto(null); setRights(false); void connection.service?.signOut(); }}><LogOut size={16} /> Salir</button> : <Link to="/explorer">Ver guía →</Link>}
+      {session ? <button disabled={!!busy} onClick={() => { setSession(null); setDraft(null); setRights(false); setConfirmRemoval(null); void connection.service?.signOut(); }}><LogOut size={16} /> Salir</button> : <Link to="/explorer">Ver guía →</Link>}
     </header>
     <main className="merchant-main">
       <div className="merchant-heading"><p className="merchant-eyebrow">DEL LOCAL A LA GUÍA</p>
@@ -141,15 +178,21 @@ export default function MerchantPhotos() {
         </section>
         <section className="merchant-editor" aria-label="Portada del local">
           <div className="merchant-step"><span>02</span><div><h2>{selected.title}</h2><p>{published ? "Con portada publicada" : "Prepara su portada"}</p></div></div>
-          <div className="merchant-photo-preview">{preview || currentCover ? <img key={preview || currentCover} src={preview || currentCover} alt={alt || selected.title} /> : <div><ImagePlus size={42} /><p>La próxima imagen de este local<br />puede empezar aquí.</p></div>}
-            <span>{photo ? "VISTA PREVIA · AÚN SIN PUBLICAR" : published ? "PORTADA PUBLICADA" : "IMAGEN ACTUAL"}</span>
+          <div className={`merchant-photo-preview${draggingPhoto && canPreparePhoto ? " is-drop-target" : ""}`}
+            onDragOver={dragPhotoOver} onDragLeave={event => {
+              if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setDraggingPhoto(false);
+            }} onDrop={dropPhoto}>
+            {preview || currentCover ? <img key={preview || currentCover} src={preview || currentCover} alt={alt || selected.title} draggable={false} />
+              : <div><ImagePlus size={42} /><p>{session ? "Arrastra una foto aquí." : "La próxima imagen de este local puede empezar aquí."}</p></div>}
+            <span>{draggingPhoto && canPreparePhoto ? "SUELTA LA FOTO AQUÍ" : photo ? "VISTA PREVIA · AÚN SIN PUBLICAR" : published ? "PORTADA PUBLICADA" : "IMAGEN ACTUAL"}</span>
           </div>
           <form onSubmit={publish}>
             <fieldset disabled={!session || !!busy}>
-              <div className="merchant-upload-actions"><label className="merchant-upload"><Camera size={19} /> Tomar foto<input aria-label="Tomar foto del local" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={preparePhoto} /></label>
-                <label className="merchant-upload"><ImagePlus size={19} /> Elegir foto<input aria-label="Elegir foto del local" type="file" accept="image/jpeg,image/png,image/webp" onChange={preparePhoto} /></label></div>
-              <p className="merchant-help">JPG, PNG o WebP, hasta 12 MB. Preparamos una versión ligera para la guía.</p>
-              {photo && <><label className="merchant-description">Descripción de la foto<input maxLength={160} required value={alt} onChange={event => setAlt(event.target.value)} /></label>
+              <div className="merchant-upload-actions"><label className="merchant-upload"><Camera size={19} /> Tomar foto<input aria-label="Tomar foto del local" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={choosePhotoFile} /></label>
+                <label className="merchant-upload"><ImagePlus size={19} /> Elegir foto<input aria-label="Elegir foto del local" type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhotoFile} /></label></div>
+              <p className="merchant-help">Arrastra un archivo al recuadro o elige una foto. JPG, PNG o WebP hasta 12 MB. Preferible horizontal 16:9, con el motivo centrado.</p>
+              {photo && <><p className="merchant-help">JPG preparado · {Math.max(1, Math.round(photo.size / 1000))} kB</p>
+                <label className="merchant-description">Descripción de la foto<input maxLength={160} required value={alt} onChange={event => setAlt(event.target.value)} /></label>
                 <label className="merchant-rights"><input type="checkbox" checked={rights} onChange={event => setRights(event.target.checked)} required />
                   <span>Tengo autorización y derechos para publicar esta fotografía. Será visible para cualquier persona.</span></label></>}
               <button className="merchant-primary merchant-publish" type="submit" disabled={!photo || !rights || !!busy}><Upload size={18} /> Publicar portada</button>
@@ -157,7 +200,7 @@ export default function MerchantPhotos() {
           </form>
           <div className="merchant-editor-footer"><Link to={`/expedition/${selected.slug}`}>Ver ficha del local ↗</Link>
             {connection.service && <button disabled={!!busy} onClick={refresh}>Actualizar portadas</button>}</div>
-          {session && published && <div className="merchant-remove">{confirmRemoval ? <><p>¿Retirar esta portada y recuperar la imagen anterior?</p><button disabled={!!busy} onClick={remove}>Sí, retirar portada</button><button disabled={!!busy} onClick={() => setConfirmRemoval(false)}>Cancelar</button></> : <button disabled={!!busy} onClick={() => setConfirmRemoval(true)}>Retirar portada publicada</button>}</div>}
+          {session && published && <div className="merchant-remove">{confirmRemoval ? <><p>¿Retirar esta portada y recuperar la imagen anterior?</p><button disabled={!!busy} onClick={remove}>Sí, retirar portada</button><button disabled={!!busy} onClick={() => setConfirmRemoval(null)}>Cancelar</button></> : <button disabled={!!busy} onClick={() => setConfirmRemoval(published)}>Retirar portada publicada</button>}</div>}
         </section>
       </div>
       <div className="merchant-feedback" aria-live="polite" aria-atomic="true">{busy && <p role="status">{busy}</p>}{notice && <p className="merchant-success" role="status">{notice}</p>}{error && <p className="merchant-error" role="alert">{error}</p>}</div>

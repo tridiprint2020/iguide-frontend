@@ -55,18 +55,18 @@ test('a signed-in user not on the editor list is refused and cannot upload', asy
     return new Response(null, { status: 204 });
   });
   await assert.rejects(client.signIn('editor@example.test', 'password'), /no está habilitada/);
-  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true), /sesión terminó/);
+  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true, null), /sesión terminó/);
   assert.equal(calls.some(call => call.url.includes('/storage/')), false);
 });
 test('requires a live session, photo rights and validated JPEG before upload', async () => {
   const { client, calls } = makeService();
-  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true), /sesión terminó/);
+  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true, null), /sesión terminó/);
   await client.signIn('editor@example.test', 'password');
   const count = calls.length;
-  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', false), /autorización/);
-  await assert.rejects(client.publishCover('../other', photo(), 'Bicho', true), /local válido/);
-  await assert.rejects(client.publishCover('CAF-0001', new Blob(['svg'], { type: 'image/svg+xml' }), 'Bicho', true), /JPG/);
-  await assert.rejects(client.publishCover('CAF-0001', photo(), ' ', true), /descripción/);
+  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', false, null), /autorización/);
+  await assert.rejects(client.publishCover('../other', photo(), 'Bicho', true, null), /local válido/);
+  await assert.rejects(client.publishCover('CAF-0001', new Blob(['svg'], { type: 'image/svg+xml' }), 'Bicho', true, null), /JPG/);
+  await assert.rejects(client.publishCover('CAF-0001', photo(), ' ', true, null), /descripción/);
   assert.equal(calls.length, count);
 });
 test('server confirmation publishes the new file and never overwrites an existing object', async () => {
@@ -76,21 +76,45 @@ test('server confirmation publishes the new file and never overwrites an existin
     return json([{ ...row(data.object_path), alt_text: data.alt_text }]);
   });
   await client.signIn('editor@example.test', 'password');
-  const confirmed = await client.publishCover('CAF-0001', photo(), ' Bicho ', true);
+  const confirmed = await client.publishCover('CAF-0001', photo(), ' Bicho ', true, null);
   assert.match(confirmed.object_path, /^CAF-0001\/[a-f0-9-]{36}\.jpg$/);
   assert.equal(confirmed.alt_text, 'Bicho');
   const upload = calls.find(call => call.url.includes('/storage/'));
   assert.equal(upload.headers.get('x-upsert'), 'false');
   assert.equal(upload.headers.get('Authorization'), 'Bearer editor-token');
   const publication = calls.at(-1);
+  assert.equal(publication.method, 'POST');
+  assert.equal(new URL(publication.url).searchParams.has('on_conflict'), false);
   assert.equal(JSON.parse(publication.body).rights_confirmed, true);
   assert.match(publication.headers.get('Prefer'), /return=representation/);
 });
 test('failed upload never attempts a metadata publication', async () => {
   const { client, calls } = makeService(() => json({ error: 'storage unavailable' }, 500));
   await client.signIn('editor@example.test', 'password');
-  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true));
-  assert.equal(calls.some(call => call.url.includes('on_conflict')), false);
+  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true, null));
+  assert.equal(calls.some(call => call.url.includes('/rest/v1/iguide_place_covers')), false);
+});
+test('a replacement from a stale tab compares the prior path and cannot overwrite the current cover', async () => {
+  const { client, calls } = makeService(request => request.url.includes('/storage/') ? json({ Key: 'ok' }) : json([]));
+  const previous = row();
+  await client.signIn('editor@example.test', 'password');
+  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true, previous), /portada cambió/);
+  const publication = calls.at(-1);
+  const filters = new URL(publication.url).searchParams;
+  assert.equal(publication.method, 'PATCH');
+  assert.equal(filters.get('experience_id'), 'eq.CAF-0001');
+  assert.equal(filters.get('object_path'), 'eq.' + previous.object_path);
+  assert.equal(JSON.parse(publication.body).experience_id, undefined);
+  assert.equal(calls.some(call => call.method === 'DELETE'), false);
+});
+test('a duplicate first publication reports a conflict and preserves the current cover', async () => {
+  const { client, calls } = makeService(request => request.url.includes('/storage/')
+    ? json({ Key: 'ok' }) : json({ code: '23505' }, 409));
+  await client.signIn('editor@example.test', 'password');
+  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true, null), /portada cambió/);
+  assert.equal(calls.at(-1).method, 'POST');
+  assert.equal(new URL(calls.at(-1).url).searchParams.has('on_conflict'), false);
+  assert.equal(calls.some(call => call.method === 'DELETE'), false);
 });
 test('an unconfirmed metadata write reports failure and does not delete a potentially committed image', async () => {
   const { client, calls } = makeService(request => {
@@ -99,7 +123,7 @@ test('an unconfirmed metadata write reports failure and does not delete a potent
     return json([row()]);
   });
   await client.signIn('editor@example.test', 'password');
-  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true), /no pudimos confirmar/);
+  await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true, null), /no pudimos confirmar/);
   assert.equal(calls.some(call => call.method === 'DELETE'), false);
 });
 test('a lost response reconciles a committed publication instead of claiming failure or deleting it', async () => {
@@ -110,7 +134,7 @@ test('a lost response reconciles a committed publication instead of claiming fai
     return json([saved]);
   });
   await client.signIn('editor@example.test', 'password');
-  assert.deepEqual(await client.publishCover('CAF-0001', photo(), 'Bicho', true), saved);
+  assert.deepEqual(await client.publishCover('CAF-0001', photo(), 'Bicho', true, null), saved);
   assert.equal(calls.some(call => call.method === 'DELETE'), false);
 });
 test('expiry blocks a write before any HTTP upload', async () => {
@@ -120,7 +144,7 @@ test('expiry blocks a write before any HTTP upload', async () => {
   Date.now = () => now() + 86400001;
   try {
     const count = calls.length;
-    await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true), /sesión terminó/);
+    await assert.rejects(client.publishCover('CAF-0001', photo(), 'Bicho', true, null), /sesión terminó/);
     assert.equal(calls.length, count);
   } finally { Date.now = now; }
 });
@@ -150,7 +174,9 @@ test('presentation updates subscribers without modifying the catalogue or recomm
   store.replacePlaceCovers(config.url, []);
   store.setPlaceCover(config.url, row());
   assert.match(store.getPlaceCoverSnapshot().get('CAF-0001').url, /storage\/v1\/object\/public\/iguide-place-covers/);
-  store.forgetPlaceCover('CAF-0001');
+  store.forgetPlaceCover('CAF-0001', 'CAF-0001/older.jpg');
+  assert.equal(store.getPlaceCoverSnapshot().has('CAF-0001'), true);
+  store.forgetPlaceCover('CAF-0001', row().object_path);
   assert.equal(store.getPlaceCoverSnapshot().has('CAF-0001'), false);
   assert.equal(contract.incorporatedPlaceCover(place), '/images/cafes/bicho.jpg');
   assert.equal(place.image, '');

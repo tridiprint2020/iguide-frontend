@@ -38,6 +38,7 @@ try {
     alter table storage.objects enable row level security;
     grant usage on schema public, auth, storage to anon, authenticated;
     grant select, insert, update, delete on storage.objects to anon, authenticated;
+    alter default privileges in schema public grant execute on functions to anon, authenticated;
     -- Deliberately broad legacy policy: the new bucket must remain protected.
     create policy legacy_open_storage on storage.objects for all to anon, authenticated
       using (true) with check (true);
@@ -47,6 +48,9 @@ try {
   await db.query('insert into public.iguide_photo_editors values ($1)', [alice]);
   await check('authorization stays outside public RPC and follows the signed-in user', async () => {
     assert.equal((await db.query("select count(*)::int as n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='iguide_is_photo_editor'")).rows[0].n, 0);
+    for (const role of ['anon', 'authenticated']) {
+      assert.equal((await db.query("select has_function_privilege($1, 'public.iguide_stamp_place_cover()', 'execute') as allowed", [role])).rows[0].allowed, false);
+    }
     assert.equal((await as('anon', '', 'select iguide_private.iguide_is_photo_editor() as allowed')).rows[0].allowed, false);
     assert.equal((await as('authenticated', bob, 'select iguide_private.iguide_is_photo_editor() as allowed')).rows[0].allowed, false);
     assert.equal((await as('authenticated', alice, 'select iguide_private.iguide_is_photo_editor() as allowed')).rows[0].allowed, true);
@@ -86,15 +90,20 @@ try {
     await assert.rejects(as('authenticated', alice, 'update public.iguide_place_covers set object_path=$1', [second]), /row-level security/);
     await assert.rejects(as('authenticated', alice, 'update public.iguide_place_covers set rights_confirmed=false'), /check constraint/);
     await assert.rejects(as('authenticated', alice, 'update public.iguide_place_covers set published_by=$1', [bob]), /permission denied/);
+    await assert.rejects(as('authenticated', alice, "update public.iguide_place_covers set experience_id='CAF-0002'"), /permission denied/);
     await assert.rejects(as('authenticated', alice, "insert into storage.objects(bucket_id,name) values ('iguide-place-covers','unsafe.svg')"), /row-level security/);
   });
-  await check('a stale withdrawal cannot remove a newer publication', async () => {
+  await check('a stale replacement cannot overwrite a newer publication', async () => {
     await as('authenticated', alice, "insert into storage.objects(bucket_id,name) values ('iguide-place-covers',$1)", [second]);
-    await as('authenticated', alice, `insert into public.iguide_place_covers
-      (experience_id,object_path,alt_text,rights_confirmed) values ('CAF-0001',$1,'Bicho actualizado',true)
-      on conflict(experience_id) do update set experience_id=excluded.experience_id,
-      object_path=excluded.object_path,alt_text=excluded.alt_text,rights_confirmed=excluded.rights_confirmed
-      returning experience_id,object_path,alt_text,updated_at`, [second]);
+    const replace = `update public.iguide_place_covers
+      set object_path=$1, alt_text='Bicho actualizado', rights_confirmed=true
+      where experience_id='CAF-0001' and object_path=$2
+      returning experience_id,object_path,alt_text,updated_at`;
+    assert.equal((await as('authenticated', alice, replace, [second, first])).rows[0].object_path, second);
+    assert.equal((await as('authenticated', alice, replace, [first, first])).rows.length, 0);
+    assert.equal((await as('anon', '', 'select object_path from public.iguide_place_covers')).rows[0].object_path, second);
+  });
+  await check('a stale withdrawal cannot remove a newer publication', async () => {
     assert.equal((await as('authenticated', alice, 'delete from public.iguide_place_covers where experience_id=$1 and object_path=$2 returning experience_id', ['CAF-0001', first])).rows.length, 0);
     assert.equal((await as('authenticated', alice, 'delete from storage.objects where name=$1 returning name', [first])).rows.length, 1);
   });

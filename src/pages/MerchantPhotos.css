@@ -37,6 +37,8 @@
 .merchant-place-list small { display:block; font-size:11px; color:#9aa5ba; margin-top:3px; }
 .merchant-place-list svg { flex-shrink:0; color:#6acbd4; }
 .merchant-photo-preview { position:relative; height:280px; background:radial-gradient(ellipse at top right,#1b3545,transparent 70%),#090f19; border:1px solid #ffffff13; border-radius:13px; overflow:hidden; display:grid; place-items:center; }
+.merchant-photo-preview.is-drop-target { border-color:#75e8ec; box-shadow:0 0 0 2px #75e8ec60; }
+.merchant-photo-preview.is-drop-target > span { background:#75e8ec; color:#07141b; }
 .merchant-photo-preview > img { display:block; width:100%; height:100%; object-fit:cover; }
 .merchant-photo-preview > div { text-align:center; color:#6b879d; padding:30px; }
 .merchant-photo-preview > div p { margin-top:10px; font-size:14px; }

@@ -8,6 +8,12 @@ export type EditorSession = { email: string; expiresAt: number };
 type PrivateSession = EditorSession & { token: string };
 const COVER_FIELDS = "experience_id,object_path,alt_text,updated_at";
 
+class CoverChangedError extends Error {
+  constructor() {
+    super("La portada cambió. Actualiza las portadas antes de volver a publicarla.");
+  }
+}
+
 export function validatePhotoServiceConfig(url: string, key: string): PhotoServiceConfig {
   let parsed: URL;
   try { parsed = new URL(url); } catch { throw new Error("La conexión de fotos no está configurada."); }
@@ -58,6 +64,7 @@ export class PlacePhotoService {
           throw new Error(authenticated ? "La sesión terminó. Vuelve a entrar para publicar." : "Revisa tu correo y contraseña.");
         }
         if (response.status === 403) throw new Error("Tu cuenta no tiene permiso para esta acción.");
+        if (response.status === 409 && path.startsWith("/rest/v1/iguide_place_covers")) throw new CoverChangedError();
         if (response.status === 413) throw new Error("La foto supera el tamaño permitido.");
         if (response.status === 429) throw new Error("Espera un momento y vuelve a intentarlo.");
         throw new Error("No se pudo completar la operación. Vuelve a intentarlo.");
@@ -113,32 +120,41 @@ export class PlacePhotoService {
     return parsePublishedCovers(await this.request(`/rest/v1/iguide_place_covers?select=${COVER_FIELDS}&limit=1000`));
   }
 
-  async publishCover(id: string, photo: Blob, alt: string, rightsConfirmed: boolean): Promise<PublishedPlaceCover> {
+  async publishCover(
+    id: string, photo: Blob, alt: string, rightsConfirmed: boolean, expected: PublishedPlaceCover | null,
+  ): Promise<PublishedPlaceCover> {
     assertPlaceId(id);
     if (!rightsConfirmed) throw new Error("Confirma que tienes autorización para publicar la fotografía.");
     if (photo.type !== "image/jpeg" || photo.size <= 0 || photo.size > MAX_COVER_BYTES) {
       throw new Error("La portada debe ser un JPG de hasta 2 MB.");
     }
     if (!alt.trim() || alt.trim().length > 160) throw new Error("Añade una descripción de hasta 160 caracteres.");
+    const previous = expected === null ? null : parsePublishedCovers([expected])[0];
+    if (previous && previous.experience_id !== id) throw new Error("La portada anterior no corresponde a este local.");
     const path = `${id}/${crypto.randomUUID()}.jpg`;
     await this.request(`/storage/v1/object/${PLACE_COVER_BUCKET}/${path}`, {
       method: "POST", headers: { "Content-Type": "image/jpeg", "Cache-Control": "max-age=3600", "x-upsert": "false" },
       body: photo,
     }, true);
     try {
-      const rows = parsePublishedCovers(await this.request(`/rest/v1/iguide_place_covers?on_conflict=experience_id&select=${COVER_FIELDS}`, {
-        method: "POST", headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
-        body: JSON.stringify({ experience_id: id, object_path: path, alt_text: alt.trim(), rights_confirmed: true }),
+      const filter = previous ? `&experience_id=eq.${id}&object_path=eq.${encodeURIComponent(previous.object_path)}` : "";
+      const fields = { object_path: path, alt_text: alt.trim(), rights_confirmed: true };
+      const rows = parsePublishedCovers(await this.request(`/rest/v1/iguide_place_covers?select=${COVER_FIELDS}${filter}`, {
+        method: previous ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify(previous ? fields : { experience_id: id, ...fields }),
       }, true));
+      if (previous && rows.length === 0) throw new CoverChangedError();
       if (rows.length !== 1 || rows[0].experience_id !== id || rows[0].object_path !== path) throw new Error("Confirmación incompleta.");
       return rows[0];
-    } catch {
+    } catch (error) {
+      if (error instanceof CoverChangedError) throw error;
       // A timed-out response may have committed. Never delete that upload.
       try {
         const confirmed = (await this.listCovers()).find(row => row.experience_id === id && row.object_path === path);
         if (confirmed) return confirmed;
       } catch { /* Keep the existing public state when reconciliation also fails. */ }
-      throw new Error("La foto se subió, pero no pudimos confirmar su publicación. Actualiza las portadas antes de repetirla.");
+      throw new Error("La foto se subió, pero no pudimos confirmar su publicación. Actualiza las portadas antes de repetirla.", { cause: error });
     }
   }
 

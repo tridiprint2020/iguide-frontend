@@ -1,13 +1,16 @@
 # Activar portadas de locales
 
-Código preparado en `feat/merchant-cover-supabase-v1`, base `main @ 0eeaf84`.
-Estado: CANDIDATO PARA REVISIÓN; proyecto conectado y publicación de rama autorizada.
-Pendientes migración, acceso de editor, revisión por SHA y QA real.
+La activación se verifica primero en el piloto `iguide-pilot-test`.
+La migración de portadas quedó registrada en ese proyecto como
+`20261110022352_place_covers_v1_hardened`. En el piloto, continuar con la
+configuración de Auth y el preview del paso 4 en adelante.
 
 ## Qué permite esta entrega
 
-En `/admin/locales`, un editor autorizado selecciona un negocio del catálogo,
-toma una foto o la elige de su galería, comprueba su vista previa y la publica.
+En `/admin/locales`, un editor autorizado selecciona un negocio del catálogo
+y arrastra una foto al recuadro desde su computadora. En el teléfono puede
+tomar una foto o elegirla de su galería. En ambos casos revisa la vista previa
+y confirma los derechos antes de pulsar **Publicar portada**.
 La portada se usa en la ficha, Explorar, las tarjetas de favoritos, las tarjetas
 del mapa, Cerca de ti y las tarjetas de destino de Inicio. El editor abre el
 panel por URL directa. La configuración de Vercel declara `X-Robots-Tag: noindex`
@@ -17,6 +20,17 @@ No añade locales nuevos: las fichas siguen siendo editoriales y el panel cambia
 solo su portada. No cambia sus datos operativos, categoría, valoración,
 recomendaciones, patrocinio, planes ni fotos personales. La interfaz de edición
 está en español; los visitantes conservan la aplicación ES/EN.
+
+## Pauta para las portadas
+
+- Usa una foto real horizontal, preferiblemente 16:9 (1600 × 900 px). Centra la
+  fachada, el ambiente o el plato principal y deja aire en los bordes para el
+  recorte de las tarjetas.
+- Mantén luz natural, líneas rectas y colores fieles al lugar. Evita texto,
+  marcas de agua y personas identificables sin permiso.
+- Si preparas el archivo antes de subirlo, apunta a un JPG de 150–350 kB.
+  El panel admite un original JPG, PNG o WebP de hasta 12 MiB y lo convierte a
+  JPG con un máximo de 1600 px en el lado largo y 2 MiB.
 
 ## Conexión y aplicación
 
@@ -31,8 +45,9 @@ está en español; los visitantes conservan la aplicación ES/EN.
 3. Aplicar la migración revisada en el entorno acordado. El bucket es público y
    permite solamente JPEG hasta 2 MiB. Los originales y sus EXIF no se suben;
    se publica la imagen reconstruida por canvas tras confirmación de derechos.
-4. Usar una cuenta de editor confirmada de Supabase Auth. No registrar usuarios
-   ni enviar invitaciones sin instrucción expresa. Con su UUID verificado:
+4. En **Authentication → Sign In / Providers**, desactivar **Allow new users to
+   sign up**. El operador crea su cuenta desde **Authentication → Users**.
+   Con el UUID confirmado del editor, agregar su autorización.
 
    ```sql
    insert into public.iguide_photo_editors (user_id)
@@ -41,11 +56,13 @@ está en español; los visitantes conservan la aplicación ES/EN.
 
    La lista es administrada solo desde un contexto privilegiado del operador;
    ningún usuario puede concederse acceso desde la aplicación.
-5. Configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` a partir de
-   `.env.example`. Admitida la clave publishable o una anon heredada. Nunca usar
-   `sb_secret` o `service_role` en VITE. No compartir contraseñas por el chat.
-6. Hacer build/preview del candidato, verificar los casos siguientes, recibir
-   revisión por SHA y el GO del Fundador antes de push/merge/producción.
+5. Configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` en el preview
+   del piloto a partir de `.env.example`. Usar una clave publishable o una anon
+   heredada. La contraseña del editor se ingresa directamente en Supabase o el
+   formulario del panel.
+6. Verificar los casos siguientes en el preview y registrar su SHA. Actualizar
+   el aviso de privacidad público antes de conectar las variables en producción.
+   Publicar e integrar el candidato requiere el GO del Fundador.
 
 ## Prueba real imprescindible
 
@@ -55,11 +72,14 @@ está en español; los visitantes conservan la aplicación ES/EN.
 - Editor: publicar y sustituir una portada, abrir la ficha desde otro navegador
   sin sesión y comprobar imagen y texto alternativo. Confirmar lectura pública
   de metadatos seleccionados y ausencia de `published_by`.
+- Arrastrar un JPG desde la computadora. Verificar que aparece en vista previa
+  y la ficha cambia después de confirmar derechos y pulsar **Publicar portada**.
 - Probar la cámara y galería del teléfono, orientación, compresión y legibilidad.
 - Archivo incompatible, carga interrumpida, caducidad y pérdida de respuesta de
   la publicación: ningún mensaje de éxito sin confirmación del servidor.
-- Retirada concurrente: una solicitud con una ruta antigua no borra la portada
-  más reciente. Storage no permite sobrescribir objetos ni borrar el vigente.
+- Reemplazo y retirada concurrentes: abrir el mismo local en dos pestañas.
+  Tras publicar en una, la otra debe pedir que se actualicen las portadas en vez
+  de reemplazar o retirar la nueva. Storage protege el archivo vigente.
 - Retirada normal: desaparece de la guía y el borrado de archivo se confirma;
   distinguir fallo de borrado del archivo de la retirada de la ficha.
 - Sin configuración o sin red: catálogo, misiones, favoritos y MemoryCards
@@ -70,8 +90,14 @@ está en español; los visitantes conservan la aplicación ES/EN.
 El acceso dura como máximo el TTL de Auth, limitado a 24 h en el cliente. No se
 guardan JWT, refresh tokens ni contraseñas en almacenamiento del navegador;
 una recarga requiere entrar otra vez. Las portadas públicas se refrescan al
-abrir la aplicación, volver a la pestaña y cada cinco minutos mientras está
-visible. El editor puede actualizar manualmente.
+abrir la aplicación y cada quince minutos mientras está visible. Volver a la
+pestaña refresca si ya pasó ese intervalo. El editor puede actualizar manualmente.
+
+Durante el piloto, informar a quienes prueben el preview de que el navegador
+consulta Supabase para cargar las portadas y sus datos públicos. Supabase recibe
+los datos de conexión de esas peticiones, como la dirección IP. El correo y la
+contraseña del editor se usan para entrar por Supabase Auth. Las portadas del
+bucket son públicas. Para probar, usar una imagen autorizada para publicación.
 
 Cada reemplazo conserva el archivo anterior para no romper una publicación
 concurrente o confirmada después de un timeout. Revisar periódicamente los

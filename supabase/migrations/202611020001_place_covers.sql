@@ -35,10 +35,8 @@ create table public.iguide_place_covers (
 alter table public.iguide_place_covers enable row level security;
 revoke all on public.iguide_place_covers from public, anon, authenticated;
 grant select (experience_id, object_path, alt_text, updated_at) on public.iguide_place_covers to anon, authenticated;
--- ON CONFLICT reads the incoming rights flag; it remains hidden from anon.
-grant select (rights_confirmed) on public.iguide_place_covers to authenticated;
 grant insert (experience_id, object_path, alt_text, rights_confirmed),
-  update (experience_id, object_path, alt_text, rights_confirmed), delete on public.iguide_place_covers to authenticated;
+  update (object_path, alt_text, rights_confirmed), delete on public.iguide_place_covers to authenticated;
 
 create function public.iguide_stamp_place_cover() returns trigger
 language plpgsql set search_path = '' as $$
@@ -48,7 +46,7 @@ begin
   return new;
 end;
 $$;
-revoke all on function public.iguide_stamp_place_cover() from public;
+revoke all on function public.iguide_stamp_place_cover() from public, anon, authenticated;
 create trigger iguide_place_cover_stamp before insert or update on public.iguide_place_covers
   for each row execute function public.iguide_stamp_place_cover();
 
