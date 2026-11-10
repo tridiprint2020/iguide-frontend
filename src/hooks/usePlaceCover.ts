@@ -14,9 +14,11 @@ export function usePlaceCoverImage(place: PlaceWithImage, lastFallback?: string)
   const [failed, setFailed] = useState<string[]>([]);
   const src = [remote?.url, incorporatedPlaceCover(place), lastFallback]
     .find(value => value && !failed.includes(value));
+  const published = src === remote?.url ? remote : undefined;
   return {
     src,
-    alt: src === remote?.url ? remote?.alt_text : undefined,
+    alt: published?.alt_text,
+    isPublished: !!published,
     onError: () => { if (src) setFailed(previous => previous.includes(src) ? previous : [...previous, src]); },
   };
 }

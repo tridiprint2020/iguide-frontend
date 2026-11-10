@@ -642,7 +642,7 @@ function Expedition() {
             </p>
           )}
 
-          <PlaceCoverImage place={expedition} style={{ margin: "12px 0" }} />
+          <PlaceCoverImage place={expedition} matchPublishedFrame style={{ margin: "12px 0" }} />
 
           {huarique && (
             <aside

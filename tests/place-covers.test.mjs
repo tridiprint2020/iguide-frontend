@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { before, after, test } from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 
-let server, Service, contract, store;
+let server, Service, contract, store, PlaceCoverImage;
 const config = { url: 'https://test-project.supabase.co', publishableKey: 'sb_publishable_test' };
 const uid = '11111111-1111-4111-8111-111111111111';
 const uuid = '22222222-2222-4222-8222-222222222222';
@@ -26,9 +28,32 @@ before(async () => {
   Service = (await server.ssrLoadModule('/src/services/placePhotoService.ts')).PlacePhotoService;
   contract = await server.ssrLoadModule('/src/engine/placeCoverContract.ts');
   store = await server.ssrLoadModule('/src/engine/placeCoverStore.ts');
+  PlaceCoverImage = (await server.ssrLoadModule('/src/components/places/PlaceCoverImage.tsx')).default;
 });
 after(async () => { await server?.close(); });
 
+test('the detail view preserves the published 16:9 frame and keeps compact cards and fallback photos', () => {
+  const place = { experienceId: 'CAF-0001', slug: 'bicho', title: 'Bicho', image: '', coverImage: '' };
+
+  try {
+    store.setPlaceCover(config.url, row());
+    const detail = renderToStaticMarkup(createElement(PlaceCoverImage, { place, matchPublishedFrame: true }));
+    assert.match(detail, /alt="Fachada de Bicho"/);
+    assert.match(detail, /height:auto/);
+    assert.match(detail, /aspect-ratio:16 \/ 9/);
+
+    const card = renderToStaticMarkup(createElement(PlaceCoverImage, { place, style: { height: 150 } }));
+    assert.match(card, /height:150px/);
+    assert.doesNotMatch(card, /aspect-ratio/);
+  } finally {
+    store.replacePlaceCovers(config.url, []);
+  }
+
+  const fallback = renderToStaticMarkup(createElement(PlaceCoverImage, { place, matchPublishedFrame: true }));
+  assert.match(fallback, /src="\/images\/cafes\/bicho\.jpg"/);
+  assert.match(fallback, /height:200px/);
+  assert.doesNotMatch(fallback, /aspect-ratio/);
+});
 test('rejects secret keys, service_role JWTs and non-HTTPS configuration before requests', () => {
   const jwt = `x.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.y`;
   for (const publishableKey of ['sb_secret_never', jwt, 'invalid']) assert.throws(() => new Service({ ...config, publishableKey }));
