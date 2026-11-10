@@ -36,6 +36,7 @@ import {
 } from "../engine/returnPointEngine";
 
 import LocalityIndexCard from "../components/profile/LocalityIndexCard";
+import GuardianCollectionLink from "../components/guardians/GuardianCollectionLink";
 
 import logoIG from "../assets/branding/logo-dark-bg.png";
 
@@ -917,6 +918,8 @@ function Profile() {
         </section>
 
         {/* EXPLORACIÓN */}
+        <div style={{ marginBottom: 18 }}><GuardianCollectionLink /></div>
+
         <section
           style={{
             padding: "18px",

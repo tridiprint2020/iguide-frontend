@@ -42,6 +42,7 @@ import {
 } from "../../engine/memoryPhotoEditor";
 
 import MemoryCard from "../MemoryCard";
+import GuardianCollectionLink from "../guardians/GuardianCollectionLink";
 import ShareDrawer from "../sharing/ShareDrawer";
 import PhotoCropEditor from "../sharing/PhotoCropEditor";
 import {
@@ -520,6 +521,10 @@ export default function JourneyCompletedView() {
         >
           {tx("Tu recorrido, recuerdos y llegada quedaron guardados.")}
         </p>
+
+        <div style={{ marginBottom: 20 }}>
+          <GuardianCollectionLink experienceId={activeExperience?.experienceId} />
+        </div>
 
         {/* Resumen único, sin repetir dentro y fuera varias veces */}
         <section

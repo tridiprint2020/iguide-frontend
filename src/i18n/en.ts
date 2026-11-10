@@ -4,6 +4,22 @@
  * allowing the whole interface to share one central dictionary.
  */
 const en: Record<string, string> = {
+  "Guardianes": "Guardians",
+  "Guardianes de Huancayo": "Guardians of Huancayo",
+  "Tu colección": "Your collection",
+  "Cuatro lugares. Cuatro guardianes. Una colección que crece con tus aventuras.": "Four places. Four guardians. A collection that grows with your adventures.",
+  "{{count}} de {{total}} guardianes coleccionados": "{{count}} of {{total}} guardians collected",
+  "{{name}} en tu colección": "{{name}} in your collection",
+  "Coleccionado": "Collected",
+  "Conocer su misión": "Explore this mission",
+  "Volver al lugar": "Revisit this place",
+  "Misión en preparación": "Mission in preparation",
+  "Misión temporalmente no disponible": "Mission temporarily unavailable",
+  "Cada aventura deja un guardián": "Every adventure leaves a guardian",
+  "Abre la ficha de un lugar, inicia su misión y completa la llegada validada por la app. Su guardián se sumará a tu colección.": "Open a place, start its mission and complete the arrival validated by the app. Its guardian will join your collection.",
+  "Las misiones que ya completaste también cuentan. Tu colección se guarda en este navegador y dispositivo.": "Missions you have already completed also count. Your collection is saved in this browser and on this device.",
+  "Ver mi progreso": "View my progress",
+  "Cóndor": "Condor",
   "Ver en mapa": "View on map",
   "No hay lugares con estos filtros.": "No places match these filters.",
   "Buscar lugares": "Search places",

@@ -44,6 +44,7 @@ import {
 import Hero from "./Hero";
 import HospesBanner from "./hospes/HospesBanner";
 import QuickActionsGrid from "./home/QuickActionsGrid";
+import GuardianCollectionLink from "./guardians/GuardianCollectionLink";
 
 import {
   Theme,
@@ -449,6 +450,8 @@ function HomeLayout() {
           )
         }
       />
+
+      <GuardianCollectionLink />
 
       <QuickActionsGrid
         actions={

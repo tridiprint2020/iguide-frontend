@@ -21,6 +21,7 @@ const Hospes = lazy(() => import("./pages/Hospes"));
 const MapPage = lazy(() => import("./pages/MapPage"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Profile = lazy(() => import("./pages/Profile"));
+const Guardians = lazy(() => import("./pages/Guardians"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PrivacyNotice = lazy(() => import("./pages/PrivacyNotice"));
 import {
@@ -122,6 +123,7 @@ function App() {
       <Suspense fallback={<p role="status" style={{ padding: 24, color: "white" }}>{t("Cargando…")}</p>}>
       <Routes>
         <Route path="/admin/locales" element={<MerchantPhotos />} />
+        <Route path="/guardianes" element={<Guardians />} />
         <Route path="/privacidad" element={privacyContact ? <PrivacyNotice /> : <NotFound />} />
         <Route
           path="/"
