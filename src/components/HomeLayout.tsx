@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { getCategorySlides } from "./home/categorySlides";
 import { isVerifiedHuarique } from "../engine/huariqueEngine";
 import { getHaversineDistanceKm } from "../engine/itineraryTravelEngine";
+import { incorporatedPlaceCover } from "../engine/placeCoverContract";
+import { usePlaceCovers } from "../hooks/usePlaceCover";
 
 
 import {
@@ -154,6 +156,7 @@ function findSurpriseExperience(
 }
 
 function HomeLayout() {
+  const publishedCovers = usePlaceCovers();
   const navigate =
     useNavigate();
 
@@ -351,17 +354,9 @@ function HomeLayout() {
   const food = category((item) => ["restaurant", "cafe", "food_route"].includes(item.type));
   const places = category((item) => ["expedition", "museum", "craft"].includes(item.type));
   const surprises = category((item) => ["expedition", "museum", "craft", "festival", "event"].includes(item.type));
-  const photos: Record<string, string> = {
-    "detras-de-la-catedral": "/images/restaurants/detras-de-la-catedral.jpg",
-    "el-olimpico": "/images/restaurants/el-olimpico.jpg",
-    "bicho": "/images/cafes/bicho.jpg",
-    "cerrito-libertad": "/images/expeditions/cerrito.jpg",
-    "torre-torre": "/images/expeditions/torretorre.jpg",
-  };
   function slides(experiences: Experience[]) {
     return experiences.map((experience) => {
-      const image = photos[experience.slug] ||
-        ([experience.image, experience.coverImage].find((value) => value && !/logo|placeholder/i.test(value)) ?? undefined);
+      const image = publishedCovers.get(experience.experienceId)?.url ?? incorporatedPlaceCover(experience);
       const ready = readyIds.has(experience.experienceId);
       const distance = origin ? `${getHaversineDistanceKm(origin, experience).toFixed(1)} km` : null;
       return {

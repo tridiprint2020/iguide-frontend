@@ -1,10 +1,10 @@
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { useState } from "react";
 import { catalog } from "../data/catalog";
 import { isVerifiedHuarique } from "../engine/huariqueEngine";
 import { browseCategories, readBrowseTypes } from "../engine/navigationPolicy";
 import type { Experience } from "../types/experience";
 import { tx } from "../i18n";
+import { usePlaceCoverImage } from "../hooks/usePlaceCover";
 import "./ExplorerCatalog.css";
 export default function ExplorerCatalog() {
   const [params, setParams] = useSearchParams();
@@ -32,10 +32,9 @@ export default function ExplorerCatalog() {
   </section>;
 }
 function CatalogCard({experience,from}: {experience:Experience;from:string}) {
-  const [failed,setFailed] = useState(false);
-  const photo=[experience.image,experience.coverImage].find(value=>value&&!/logo|placeholder/i.test(value));
+  const { src: photo, onError } = usePlaceCoverImage(experience);
   return <Link className="explorer-catalog-card" to={`/expedition/${experience.slug}`} state={{from}}>
-    {photo&&!failed ? <img src={photo} alt="" loading="lazy" onError={()=>setFailed(true)} /> : <div className="explorer-catalog-photo">{tx("Foto del lugar pendiente")}</div>}
+    {photo ? <img src={photo} alt="" loading="lazy" onError={onError} /> : <div className="explorer-catalog-photo">{tx("Foto del lugar pendiente")}</div>}
     <div><h2>{experience.title}</h2><p>{experience.description}</p><span>{tx("Ver detalles")} →</span></div>
   </Link>;
 }
