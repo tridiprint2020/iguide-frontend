@@ -36,6 +36,19 @@ test('rejects secret keys, service_role JWTs and non-HTTPS configuration before 
     assert.throws(() => new Service({ ...config, url }));
   }
 });
+test('the default browser fetch uses the global receiver when an editor signs in', async t => {
+  const browserFetch = t.mock.method(globalThis, 'fetch', async function (url, init) {
+    if (this !== globalThis) throw new TypeError('Illegal invocation');
+    if (url.endsWith('/auth/v1/token?grant_type=password')) return login();
+    assert.match(url, /\/rest\/v1\/iguide_photo_editors\?/);
+    assert.equal(init.headers.get('Authorization'), 'Bearer editor-token');
+    return json([{ user_id: uid }]);
+  });
+  const client = new Service(config);
+  const session = await client.signIn('editor@example.test', 'password');
+  assert.equal(session.email, 'editor@example.test');
+  assert.equal(browserFetch.mock.callCount(), 2);
+});
 test('public photo reads send no editor token, cookie or personal session', async () => {
   const { client, calls } = makeService(() => json([row()]));
   await client.signIn('editor@example.test', 'password');

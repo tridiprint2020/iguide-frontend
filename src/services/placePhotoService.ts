@@ -37,7 +37,7 @@ export class PlacePhotoService {
   private session: PrivateSession | null = null;
   private fetcher: typeof fetch;
 
-  constructor(config: PhotoServiceConfig, fetcher: typeof fetch = fetch) {
+  constructor(config: PhotoServiceConfig, fetcher: typeof fetch = globalThis.fetch.bind(globalThis)) {
     this.config = validatePhotoServiceConfig(config.url, config.publishableKey);
     this.fetcher = fetcher;
   }
