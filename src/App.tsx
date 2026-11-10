@@ -6,6 +6,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import {
+  Link,
   Navigate,
   Route,
   Routes,
@@ -21,6 +22,7 @@ const MapPage = lazy(() => import("./pages/MapPage"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Profile = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const PrivacyNotice = lazy(() => import("./pages/PrivacyNotice"));
 import {
   MainContainer,
 } from "./pages/MainContainer";
@@ -33,6 +35,7 @@ import {
   useJourney,
 } from "./context/JourneyContext";
 import { useLoadPublicPlaceCovers } from "./hooks/usePlaceCover";
+import { privacyContact } from "./data/privacyContact";
 const MerchantPhotos = lazy(() => import("./pages/MerchantPhotos"));
 
 /**
@@ -105,6 +108,7 @@ function JourneyUiCoordinator() {
 
 function App() {
   useLoadPublicPlaceCovers();
+  const { pathname } = useLocation();
   /*
    * La suscripción global vuelve a renderizar todas las rutas
    * cuando el usuario cambia entre español e inglés.
@@ -118,6 +122,7 @@ function App() {
       <Suspense fallback={<p role="status" style={{ padding: 24, color: "white" }}>{t("Cargando…")}</p>}>
       <Routes>
         <Route path="/admin/locales" element={<MerchantPhotos />} />
+        <Route path="/privacidad" element={privacyContact ? <PrivacyNotice /> : <NotFound />} />
         <Route
           path="/"
           element={<MainContainer />}
@@ -180,6 +185,11 @@ function App() {
         />
       </Routes>
       </Suspense>
+      {privacyContact && pathname !== "/privacidad" && (
+        <footer className="privacy-footer">
+          <Link to="/privacidad">{t("Aviso de privacidad")}</Link>
+        </footer>
+      )}
     </>
   );
 }

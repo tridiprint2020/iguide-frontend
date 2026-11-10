@@ -2,6 +2,7 @@ import {
   assertPlaceId, MAX_COVER_BYTES, parsePublishedCovers, PLACE_COVER_BUCKET,
   type PublishedPlaceCover,
 } from "../engine/placeCoverContract";
+import { privacyContact } from "../data/privacyContact";
 
 export type PhotoServiceConfig = { url: string; publishableKey: string };
 export type EditorSession = { email: string; expiresAt: number };
@@ -31,7 +32,7 @@ export class PlacePhotoService {
   private session: PrivateSession | null = null;
   private fetcher: typeof fetch;
 
-  constructor(config: PhotoServiceConfig, fetcher: typeof fetch = fetch) {
+  constructor(config: PhotoServiceConfig, fetcher: typeof fetch = globalThis.fetch.bind(globalThis)) {
     this.config = validatePhotoServiceConfig(config.url, config.publishableKey);
     this.fetcher = fetcher;
   }
@@ -159,7 +160,9 @@ export class PlacePhotoService {
 }
 
 let configuredService: PlacePhotoService | undefined;
-export function getPlacePhotoService(): PlacePhotoService | null {
+export function getPlacePhotoService(access: "read" | "edit" = "read"): PlacePhotoService | null {
+  if (!privacyContact) return null;
+  if (access === "edit" && import.meta.env.VITE_PLACE_COVER_EDITOR_ENABLED !== "true") return null;
   const url = import.meta.env.VITE_SUPABASE_URL?.trim();
   const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!url && !key) return null;

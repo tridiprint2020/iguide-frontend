@@ -61,6 +61,49 @@ test('rejects secret keys, service_role JWTs and non-HTTPS configuration before 
     assert.throws(() => new Service({ ...config, url }));
   }
 });
+test('the public photo connection requires the notice and leaves the editor disabled by default', async t => {
+  const browserFetch = t.mock.method(globalThis, 'fetch', async function (url, init) {
+    assert.equal(this, globalThis);
+    assert.match(url, /\/rest\/v1\/iguide_place_covers\?/);
+    assert.equal(init.headers.get('Authorization'), null);
+    assert.equal(init.credentials, 'omit');
+    return json([row()]);
+  });
+
+  for (const email of ['', 'privacy@example.test']) {
+    const variables = {
+      VITE_SUPABASE_URL: config.url,
+      VITE_SUPABASE_PUBLISHABLE_KEY: config.publishableKey,
+      VITE_PRIVACY_CONTROLLER: 'I.GUIDE Test',
+      VITE_PRIVACY_ADDRESS: 'Domicilio de prueba',
+      VITE_PRIVACY_EMAIL: email,
+      VITE_PLACE_COVER_EDITOR_ENABLED: 'false',
+    };
+    const isolated = await createServer({
+      configFile: false,
+      envDir: false,
+      define: Object.fromEntries(Object.entries(variables).map(([name, value]) => [
+        'import.meta.env.' + name, JSON.stringify(value),
+      ])),
+      server: { middlewareMode: true, hmr: false, ws: false },
+      appType: 'custom',
+    });
+    try {
+      const { getPlacePhotoService } = await isolated.ssrLoadModule('/src/services/placePhotoService.ts');
+      assert.equal(getPlacePhotoService('edit'), null);
+      const service = getPlacePhotoService();
+      if (email) {
+        assert.ok(service);
+        assert.deepEqual(await service.listCovers(), [row()]);
+      } else {
+        assert.equal(service, null);
+      }
+    } finally {
+      await isolated.close();
+    }
+  }
+  assert.equal(browserFetch.mock.callCount(), 1);
+});
 test('public photo reads send no editor token, cookie or personal session', async () => {
   const { client, calls } = makeService(() => json([row()]));
   await client.signIn('editor@example.test', 'password');

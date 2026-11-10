@@ -65,6 +65,18 @@ está en español; los visitantes conservan la aplicación ES/EN.
 - Sin configuración o sin red: catálogo, misiones, favoritos y MemoryCards
   siguen funcionando con sus imágenes incorporadas.
 
+## Lectura de portadas en producción
+
+1. En el entorno **Production** de Vercel, configurar los datos públicos aprobados
+   del responsable en `VITE_PRIVACY_CONTROLLER`, `VITE_PRIVACY_ADDRESS` y
+   `VITE_PRIVACY_EMAIL`. Desplegar y comprobar el aviso en `/privacidad`.
+2. En el mismo entorno, configurar `VITE_SUPABASE_URL` y
+   `VITE_SUPABASE_PUBLISHABLE_KEY` del proyecto que contiene las portadas
+   aprobadas. Mantener `VITE_PLACE_COVER_EDITOR_ENABLED` en `false`.
+3. Volver a desplegar. Abrir las fichas de Amazon Centric Hotel y Hotel Wanka
+   Palace en una ventana privada y comprobar sus portadas y textos alternativos.
+   La edición se gestiona desde el panel del piloto.
+
 ## Sesiones y mantenimiento
 
 El acceso dura como máximo el TTL de Auth, limitado a 24 h en el cliente. No se

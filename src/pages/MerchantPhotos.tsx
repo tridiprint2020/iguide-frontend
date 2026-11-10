@@ -16,7 +16,7 @@ const searchable = (value: string) => value.normalize("NFD").replace(/[\u0300-\u
 
 export default function MerchantPhotos() {
   const connection = useMemo(() => {
-    try { return { service: getPlacePhotoService(), error: "" }; }
+    try { return { service: getPlacePhotoService("edit"), error: "" }; }
     catch (error) { return { service: null, error: error instanceof Error ? error.message : "Conexión pendiente de activación." }; }
   }, []);
   const [session, setSession] = useState<EditorSession | null>(null);
@@ -120,8 +120,8 @@ export default function MerchantPhotos() {
         <h1>Una foto. Una mejor<br /><span>primera impresión.</span></h1>
         <p>Actualiza la portada de cada negocio durante tu visita.</p>
       </div>
-      {!connection.service && <div className="merchant-activation" role="status"><ShieldCheck size={22} /><div><strong>Carga de fotos pendiente de activación</strong>
-        <p>{connection.error || "Podrás publicar cuando conectemos el almacenamiento y habilitemos tu acceso de editor."}</p></div></div>}
+      {!connection.service && <div className="merchant-activation" role="status"><ShieldCheck size={22} /><div><strong>Edición de portadas reservada al piloto</strong>
+        <p>{connection.error || "Abre el panel del piloto para publicar o reemplazar fotos."}</p></div></div>}
       {connection.service && !session && <form className="merchant-login" onSubmit={signIn}>
         <div><ShieldCheck size={24} /><h2>Acceso de editor</h2><p>Entra con tu cuenta autorizada para publicar.</p></div>
         <label>Correo<input type="email" autoComplete="username" value={email} onChange={event => setEmail(event.target.value)} required disabled={!!busy} /></label>
