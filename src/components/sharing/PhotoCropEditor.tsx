@@ -17,18 +17,20 @@ import {
 } from "../../engine/mediaStorage";
 import { tx } from "../../i18n";
 
-type Props = {
-  photoReference: string;
+export type PhotoFraming = { zoom: number; offsetX: number; offsetY: number };
+
+type Props = (
+  | { photoReference: string; coverPhoto?: never; initialFraming?: never }
+  | { photoReference?: never; coverPhoto: Blob; initialFraming?: PhotoFraming }
+) & {
   onCancel: () => void;
-  onApply: (croppedPhoto: Blob) => Promise<void>;
+  onApply: (croppedPhoto: Blob, framing: PhotoFraming) => void | Promise<void>;
 };
 
 type LoadedPhoto = ImageBitmap | HTMLImageElement;
 
-const PREVIEW_WIDTH = 432;
-const PREVIEW_HEIGHT = 540;
-const OUTPUT_WIDTH = 1080;
-const OUTPUT_HEIGHT = 1350;
+const MEMORY_FRAME = { previewWidth: 432, previewHeight: 540, width: 1080, height: 1350, quality: 0.88 };
+const COVER_FRAME = { previewWidth: 640, previewHeight: 360, width: 1600, height: 900, quality: 0.82 };
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -109,7 +111,7 @@ function drawCrop(
   );
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -121,16 +123,20 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
         reject(new Error(tx("No se pudo guardar el encuadre.")));
       },
       "image/jpeg",
-      0.88
+      quality
     );
   });
 }
 
 export default function PhotoCropEditor({
   photoReference,
+  coverPhoto,
+  initialFraming,
   onCancel,
   onApply,
 }: Props) {
+  const isCover = coverPhoto !== undefined;
+  const frame = isCover ? COVER_FRAME : MEMORY_FRAME;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const photoRef = useRef<LoadedPhoto | null>(null);
   const dragRef = useRef<{
@@ -142,9 +148,9 @@ export default function PhotoCropEditor({
   } | null>(null);
 
   const [photoReady, setPhotoReady] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(0);
+  const [zoom, setZoom] = useState(initialFraming?.zoom ?? 1);
+  const [offsetX, setOffsetX] = useState(initialFraming?.offsetX ?? 0);
+  const [offsetY, setOffsetY] = useState(initialFraming?.offsetY ?? 0);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -152,7 +158,10 @@ export default function PhotoCropEditor({
     let cancelled = false;
     let loadedPhoto: LoadedPhoto | null = null;
 
-    void loadPhotoBlob(photoReference)
+    const photoSource = photoReference === undefined
+      ? Promise.resolve(coverPhoto)
+      : loadPhotoBlob(photoReference);
+    void photoSource
       .then(async (blob) => {
         if (!blob) {
           throw new Error(tx("No se encontró la fotografía guardada."));
@@ -183,7 +192,7 @@ export default function PhotoCropEditor({
       releasePhoto(photoRef.current ?? loadedPhoto);
       photoRef.current = null;
     };
-  }, [photoReference]);
+  }, [photoReference, coverPhoto]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -202,13 +211,13 @@ export default function PhotoCropEditor({
     drawCrop(
       context,
       photo,
-      PREVIEW_WIDTH,
-      PREVIEW_HEIGHT,
+      frame.previewWidth,
+      frame.previewHeight,
       zoom,
       offsetX,
       offsetY
     );
-  }, [photoReady, zoom, offsetX, offsetY]);
+  }, [frame, photoReady, zoom, offsetX, offsetY]);
 
   function handlePointerDown(
     event: React.PointerEvent<HTMLDivElement>
@@ -276,8 +285,8 @@ export default function PhotoCropEditor({
 
     try {
       const outputCanvas = document.createElement("canvas");
-      outputCanvas.width = OUTPUT_WIDTH;
-      outputCanvas.height = OUTPUT_HEIGHT;
+      outputCanvas.width = frame.width;
+      outputCanvas.height = frame.height;
       const outputContext = outputCanvas.getContext("2d");
 
       if (!outputContext) {
@@ -287,17 +296,17 @@ export default function PhotoCropEditor({
       drawCrop(
         outputContext,
         photo,
-        OUTPUT_WIDTH,
-        OUTPUT_HEIGHT,
+        frame.width,
+        frame.height,
         zoom,
         offsetX,
         offsetY
       );
 
-      const croppedPhoto = await canvasToBlob(outputCanvas);
+      const croppedPhoto = await canvasToBlob(outputCanvas, frame.quality);
       outputCanvas.width = 1;
       outputCanvas.height = 1;
-      await onApply(croppedPhoto);
+      await onApply(croppedPhoto, { zoom, offsetX, offsetY });
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -329,7 +338,7 @@ export default function PhotoCropEditor({
     >
       <section
         style={{
-          width: "min(94vw, 430px)",
+          width: isCover ? "min(100%, 660px)" : "min(94vw, 430px)",
           boxSizing: "border-box",
           padding: "14px",
           borderRadius: "24px",
@@ -358,7 +367,7 @@ export default function PhotoCropEditor({
                 textTransform: "uppercase",
               }}
             >
-              {tx("Encuadre 4:5")}
+              {isCover ? tx("Portada 16:9") : tx("Encuadre 4:5")}
             </span>
             <h2
               id="photo-crop-title"
@@ -378,7 +387,9 @@ export default function PhotoCropEditor({
                 lineHeight: 1.4,
               }}
             >
-              {tx("Amplía y arrastra hasta dejar lo importante en las zonas libres.")}
+              {isCover
+                ? tx("Arrastra la foto y ajusta el zoom para encuadrar la portada.")
+                : tx("Amplía y arrastra hasta dejar lo importante en las zonas libres.")}
             </p>
           </div>
 
@@ -411,8 +422,8 @@ export default function PhotoCropEditor({
           onPointerCancel={handlePointerEnd}
           style={{
             position: "relative",
-            width: "min(78vw, 330px)",
-            aspectRatio: "4 / 5",
+            width: isCover ? "100%" : "min(78vw, 330px)",
+            aspectRatio: `${frame.previewWidth} / ${frame.previewHeight}`,
             margin: "0 auto",
             overflow: "hidden",
             borderRadius: "18px",
@@ -424,8 +435,8 @@ export default function PhotoCropEditor({
         >
           <canvas
             ref={canvasRef}
-            width={PREVIEW_WIDTH}
-            height={PREVIEW_HEIGHT}
+            width={frame.previewWidth}
+            height={frame.previewHeight}
             style={{
               width: "100%",
               height: "100%",
@@ -448,74 +459,78 @@ export default function PhotoCropEditor({
             </div>
           )}
 
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              top: "8px",
-              left: "8px",
-              width: "24%",
-              height: "10%",
-              display: "grid",
-              placeItems: "center",
-              borderRadius: "9px",
-              border: "1px dashed rgba(255,255,255,0.66)",
-              background: "rgba(5,7,13,0.25)",
-              color: "rgba(255,255,255,0.86)",
-              fontSize: "7px",
-              fontWeight: 900,
-              letterSpacing: "0.08em",
-              pointerEvents: "none",
-            }}
-          >
-            {tx("LOGO")}
-          </div>
+          {!isCover && (
+            <>
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  left: "8px",
+                  width: "24%",
+                  height: "10%",
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "9px",
+                  border: "1px dashed rgba(255,255,255,0.66)",
+                  background: "rgba(5,7,13,0.25)",
+                  color: "rgba(255,255,255,0.86)",
+                  fontSize: "7px",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  pointerEvents: "none",
+                }}
+              >
+                {tx("LOGO")}
+              </div>
 
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              right: "8px",
-              bottom: "8px",
-              width: "35%",
-              height: "30%",
-              display: "grid",
-              placeItems: "center",
-              borderRadius: "12px",
-              border: "1px dashed rgba(66,232,245,0.78)",
-              background: "rgba(5,7,13,0.22)",
-              color: "#42E8F5",
-              fontSize: "7px",
-              fontWeight: 900,
-              letterSpacing: "0.08em",
-              pointerEvents: "none",
-            }}
-          >
-            {tx("MINIMAPA")}
-          </div>
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  right: "8px",
+                  bottom: "8px",
+                  width: "35%",
+                  height: "30%",
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "12px",
+                  border: "1px dashed rgba(66,232,245,0.78)",
+                  background: "rgba(5,7,13,0.22)",
+                  color: "#42E8F5",
+                  fontSize: "7px",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  pointerEvents: "none",
+                }}
+              >
+                {tx("MINIMAPA")}
+              </div>
 
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              left: "8px",
-              bottom: "8px",
-              width: "50%",
-              height: "20%",
-              display: "grid",
-              placeItems: "center",
-              borderRadius: "12px",
-              border: "1px dashed rgba(255,61,232,0.74)",
-              background: "rgba(5,7,13,0.20)",
-              color: "#FF65DF",
-              fontSize: "7px",
-              fontWeight: 900,
-              letterSpacing: "0.08em",
-              pointerEvents: "none",
-            }}
-          >
-            {tx("TEXTO")}
-          </div>
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: "8px",
+                  bottom: "8px",
+                  width: "50%",
+                  height: "20%",
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: "12px",
+                  border: "1px dashed rgba(255,61,232,0.74)",
+                  background: "rgba(5,7,13,0.20)",
+                  color: "#FF65DF",
+                  fontSize: "7px",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  pointerEvents: "none",
+                }}
+              >
+                {tx("TEXTO")}
+              </div>
+            </>
+          )}
         </div>
 
         <div
@@ -537,7 +552,7 @@ export default function PhotoCropEditor({
             onChange={(event) => setZoom(Number(event.target.value))}
             aria-label={tx("Ampliar fotografía")}
             disabled={!photoReady || isSaving}
-            style={{ width: "100%", accentColor: "#FF20CE" }}
+            style={{ width: "100%", accentColor: isCover ? "#75E8EC" : "#FF20CE" }}
           />
           <strong style={{ fontSize: "10px", minWidth: "34px" }}>
             {zoom.toFixed(1)}×
@@ -604,8 +619,8 @@ export default function PhotoCropEditor({
               gap: "8px",
               border: "none",
               borderRadius: "13px",
-              background: "linear-gradient(145deg, #FF3DE8, #D4008D)",
-              color: "#FFFFFF",
+              background: isCover ? "#75E8EC" : "linear-gradient(145deg, #FF3DE8, #D4008D)",
+              color: isCover ? "#07141B" : "#FFFFFF",
               fontSize: "11px",
               fontWeight: 900,
               cursor: isSaving ? "wait" : "pointer",

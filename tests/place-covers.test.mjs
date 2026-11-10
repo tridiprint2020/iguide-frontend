@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { before, after, test } from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 
-let server, Service, contract, store;
+let server, Service, contract, store, PhotoCropEditor;
 const config = { url: 'https://test-project.supabase.co', publishableKey: 'sb_publishable_test' };
 const uid = '11111111-1111-4111-8111-111111111111';
 const uuid = '22222222-2222-4222-8222-222222222222';
@@ -22,13 +24,32 @@ function makeService(route = () => json([])) {
   return { client, calls };
 }
 before(async () => {
+  globalThis.localStorage = { getItem: () => 'es', setItem() {} };
+  globalThis.document = { documentElement: { lang: 'es' } };
   server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   Service = (await server.ssrLoadModule('/src/services/placePhotoService.ts')).PlacePhotoService;
   contract = await server.ssrLoadModule('/src/engine/placeCoverContract.ts');
   store = await server.ssrLoadModule('/src/engine/placeCoverStore.ts');
+  PhotoCropEditor = (await server.ssrLoadModule('/src/components/sharing/PhotoCropEditor.tsx')).default;
 });
 after(async () => { await server?.close(); });
 
+test('place cover framing is horizontal and restores the applied zoom while MemoryCards retain their framing', () => {
+  const actions = { onApply() {}, onCancel() {} };
+  const cover = renderToStaticMarkup(createElement(PhotoCropEditor, {
+    ...actions,
+    coverPhoto: photo(),
+    initialFraming: { zoom: 1.6, offsetX: 0, offsetY: -1 },
+  }));
+  const memory = renderToStaticMarkup(createElement(PhotoCropEditor, {
+    ...actions, photoReference: 'memory-photo',
+  }));
+  assert.match(cover, /<canvas width="640" height="360"/);
+  assert.match(cover, /<input type="range"[^>]*value="1\.6"/);
+  assert.doesNotMatch(cover, />LOGO</);
+  assert.match(memory, /<canvas width="432" height="540"/);
+  assert.match(memory, />LOGO</);
+});
 test('rejects secret keys, service_role JWTs and non-HTTPS configuration before requests', () => {
   const jwt = `x.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.y`;
   for (const publishableKey of ['sb_secret_never', jwt, 'invalid']) assert.throws(() => new Service({ ...config, publishableKey }));

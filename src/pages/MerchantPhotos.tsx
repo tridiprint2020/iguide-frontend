@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Camera, Check, ImagePlus, LogOut, Search, ShieldCheck, Upload } from "lucide-react";
+import { Camera, Check, Crop, ImagePlus, LogOut, Search, ShieldCheck, Upload } from "lucide-react";
+import PhotoCropEditor, { type PhotoFraming } from "../components/sharing/PhotoCropEditor";
 import { catalog } from "../data/catalog";
 import { assertPhotoInput, MAX_COVER_BYTES, type PublishedPlaceCover } from "../engine/placeCoverContract";
 import { forgetPlaceCover, replacePlaceCovers, setPlaceCover } from "../engine/placeCoverStore";
@@ -13,7 +14,13 @@ const merchants = catalog.filter(place =>
   ["restaurant", "cafe", "bar", "nightclub", "hotel", "craft"].includes(place.type)
 ).sort((a, b) => a.title.localeCompare(b.title, "es"));
 const searchable = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-type CoverDraft = { photo: Blob; expected: PublishedPlaceCover | null };
+type CoverDraft = {
+  photo: Blob;
+  source: Blob;
+  expected: PublishedPlaceCover | null;
+  adjusting: boolean;
+  framing?: PhotoFraming;
+};
 
 export default function MerchantPhotos() {
   const connection = useMemo(() => {
@@ -38,6 +45,7 @@ export default function MerchantPhotos() {
   const published = covers.get(selectedId);
   const currentCover = usePlaceCover(selected);
   const photo = draft?.photo ?? null;
+  const cropDraft = session && draft?.adjusting ? draft : null;
   const canPreparePhoto = !!connection.service && !!session && !busy;
   const preview = useMemo(() => photo ? URL.createObjectURL(photo) : "", [photo]);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
@@ -77,7 +85,7 @@ export default function MerchantPhotos() {
       const { compressPhotoFile } = await import("../engine/photoProcessing");
       const compressed = await compressPhotoFile(file, 1600, 0.82);
       if (compressed.size > MAX_COVER_BYTES) throw new Error("La foto sigue siendo muy grande. Elige otra fotografía.");
-      setDraft({ photo: compressed, expected }); setAlt(selected.title);
+      setDraft({ photo: compressed, source: compressed, expected, adjusting: false }); setAlt(selected.title);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo preparar la fotografía."); }
     finally { setBusy(""); }
   }
@@ -106,9 +114,18 @@ export default function MerchantPhotos() {
     }
     if (files[0]) void preparePhoto(files[0]);
   }
+  function cancelFraming() {
+    setDraft(current => current && { ...current, adjusting: false });
+  }
+  function applyFraming(photo: Blob, framing: PhotoFraming) {
+    if (photo.size > MAX_COVER_BYTES) throw new Error("El encuadre supera 2 MB. Prueba con otra fotografía.");
+    setDraft(current => current && current === cropDraft
+      ? { ...current, photo, framing, adjusting: false }
+      : current);
+  }
   async function publish(event: FormEvent) {
     event.preventDefault();
-    if (!draft || !rights || !session || !connection.service || busy) return;
+    if (!draft || draft.adjusting || !rights || !session || !connection.service || busy) return;
     resetMessages(); setBusy("Publicando portada…");
     try {
       const cover = await connection.service.publishCover(selected.experienceId, draft.photo, alt, rights, draft.expected);
@@ -147,12 +164,12 @@ export default function MerchantPhotos() {
 
   const filtered = merchants.filter(place => searchable(`${place.title} ${place.city} ${place.address ?? ""}`).includes(searchable(query)));
   return <div className="merchant-photos">
-    <header className="merchant-topbar">
+    <header className="merchant-topbar" inert={!!cropDraft}>
       <Link to="/" aria-label="Volver a I.GUIDE"><img src={logo} alt="I.GUIDE" /></Link>
       <span>LOCALES · EDICIÓN</span>
       {session ? <button disabled={!!busy} onClick={() => { setSession(null); setDraft(null); setRights(false); setConfirmRemoval(null); void connection.service?.signOut(); }}><LogOut size={16} /> Salir</button> : <Link to="/explorer">Ver guía →</Link>}
     </header>
-    <main className="merchant-main">
+    <main className="merchant-main" inert={!!cropDraft}>
       <div className="merchant-heading"><p className="merchant-eyebrow">DEL LOCAL A LA GUÍA</p>
         <h1>Una foto. Una mejor<br /><span>primera impresión.</span></h1>
         <p>Actualiza la portada de cada negocio durante tu visita.</p>
@@ -191,7 +208,13 @@ export default function MerchantPhotos() {
               <div className="merchant-upload-actions"><label className="merchant-upload"><Camera size={19} /> Tomar foto<input aria-label="Tomar foto del local" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={choosePhotoFile} /></label>
                 <label className="merchant-upload"><ImagePlus size={19} /> Elegir foto<input aria-label="Elegir foto del local" type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhotoFile} /></label></div>
               <p className="merchant-help">Arrastra un archivo al recuadro o elige una foto. JPG, PNG o WebP hasta 12 MB. Preferible horizontal 16:9, con el motivo centrado.</p>
-              {photo && <><p className="merchant-help">JPG preparado · {Math.max(1, Math.round(photo.size / 1000))} kB</p>
+              {draft && <><div className="merchant-framing-actions">
+                <button type="button" className="merchant-upload" onClick={() => {
+                  resetMessages();
+                  setDraft({ ...draft, adjusting: true });
+                }}><Crop size={18} /> Ajustar encuadre</button>
+                <p className="merchant-help">JPG preparado · {Math.max(1, Math.round(draft.photo.size / 1000))} kB</p>
+              </div>
                 <label className="merchant-description">Descripción de la foto<input maxLength={160} required value={alt} onChange={event => setAlt(event.target.value)} /></label>
                 <label className="merchant-rights"><input type="checkbox" checked={rights} onChange={event => setRights(event.target.checked)} required />
                   <span>Tengo autorización y derechos para publicar esta fotografía. Será visible para cualquier persona.</span></label></>}
@@ -206,5 +229,11 @@ export default function MerchantPhotos() {
       <div className="merchant-feedback" aria-live="polite" aria-atomic="true">{busy && <p role="status">{busy}</p>}{notice && <p className="merchant-success" role="status">{notice}</p>}{error && <p className="merchant-error" role="alert">{error}</p>}</div>
       <footer className="merchant-footer">I.GUIDE · Huancayo <span>Una portada mejora la ficha; las recomendaciones mantienen sus propios criterios.</span></footer>
     </main>
+    {cropDraft && <PhotoCropEditor
+      coverPhoto={cropDraft.source}
+      initialFraming={cropDraft.framing}
+      onCancel={cancelFraming}
+      onApply={applyFraming}
+    />}
   </div>;
 }
