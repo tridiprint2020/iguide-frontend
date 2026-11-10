@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ArrowUpRight, Check, Compass, LockKeyhole } from "lucide-react";
 import { Link } from "react-router-dom";
 import GuardianEmblem from "../components/guardians/GuardianEmblem";
@@ -10,6 +11,10 @@ import "../components/guardians/Guardians.css";
 export default function Guardians() {
   const collection = useGuardianCollection();
   const collected = collection.filter((guardian) => guardian.collected).length;
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <main className="guardians-page">
