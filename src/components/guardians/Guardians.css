@@ -154,7 +154,7 @@
   height: 124px;
 }
 
-.guardian-card h2 {
+.guardian-card h3 {
   margin: 0 0 4px;
   font-size: 26px;
   line-height: 1.2;
@@ -297,7 +297,7 @@
     width: 106px;
     height: 106px;
   }
-  .guardian-card h2 {
+  .guardian-card h3 {
     font-size: 23px;
   }
   .guardian-place {

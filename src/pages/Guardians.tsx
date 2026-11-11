@@ -62,7 +62,7 @@ export default function Guardians() {
                   </span>
                 </div>
                 <div className="guardian-art"><GuardianEmblem id={guardian.id} /></div>
-                <h2>{tx(guardian.name)}</h2>
+                <h3>{tx(guardian.name)}</h3>
                 <p className="guardian-place">{experience ? tx(experience.title) : tx("Misión en preparación")}</p>
                 {available ? (
                   <Link className="guardian-mission" to={`/expedition/${experience.slug}`}>
