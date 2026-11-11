@@ -5,6 +5,7 @@ import {
   Map,
   CalendarDays,
   UserRound,
+  Sparkles,
 } from "lucide-react";
 
 import type {
@@ -68,6 +69,11 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     to: "/perfil",
     icon: UserRound,
     label: "Perfil",
+  },
+  {
+    to: "/guardianes",
+    icon: Sparkles,
+    label: "Coleccionables",
   },
 ];
 
