@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { getGuardianCollection } from "../data/guardians";
+import { getStickerCollection, type CollectionId } from "../data/collectibles";
 import { loadUserProfile } from "../data/user";
 
-export function useGuardianCollection() {
+export function useCollectibleCollection(collectionId?: CollectionId) {
   const [profile, setProfile] = useState(loadUserProfile);
 
   useEffect(() => {
@@ -15,5 +16,8 @@ export function useGuardianCollection() {
     };
   }, []);
 
-  return getGuardianCollection(profile.visitedExperiences);
+  return {
+    guardians: getGuardianCollection(profile.visitedExperiences, collectionId),
+    stickers: getStickerCollection(profile.visitedExperiences, collectionId),
+  };
 }

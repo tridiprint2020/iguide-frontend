@@ -73,7 +73,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   {
     to: "/guardianes",
     icon: Sparkles,
-    label: "Guardianes",
+    label: "Coleccionables",
   },
 ];
 
